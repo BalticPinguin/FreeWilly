@@ -1,0 +1,75 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+<head>
+   <meta http-equiv="content-type" content="text/html;charset=utf-8">
+   <title>Designing FEM solver with libmesh</title>
+   <link rel="stylesheet" href="pycco.css">
+   <style>
+   table, th, td {
+      border: 1px solid white;
+      border-collapse: collapse;
+   }
+   th, td {
+      padding: 10px;
+   }
+   </style>
+   <div style="margit-left: 10%">
+</head>
+
+<body>
+<h1><center> How to design a libmesh-programme</center></h1>
+<h1>Contents:</h1>
+<nav role="navigation" class="table-of-contents">
+   <h2>List of contents:</h2>
+   <ul>
+      <li><a href="#main">The aim to achive</a></li>
+      <li><a href="#Start">Start easily</a></li>
+   </ul>
+</nav>
+
+<!-- Main content -->
+
+<h1 id="main">Main</h1>
+Finally, I want to solve a one-particle Schroedinger equation in 3D for a free particle in a local potential.
+
+<h1 id="Start">Start: Implement 1D Schroedinger equation</h1>
+For the first part, lets work in 1D only and implement the SE for one particle in a box with infinite walls,
+that means the grid has the boundary condition phi(boarders)=0.
+<h2 id="start:basic">The basic lines, appearing in all programms</h2>
+<p>There are some standard things that need to be written in any programme using libmesh. These are libraries
+   that are included as well as initialisation of objects.
+   This results in the framework of any programme looking like this:</p>
+<pre> <font color="#680000">
+ 1  #include "libmesh/libmesh.h" // basic library for initialisation
+ 2  #include "libmesh/mesh.h" // provides the class 'mesh'
+ 3  
+ 4  // Here, I will not use any namespace by default to keep track of origin of functions
+ 5  
+ 6  int main(int argc, char** argv){
+ 7      libMesh::LibMeshInit init (argc, argv); // initialisation must be with command-line arguments.
+ 8      const unsigned int dim=1; // make it 1D 
+ 9      
+10      // 1D should be supported always; but for the sake of good style...
+11      libmesh_example_requires(dim <= LIBMESH_DIM, "1D support"); // > becomes important later
+12   
+13      //create the mesh object
+14      //argument 1: parallel communicator object; initialized by LibMeshInit
+15      //argument 2: dimension; dim=1 is default here.
+16      libMesh::Mesh mesh(init.comm(), dim);
+17      return 0;
+18   }</font></pre>
+<p>The only specific part to this code is line 8 and 11, specifying the dimensionality.</p>
+
+<h2 id="start:run">Making the code usefull</h2>
+<p>The above 9 lines of code should compile without problem, but the programme as useless as short: 
+   Besides having no grid, we also haven't defined a problem at all. </p>
+   <p>So we have to add a <a href="LibDoc.html#lib:mesh_build">mesh-generator</a>. Here, we will use a
+     cubic grid.</p>
+   <p>The second part to be added is the equation to be solved: The free-particle SE.</p>
+
+
+<h2 id="start:run">Debugging and Understanding the structure.</h2>
+ Sometimes it is useful or just nice to have a look at the structure of matrices in use. Therefore, the function parseMatrix::print_matlab() Can be used. With that, one can then use the built-in sparse matrix viewer in Matlab/Octave to view the results.
+<p> A second option is provided by petsc denoted as  <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatView.html">mat_view draw </a></p>.
+</body>
+</html>

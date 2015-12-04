@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+<head>
+   <meta http-equiv="content-type" content="text/html;charset=utf-8">
+   <title>Documentation for smallscript</title>
+   <link rel="stylesheet" href="pycco.css">
+   <style>
+   table, th, td {
+      border: 1px solid white;
+      border-collapse: collapse;
+   }
+   th, td {
+      padding: 10px;
+   }
+   </style>
+   <div style="margit-left: 10%">
+</head>
+
+<body>
+<h1><center>Here, a describtion of libmesh and its elements is coming.</center></h1>
+<h1>Contents:</h1>
+<nav role="navigation" class="table-of-contents">
+   <h2>List of contents:</h2>
+   <ul>
+      <li><a href="#main">Libmesh and its Capabilites</a></li>
+      <li><a href="#funct">Functionality I will use maybe</a></li>
+      <li><a href="#libs">The libraries</a></li>
+      <li><a href="#classes">Most important Classes</a></li>
+   </ul>
+</nav>
+
+<!-- Main content -->
+
+<h1 id="main">Main:</h1>
+<p> This page is not intended to be an exhaustive libmesh-documentation nor a complete reference list.
+   It moreover tries to give an introduction to the main structure of the library and give links to other
+   pages for more detailed information.</p>
+   In general, libmesh is a finite element (FEM) library
+   If not mentioned differently, the functions and variables belong to the namespace "libmesh".
+   <p>Libmesh, moreover, uses many <a href="http://libmesh.github.io/externalsoftware.html">external packages</a>.</p>
+
+<h1 id="funct">Functionality</h1>
+    <p> One of the main figureheads of libmesh is their adaptive grid refinement, but there are some other functions
+    that are quite useful for several applications. </p>
+    <p> For some purposes, libmesh offers several options as well. I will try to compare them and find differences 
+    between the packages.</p>
+    <p> Libmesh is build on top of several other libraries and for many applications further libraries need to 
+    be installed. One of these applications are <a href="#lib:systems">eigen systems</a> that require 
+    <a href="http://slepc.upv.es">slepc</a> which again needs 
+    <a href="http://www.mcs.anl.gov/petsc/documentation/installation.html">petsc</a> to be installed
+    and configured accordingly. This means for example that petsc needs to be installed such that it
+    uses <a href="http://www.mcs.anl.gov/petsc/documentation/installation.html">complex numbers</a>  
+    if this is needed for the libmesh-application.</p>
+
+<h2 id="f:tetgen">Generation of Meshes</h2>
+    <p> The tool <a href="http://wias-berlin.de/software/tetgen/">tetgen</a> can generate different types of meshes 
+    and Delaunay triangulations. That are, for example, Voronoi meshes. </p>
+    <p> Libmesh provides qhull as well. This is mentioned only at few places (the code is in 'contrib/qhull'.
+    This library can be allowed when installing libmesh by the option '--enable-qhull' </p>
+    <p> <font color=”green”>Find out differences between qhull and tetgen! </font></p>
+
+<h2 id="f:infel">infinite elements</h2>
+   <p> The libraries for infinite elements are not compiled by default but require an extra option
+       in the configure script.</p>
+   <p> Related to this option, there are the libraries <a href="#lib:inffe">inf_fe.h</a> and 
+       <a href="#lib:inf_el_buld">libmesh/inf_elem_builder.h</a>. </p>
+
+<h1 id="libs">The libraries</h1>
+<h2 id="lib:Basic">The Basic libraries</h2>
+<p>The most important library is <a href="http://libmesh.github.io/doxygen/libmesh_8h.html">"libmesh/libmesh.h"</a>.
+   Its most important functions are the initialisation (and closing) of the library and other libraries 
+   depending on it, such as mpi and <a href="#lib:petsc">PETSc</a>. </p>
+
+<p> The second basic library that is needed always is 
+    <a href="http://libmesh.github.io/doxygen/mesh_8h.html">mesh.h</a> that provides the  
+    <a href="#cl:mesh">class mesh</a> </p>
+
+<h2 id="lib:infel">Finete elements and Related </h2>
+<h4 id="lib:mesh_build">building Meshes</h4>
+<p>The generation of meshes can be done on several ways. Most basic algorithms are provided by the library
+<a href="http://libmesh.github.io/doxygen/namespacelibMesh_1_1MeshTools_1_1Generation.html"></a>mesh_generation.h</p>
+ which can build meshes on different geometries.
+
+<h4 id="lib:inffe">infinite elements</h4>
+   The library is called  <a href="http://libmesh.github.io/doxygen/inf__fe_8h.html">inf_fe.h</a> internally.
+   <p>By this library, three different classes are provided. </p>
+
+<h4 id="lib:inf_el_buld">infinite element builder</h4>
+   The <a href="http://libmesh.github.io/doxygen/inf__elem__builder_8h.html">inf_elem_builder</a> provides the 
+   only class InfElemBuilder.
+
+<h4 id="lib:systems">Implicit and Explicit System</h4>
+   Libmesh provides the libraries 
+   <a href="https://libmesh.github.io/doxygen/implicit__system_8h.html">implicit_system.h</a> ,
+   <a href="https://libmesh.github.io/doxygen/linear__implicit__system_8h.html">linear_implicit_system.h</a> ,
+   <a href="https://libmesh.github.io/doxygen/nonlinear__implicit__system_8h.html">nonlinear_implicit_system.h</a> and
+   <a href="https://libmesh.github.io/doxygen/explicit__system_8h.html">explicit_system.h</a>.
+   These libraries contain each a class of same name.
+   <p> The implicit systems, moreover, have an own solver class which contain different functions to solve 
+   liner/nonlinear systems and eigen equations using Laspack, PETSc or other libraries.</p>
+   <p>For nonlinear systems, various methods are provided by
+   <a href="http://www.mcs.anl.gov/petsc/documentation/nonlinearsolvertable.html">petsc</a> in addition to 
+      solvers implemented in libmesh.</p>
+   <!-- <p> The explicit system  </p>-->
+   <p><font color="red"> I didn't find any difference between explict and implicit systems yet. </font></p>
+   <p><font color="red"> Also, I don't really know what implicit_system.h does. It doesn't seem
+      to be a relict; but I didn't find any real functionality for it. </font></p>
+   <p>An other important library for a class of systems is <a href="">eigen_system.h</a> which is needed
+   e.g. to solve the schroedinger equation for bound particles.</p>
+
+<h2 id="lib:io">Libraries for in- and output</h2>
+There are several libraries that handle input and output of meshes and related quantities in different formats.
+
+<h4 id="lib:getpot">GetPot</h4>
+   The tool <a href="http://getpot.sourceforge.net/">GetPot</a> is a commandline- and inputfile parser supported
+   by libmesh. 
+
+<h4 id="lib:io_exodus">exodus</h4>
+   <p> One of the formats of choise is 
+      <a href="https://cubit.sandia.gov/public/13.2/help_manual/WebHelp/finite_element_model/export/exporting_exodus2_file.htm">Exodus 2</a> format (.exd) which is a binary format that can be converted to 
+      ascii using the tool 'ncdump'. This library is imported by 
+      <a href="http://libmesh.github.io/doxygen/exodusII__io_8h.html">libmesh/exodusII_io.h</a> that provides
+      an extra <a href="#cl:exodus">class exodusII_IO</a>. </p>
+
+<h4 id="lib:io_xdr">xdr</h4>
+   <p>The second format that is important for in- and output is the file format 
+    <a href="https://en.wikipedia.org/wiki/External_Data_Representation">External Data Representation</a> 'xdr'. 
+     This is obtained by an option in installation (by default it seems to be on). </p>
+    <p>Note: xdr is supported by other programms and languages such as R as well.</p>
+    <p> This file format can be an elegant way to insert a mesh and maybe even an external potential to application
+    programms.</p>
+
+<h4 id="lib:io_tec">tecplot</h4>
+    <p>Such as exodus, tecplot can handle data in binary as well as ascii format.</p> 
+
+<h4 id="lib:io_misc">miscelangelous</h4>
+   <p>There also exists a library <a href="http://libmesh.github.io/doxygen/gnuplot__io_8h.html">gnuplot_io.h</a>
+      which is able to handle 1d data only. However, it can be used to create nice gnuplot script and data
+      files.</p>
+
+<h2 id="lib:petsc">PETSc</h2>
+   The library <a href="http://www.mcs.anl.gov/petsc/">PETSc</a> is a very powerful tool for vector- and matrix
+   operations.
+   The developers of PETSc call it "a suite of data structures and routines for the scalable (parallel) solution 
+   of scientific applications modeled by partial differential equations." 
+   It provides many different solvers for 
+   <a href="http://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html">linear systems</a> where most of 
+   them work for complex matrices as well.
+   However, many of these functions depend on external packages themselves.
+   One important note about this library is that it is not only parallelized in terms of mpi, but supports 
+    <a href="http://www.mcs.anl.gov/petsc/features/gpus.html">cuda and opencl</a> as well.
+   <p> PETSc provides a detailed documentation and helps on its homepage.</p>
+
+<h1 id="classes">Important classes</h1> 
+   Libmesh is mainly an object oriented library; that means: everything is organised in classes.
+   Hence, this collection will contain only the most important classes with some features.
+
+<h2 id="cl:mesh">mesh</h2>
+   <p> the class <a href="http://libmesh.github.io/doxygen/classlibMesh_1_1Mesh.html">mesh</a> is the central 
+   class in the library libmesh. </p>
+
+<h2 id="cl:exodus_io">Exodus2 for in- and output</h2>
+   <p> the class exodus 2 contains several 
+    <a href="http://libmesh.github.io/doxygen/classlibMesh_1_1ExodusII__IO.html">elements</a>. </p> 
+</body>
+</html>
