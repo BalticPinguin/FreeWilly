@@ -1,4 +1,6 @@
 // libMesh include files.
+#include <math.h> // needed for sqrt function in Coul()
+#include "libmesh/getpot.h" // for input-argument parsing
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
 #include "libmesh/mesh_generation.h"
@@ -13,6 +15,7 @@
 #include "libmesh/dof_map.h"
 #include "libmesh/condensed_eigen_system.h"
 #include "libmesh/fe_interface.h" // for dirichlet boundary conditions
+#include "libmesh/error_vector.h" // for dirichlet boundary conditions
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -25,6 +28,7 @@ void get_dirichlet_dofs(EquationSystems& es, const std::string& system_name, std
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
    LibMeshInit init (argc, argv);
+   GetPot cl(argv[1]);
 
    // Skip SLEPc examples on a non-SLEPc libMesh build
    #ifndef LIBMESH_HAVE_SLEPC
@@ -38,8 +42,8 @@ int main (int argc, char** argv){
    #endif
 
    // Check for proper usage.
-   if (argc < 3)
-      libmesh_error_msg("\nUsage: " << argv[0] << " -n <number of eigen values>");
+   if (argc < 2)
+      libmesh_error_msg("\nUsage: " << argv[0] << " <input-filename>");
    // Tell the user what we are doing.
    else {
       std::cout << "Running " << argv[0];
@@ -50,7 +54,8 @@ int main (int argc, char** argv){
    }
 
    // Get the number of eigen values to be computed from argv[2]
-   const unsigned int nev = std::atoi(argv[2]);
+   //const unsigned int nev = std::atoi(argv[2]);
+   const unsigned int nev = cl("nev",10);
 
    // Skip this 2D example if libMesh was compiled as 1D-only.
    libmesh_example_requires(3 <= LIBMESH_DIM, "2D support");
@@ -63,7 +68,8 @@ int main (int argc, char** argv){
    // Use the internal mesh generator to create a uniform
    // 2D grid on a square.
    //MeshTools::Generation::build_square (mesh, 40, 40, 0., 1., 0, 1.1, QUAD4);
-   MeshTools::Generation::build_cube (mesh, 20, 20, 20, 0., 1., 0, 1.1, 0, 1.1, PRISM15);
+   //MeshTools::Generation::build_cube (mesh, 20, 20, 20, 0., 1., 0, 1.1, 0, 1.1, PRISM15);
+   MeshTools::Generation::build_cube (mesh, 50, 50, 50, 0., 5., 0, 5., 0., 5., PRISM6);
    //MeshTools::Generation::build_sphere(mesh, 1., 10, QUAD4, 20, false);
 
    // Print information about the mesh to the screen.
@@ -79,7 +85,8 @@ int main (int argc, char** argv){
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
-   eigen_system.add_variable("phi", SECOND);
+   //eigen_system.add_variable("phi", SECOND);
+   eigen_system.add_variable("phi", FIRST);
    
    // Give the system a pointer to the matrix assembly
    // function defined below.
@@ -90,16 +97,18 @@ int main (int argc, char** argv){
    // of basis vectors \p ncv used in the solution algorithm. Note that
    // ncv >= nev must hold and ncv >= 2*nev is recommended.
    equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
-   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3;
+   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*5;
+   equation_systems.parameters.set<std::string>("potential")= cl("pot", "none");
    
    //eigen_system.set_eigenproblem_type(GNHEP);
    eigen_system.set_eigenproblem_type(GHEP);
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
    eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_MAGNITUDE);
+   // an alternative would be here: TARGET_MAGNITUDE --> get values closest to ...
    
    // Set the solver tolerance and the maximum number of iterations.
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
-   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1000;
+   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 10000;
    
    // Initialize the data structures for the equation system.
    equation_systems.init();
@@ -121,10 +130,13 @@ int main (int argc, char** argv){
    #ifdef LIBMESH_HAVE_EXODUS_API
        // Write the eigen vector to file.
        for(unsigned int i=0; i<nconv; i++){
-          eigen_system.get_eigenpair(i);
+          std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
+          std::cout<<"eigen vector"<<i<<" "<<eigpair.first<<std::endl;
           std::ostringstream eigenvector_output_name;
-          eigenvector_output_name<< i <<"_ep.e";
+          eigenvector_output_name<< i <<cl("pot","unknwn")<<".e" ;
           ExodusII_IO (mesh).write_equation_systems ( eigenvector_output_name.str(), equation_systems);
+          //eigenvector_output_name<< i <<"_err.e";
+          //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
        }
    #endif // #ifdef LIBMESH_HAVE_EXODUS_API
 
@@ -132,6 +144,34 @@ int main (int argc, char** argv){
    return 0;
 }
 #endif // LIBMESH_HAVE_SLEPC
+
+double Harm(Real x, Real y, Real z){
+  const Real x0=0.5;
+  const Real y0=0.5;
+  const Real z0=0.5;
+  const Real a=10;
+  const Real b=10;
+  const Real c=10;
+  const Real V0=(-a-b-c)*10;
+  return V0+a*(x-x0)*(x-x0)+b*(y-y0)*(y-y0)+c*(z-z0)*(z-z0);
+}
+
+double Coul(Real x, Real y, Real z){
+  const Real x0=2.5;
+  const Real y0=2.5;
+  const Real z0=2.5;
+  const Real Z=1;
+  return -Z/sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0));
+}
+
+double Morse(Real x, Real y, Real z){
+  const Real x0=2.5;
+  const Real y0=2.5;
+  const Real z0=2.5;
+  const Real D=1;
+  const Real a=5;
+  return -D*(1-exp(-a*sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0))) );
+}
 
 void assemble_EigenSE(EquationSystems& es, const std::string& system_name){
   // It is a good idea to make sure we are assembling
@@ -141,11 +181,11 @@ void assemble_EigenSE(EquationSystems& es, const std::string& system_name){
   const MeshBase& mesh = es.get_mesh();
   // The dimension that we are running.
   const unsigned int dim = mesh.mesh_dimension();
-   std::cout<<dim<<std::endl;
 
   // Get a reference to our system.
   EigenSystem & eigen_system = es.get_system<EigenSystem> (system_name);
 
+  const std::string & Pot = es.parameters.get<std::string>("potential");
   // Get a constant reference to the Finite Element type
   // for the first (and only) variable in the system.
   FEType fe_type = eigen_system.get_dof_map().variable_type(0);
@@ -172,9 +212,9 @@ void assemble_EigenSE(EquationSystems& es, const std::string& system_name){
   // The element shape functions evaluated at the quadrature points.
   const std::vector<std::vector<Real> >& phi = fe->get_phi();
   const std::vector<std::vector<RealGradient> >& dphi = fe->get_dphi();
+  const std::vector<Point>& q_point = fe->get_xyz();
 
   libMesh::Number E=0.0;
-  libMesh::Number V=0.00;
   libMesh::Number co0_5= 0.5;
 
   // A reference to the \p DofMap object for this system.  The \p DofMap
@@ -198,6 +238,8 @@ void assemble_EigenSE(EquationSystems& es, const std::string& system_name){
   // hence we use a variant of the \p active_elem_iterator.
   MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+
+  Real pot=0;
 
   for ( ; el != end_el; ++el){
       // Store a pointer to the element we are currently
@@ -232,10 +274,23 @@ void assemble_EigenSE(EquationSystems& es, const std::string& system_name){
       // a double loop to integrate the test funcions (i) against
       // the trial functions (j).
       for (unsigned int qp=0; qp<qrule.n_points(); qp++){
+        if (Pot == "harm"){
+		pot=Harm(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+	}
+        else if (Pot == "coul"){
+		pot=Coul(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+	}
+        else if (Pot == "morse"){
+		pot=Morse(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+	}
+	else{
+		pot=0;
+        }
+        //const Real pot=V(q_point[qp](0), q_point[qp](1), q_point[qp](2));
         for (unsigned int i=0; i<phi.size(); i++){
           for (unsigned int j=0; j<phi.size(); j++){
             Se(i,j) += JxW[qp]*(phi[i][qp]*phi[j][qp]);
-            H(i,j)  += JxW[qp]*(co0_5*(dphi[i][qp]*dphi[j][qp]) +(V- E)*phi[i][qp]*phi[j][qp]);
+            H(i,j)  += JxW[qp]*(co0_5*(dphi[i][qp]*dphi[j][qp]) +(pot- E)*phi[i][qp]*phi[j][qp]);
           }
         }
       }
@@ -279,7 +334,6 @@ void get_dirichlet_dofs(EquationSystems& es, const std::string& system_name, std
    
    // The dimension that we are running.
    const unsigned int dim = mesh.mesh_dimension();
-   std::cout<<dim<<std::endl;
    
    // Get a reference to our system.
    EigenSystem & eigen_system = es.get_system<EigenSystem> (system_name);
