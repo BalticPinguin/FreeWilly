@@ -19,6 +19,7 @@
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
+#include <complex.h> // the infinite element version requires complex numbers explicitly.
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -89,6 +90,7 @@ int main (int argc, char** argv){
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
+   ExodusII_IO (mesh).write("orig.mesh");
    if (infel){
       InfElemBuilder builder(mesh);
       builder.build_inf_elem(true);
@@ -97,6 +99,7 @@ int main (int argc, char** argv){
 
       // find the neighbours; for correct linking the two areas
       mesh.find_neighbors();
+      ExodusII_IO (mesh).write("full.mesh");
    }
 
    // Create an equation systems object.
@@ -116,19 +119,18 @@ int main (int argc, char** argv){
    // function defined below.
    if( infel ){
      eigen_system.attach_assemble_function (assemble_InfSE);
-     eigen_system.set_eigenproblem_type(GNHEP);
    }
    else {
      eigen_system.attach_assemble_function (assemble_EigenSE);
-    eigen_system.set_eigenproblem_type(GHEP);
    }
+   eigen_system.set_eigenproblem_type(GHEP);
    
    // Set necessary parametrs used in EigenSystem::solve(),
    // i.e. the number of requested eigenpairs \p nev and the number
    // of basis vectors \p ncv used in the solution algorithm. Note that
    // ncv >= nev must hold and ncv >= 2*nev is recommended.
    equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
-   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*5;
+   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
 
    // set the potential
    equation_systems.parameters.set<std::string>("potential")= cl("pot", "none");
@@ -191,7 +193,7 @@ int main (int argc, char** argv){
        // Write the eigen vector to file.
        for(unsigned int i=0; i<nconv; i++){
           std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
-          std::cout<<"eigen vector"<<i<<" "<<eigpair.first<<std::endl;
+          std::cout<<"energy of state "<<i<<" = "<<eigpair.first+equation_systems.parameters.set<Number>("offset")<<std::endl;
           std::ostringstream eigenvector_output_name;
           if (infel){
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
@@ -209,32 +211,3 @@ int main (int argc, char** argv){
    return 0;
 }
 #endif // LIBMESH_HAVE_SLEPC
-
-double Harm(Real x, Real y, Real z){
-  const Real x0=0.0;
-  const Real y0=0.0;
-  const Real z0=0.0;
-  const Real a=10;
-  const Real b=10;
-  const Real c=10;
-  const Real V0=(-a-b-c)*10;
-  return V0+a*(x-x0)*(x-x0)+b*(y-y0)*(y-y0)+c*(z-z0)*(z-z0);
-}
-
-double Coul(Real x, Real y, Real z){
-  const Real x0=0.0;
-  const Real y0=0.0;
-  const Real z0=0.0;
-  const Real Z=1.;
-  return -Z/sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0));
-}
-
-double Morse(Real x, Real y, Real z){
-  const Real x0=0.0;
-  const Real y0=0.0;
-  const Real z0=0.0;
-  const Real D=5.3;
-  const Real a=0.5;
-  return -D*( 1-exp(-a*sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0))) );
-}
-

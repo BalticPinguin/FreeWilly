@@ -1,7 +1,7 @@
 #    This is a sample input-file for InSpecTOR.
 
-nev = 15         # any integer
-pot = coul     # morse, harm, coul
+nev = 15        # any integer
+pot = coul      # morse, harm, coul
 spect =sr       #  sm, lm, (magnitude) sr, lr, (real) si, li, (imaginary) 
-Energy = 0.0    # set the energy-offset ( target energy: Energy= ... and spect = sm, sr or similar)
+Energy = -0.25  # set the energy-offset ( target energy: Energy= ... and spect = sm, sr or similar)
 infinite =true  # true or false 
