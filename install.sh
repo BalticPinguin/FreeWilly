@@ -1,38 +1,25 @@
 #!/bin/bash
 
-# built without nodeconstraint
-#  with infinite elements, without mpi
-#  use tripleprecision scalars
-#  Provide global libMesh::CommWorld
-#  build without periodic boundary condition suppport
-#  build to support complex-number solutions
-#  build with performance logging turned on
-#  build with slepc library...
-#  build with Qhull API support
+export SLEPC_DIR=/home/tm162/lib/libmesh/slepc-3.6.2
+export PETSC_DIR=/home/tm162/lib/libmesh/petsc/
+export PETSC_ARCH="arch-linux2-c-debug"
 
-   #--disable-nodeconstraint \
-
-CXXFLAGS=-std=c++11 # try to get rid of cast-errors
-export PETSC_DIR=/home/hubert/bin/libmesh/petsc-3.6.2 
-export PETSC_ARCH=arch-linux2-c-debug
-export SLEPC_DIR=/home/hubert/bin/libmesh/slepc-3.6.2
-./configure --prefix=/usr/local \
-   --disable-mpi            \
-   --enable-tripleprecision \
+./configure --prefix=/home/tm162/bin/libmesh \
    --enable-default-comm-world \
-   --disable-periodic      \
+   --disable-strict-lgpl   \  # enables tetgen and others.
    --enable-complex        \
    --enable-perflog        \
    --enable-qhull          \
    --enable-slepc          \
    --enable-petsc          \
-   --enable-tetgen         \
-   --enable-triangle       \
-   --enable-vtk            \
    --enable-trilinos       \
-   --enable-ifem            >& configs.conf
+   --enable-triangle       \
+   --enable-tetgen         \
+   --enable-tecplot        \
+   --enable-ifem           \
+   --enable-everything     >& configs.conf
 
 make         >& make.log
 make check   >& check.log
 make -C tests check    >& unitcheck.log
-#make install >& install.log
+make install >& install.log
