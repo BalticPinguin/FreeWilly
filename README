@@ -34,6 +34,13 @@ Having these libraries (and facultatively some others) one can install libmesh f
 configurations, this should be possible using the './install.sh' script as long as your compiler is able to cast
 'double' to 'complex' on the fly. This may be possible by some options to the compiler in use.
 
+To compile the application (FreeWilly) in debug-mode, type 'export METHOD=dbg' before 'make'. This method must be
+enabled by the libmesh-installation (as it is by default).
+For installing FreeWilly finally, first change the first line in the makefile such that it points to your libmesh
+installation.
+
+Good luck!
+
 ==================================================================================================================
 *****************************  Description of the Programme  *****************************************************
 ==================================================================================================================
@@ -45,3 +52,11 @@ All quantities specified are in atomic units here.
 ==================================================================================================================
 
 To get the solution in infinite region: use FEInterface::compute_data()
+
+
+
+patches:
+  1): for spherical mesh: src/mesh/mesh_generation.C
+  --------------
+  2): for infinite elements:
+      src/mesh/inf_elem_builder.C 

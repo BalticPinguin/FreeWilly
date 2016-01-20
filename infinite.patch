@@ -1,0 +1,21 @@
+*** src/mesh/inf_elem_builder.C.orig	2016-01-19 17:30:35.147643066 +0100
+--- src/mesh/inf_elem_builder.C	2016-01-20 10:15:57.269920362 +0100
+***************
+*** 418,424 ****
+    //  from faces to ofaces, nodes are collected in onodes.
+    //  Here, the search is done iteratively, because, depending on
+    //  the mesh, a very high level of recursion might be necessary.
+!   if (max_r_node > 0) 
+      onodes.insert(max_r_node);
+  
+  
+--- 418,426 ----
+    //  from faces to ofaces, nodes are collected in onodes.
+    //  Here, the search is done iteratively, because, depending on
+    //  the mesh, a very high level of recursion might be necessary.
+!   if (max_r_node >= 0) 
+!     // include the possibility of the 1st element being most far away.
+!     // Only the case of no outer boundary is to be excluded.
+      onodes.insert(max_r_node);
+  
+  
