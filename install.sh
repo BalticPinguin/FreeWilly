@@ -1,12 +1,11 @@
-#!/bin/bash
-
-export SLEPC_DIR=/home/tm162/lib/libmesh/slepc-3.6.2
-export PETSC_DIR=/home/tm162/lib/libmesh/petsc/
+export SLEPC_DIR='~/bin/libmesh/slepc'
+export PETSC_DIR='~/bin/libmesh/petsc'
 export PETSC_ARCH="arch-linux2-c-debug"
 
-./configure --prefix=/home/tm162/bin/libmesh \
+./configure --prefix=~/bin/libmesh \
    --enable-default-comm-world \
-   --disable-strict-lgpl   \  # enables tetgen and others.
+   --disable-strict-lgpl   \
+   --disable-maintainer-mode \
    --enable-complex        \
    --enable-perflog        \
    --enable-qhull          \
@@ -17,6 +16,7 @@ export PETSC_ARCH="arch-linux2-c-debug"
    --enable-tetgen         \
    --enable-tecplot        \
    --enable-ifem           \
+   --disable-second        \
    --enable-everything     >& configs.conf
 
 make         >& make.log

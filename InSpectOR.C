@@ -3,6 +3,7 @@
 #include "libmesh/getpot.h" // for input-argument parsing
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
+#include "libmesh/elem.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/eigen_system.h"
@@ -83,7 +84,9 @@ int main (int argc, char** argv){
    //MeshTools::Generation::build_square (mesh, 40, 40, 0., 1., 0, 1.1, QUAD4);
    //MeshTools::Generation::build_cube (mesh, 20, 20, 20, 0., 1., 0, 1.1, 0, 1.1, PRISM15);
    //MeshTools::Generation::build_sphere(mesh, 1., 10, QUAD4, 20, false);
-   MeshTools::Generation::build_cube (mesh, 50, 50, 50, -20., 20., -20., 20., -20., 20., PRISM6);
+   //MeshTools::Generation::build_cube (mesh, 50, 50, 50, -20., 20., -20., 20., -20., 20., PRISM6);
+   MeshTools::Generation::build_cube (mesh, 1, 1, 1, -2., 2., -2., 2., -2., 2., PRISM6);
+   //MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
 
    // Print information about the mesh to the screen.
    mesh.print_info();
@@ -94,12 +97,23 @@ int main (int argc, char** argv){
    if (infel){
       InfElemBuilder builder(mesh);
       builder.build_inf_elem(true);
+   
+      // Reassign subdomain_id() of all infinite elements.
+      // Otherwise, the exodus-api will fail on the mesh.
+      MeshBase::element_iterator       elem_it  = mesh.elements_begin();
+      const MeshBase::element_iterator elem_end = mesh.elements_end();
+      for (; elem_it != elem_end; ++elem_it){
+          Elem* elem = *elem_it;
+          if(elem->infinite()){
+              elem->subdomain_id() = 1;
+            }
+      }
+
       // print info on new mesh
       mesh.print_info();
 
       // find the neighbours; for correct linking the two areas
       mesh.find_neighbors();
-      ExodusII_IO (mesh).write("full.mesh");
    }
 
    // Create an equation systems object.
@@ -108,6 +122,7 @@ int main (int argc, char** argv){
    // Create a EigenSystem named "Eigensystem" and (for convenience)
    // use a reference to the system we create.
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
+   //EigenSystem & eigen_system = equation_systems.add_system<EigenSystem> ("EigenSE");
 
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
@@ -121,9 +136,11 @@ int main (int argc, char** argv){
      eigen_system.attach_assemble_function (assemble_InfSE);
    }
    else {
-     eigen_system.attach_assemble_function (assemble_EigenSE);
+     eigen_system.attach_assemble_function (assemble_InfSE);
+     //eigen_system.attach_assemble_function (assemble_EigenSE);
    }
-   eigen_system.set_eigenproblem_type(GHEP);
+   //eigen_system.set_eigenproblem_type(GHEP);
+   eigen_system.set_eigenproblem_type(GNHEP);
    
    // Set necessary parametrs used in EigenSystem::solve(),
    // i.e. the number of requested eigenpairs \p nev and the number
@@ -176,11 +193,11 @@ int main (int argc, char** argv){
    equation_systems.print_info();
 
     // add boundary conditions if not infinite elements used. In the latter case ...
-   if (not infel){
+   //if (not infel){
       std::set<unsigned int> dirichlet_dof_ids;
       get_dirichlet_dofs(equation_systems, "EigenSE" ,dirichlet_dof_ids);
       eigen_system.initialize_condensed_dofs(dirichlet_dof_ids);
-  }
+   //}
    // Solve the system "Eigensystem".
    eigen_system.solve();
 
@@ -199,7 +216,9 @@ int main (int argc, char** argv){
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
           }
           else{
-             eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
+             //eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
+             eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf2.e" ;
+             //eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
           }
           ExodusII_IO (mesh).write_equation_systems ( eigenvector_output_name.str(), equation_systems);
           //eigenvector_output_name<< i <<"_err.e";
