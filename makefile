@@ -7,19 +7,19 @@ LIBMESH_DIR ?= /home/tm162/bin/libmesh/libmesh
 # include the library options determined by configure
 include $(LIBMESH_DIR)/Make.common
 
-#target	   := ./InSpect-$(METHOD)
+target	   := ./InSpect-$(METHOD)
 #target	   := ./FrWll-$(METHOD)
 #target	   := ./Mesh-$(METHOD)
-target	   := ./misc-$(METHOD)
+#target	   := ./misc-$(METHOD)
 ###############################################################################
 # File management.  This is where the source, header, and object files are
 # defined
 
-#srcfiles	:= InSpectOR.C assembles.C
+srcfiles	:= InSpectOR.C assembles.C
 #srcfiles	:= eigenproblems_ex3.C
 #srcfiles	:= InSpectOR.C
 #srcfiles	:= FreeWilly.C
-srcfiles	:= misc1.C
+#srcfiles	:= misc1.C
 #srcfiles	:= Mesh.C
 
 objects		:= $(patsubst %.C, %.$(obj-suffix), $(srcfiles))

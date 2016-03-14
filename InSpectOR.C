@@ -127,8 +127,8 @@ int main (int argc, char** argv){
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
-   //eigen_system.add_variable("phi", SECOND);
-   eigen_system.add_variable("phi", FIRST);
+   eigen_system.add_variable("phi", SECOND);
+   //eigen_system.add_variable("phi", FIRST);
    
    // Give the system a pointer to the matrix assembly
    // function defined below.
@@ -136,11 +136,11 @@ int main (int argc, char** argv){
      eigen_system.attach_assemble_function (assemble_InfSE);
    }
    else {
-     eigen_system.attach_assemble_function (assemble_InfSE);
-     //eigen_system.attach_assemble_function (assemble_EigenSE);
+     //eigen_system.attach_assemble_function (assemble_InfSE);
+     eigen_system.attach_assemble_function (assemble_EigenSE);
    }
-   //eigen_system.set_eigenproblem_type(GHEP);
-   eigen_system.set_eigenproblem_type(GNHEP);
+   eigen_system.set_eigenproblem_type(GHEP);
+   //eigen_system.set_eigenproblem_type(GNHEP);
    
    // Set necessary parametrs used in EigenSystem::solve(),
    // i.e. the number of requested eigenpairs \p nev and the number
@@ -193,11 +193,11 @@ int main (int argc, char** argv){
    equation_systems.print_info();
 
     // add boundary conditions if not infinite elements used. In the latter case ...
-   //if (not infel){
+   if (not infel){
       std::set<unsigned int> dirichlet_dof_ids;
       get_dirichlet_dofs(equation_systems, "EigenSE" ,dirichlet_dof_ids);
       eigen_system.initialize_condensed_dofs(dirichlet_dof_ids);
-   //}
+   }
    // Solve the system "Eigensystem".
    eigen_system.solve();
 
