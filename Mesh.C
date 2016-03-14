@@ -48,12 +48,12 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, const Parallel::Communicator&
    // 5.) Set parameters and tetrahedralize the domain
    
    // 0 means "use TetGen default value"
-   Real quality_constraint = 2.0;
+   Real quality_constraint = 0.0;
    
    // The volume constraint determines the max-allowed tetrahedral
    // volume in the Mesh.  TetGen will split cells which are larger than
    // this size
-   Real volume_constraint = 1;  // no splitting at all. I want to see the input-parameters.
+   Real volume_constraint = 0.00001; 
    
    // Construct the Delaunay tetrahedralization
    TetGenMeshInterface t(mesh);
@@ -65,8 +65,9 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, const Parallel::Communicator&
    
    // Find neighbors, etc in preparation for writing out the Mesh
    mesh.prepare_for_use();
+   
    // Finally, write out the result
-   mesh.write("sphere_3D.e");
+   //mesh.write("sphere_3D.e");
    #else
    // Avoid compiler warnings
    libmesh_ignore(comm);
@@ -82,8 +83,6 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real radius, unsign
    #endif
    // I don't know, what the last two arguments stand for.
    MeshTools::Generation::build_sphere(sphere_mesh, radius, 2, HEX8, 2, true);
-   
-   //sphere2MolecularGeom(sphere_mesh, geometry);
    
    // The pointset_convexhull() algorithm will ignore the Hex8s
    // in the Mesh, and just construct the triangulation
@@ -116,9 +115,9 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real radius, unsign
    geometry = get_water();
    Point xxx;
    // play with the following parameters:
-   const double L=5.; // gives curvature: the larger L, the more straight line is obtained.
+   const double L=1.; // gives curvature: the larger L, the more straight line is obtained.
    const double r_max = 1.; // map to interval [0:r_max]
-   const int N= 5;
+   const int N= 3;
    double x, scale;
    // For each node in the map, insert it into the input mesh and copy it to all nuclear sites.
    // keep track of the ID assigned.

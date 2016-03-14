@@ -7,8 +7,8 @@ LIBMESH_DIR ?= /home/tm162/bin/libmesh/libmesh
 # include the library options determined by configure
 include $(LIBMESH_DIR)/Make.common
 
-target	   := ./InSpect-$(METHOD)
-#target	   := ./FrWll-$(METHOD)
+#target	   := ./InSpect-$(METHOD)
+target	   := ./FrWll-$(METHOD)
 #target	   := ./Mesh-$(METHOD)
 #target	   := ./misc-$(METHOD)
 
@@ -17,9 +17,9 @@ target	   := ./InSpect-$(METHOD)
 # defined
 
 #srcfiles	:= eigenproblems_ex3.C
-srcfiles	:= InspectOR.C assembles.C
+#srcfiles	:= InspectOR.C assembles.C
 #srcfiles	:= FreeWilly.C assembles.C Mesh.C FreeWilly.h assembles.h Mesh.h
-#srcfiles	:= FreeWilly.C assembles.C Mesh.C
+srcfiles	:= FreeWilly.C assembles.C Mesh.C
 #srcfiles	:= misc1.C
 #srcfiles	:= Mesh.C
 

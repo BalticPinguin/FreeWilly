@@ -105,10 +105,14 @@ int main (int argc, char** argv){
    // 2D grid on a square.
    //MeshTools::Generation::build_square (mesh, 40, 40, 0., 1., 0, 1.1, QUAD4);
    //MeshTools::Generation::build_cube (mesh, 20, 20, 20, 0., 1., 0, 1.1, 0, 1.1, PRISM15);
-   //MeshTools::Generation::build_sphere(mesh, 1., 10, QUAD4, 20, false);
+   //MeshTools::Generation::build_sphere(mesh, 1., 10, HEX8, 20, false);
+   //MeshTools::Generation::build_sphere(mesh, 2., 2, HEX8, 2, true);
    //MeshTools::Generation::build_cube (mesh, 50, 50, 50, -20., 20., -20., 20., -20., 20., PRISM6);
-   MeshTools::Generation::build_cube (mesh, 1, 1, 1, -2., 2., -2., 2., -2., 2., PRISM6);
+   //MeshTools::Generation::build_cube (mesh, 1, 1, 1, -2., 2., -2., 2., -2., 2., PRISM6);
    //MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
+
+   // the function below creates a mesh using the molecular structure.
+   tetrahedralise_sphere( mesh, init.comm());
 
    // Print information about the mesh to the screen.
    mesh.print_info();

@@ -424,7 +424,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();
          // loop over it:
-         out<<n_sf<<std::endl;
          for (unsigned int i=0; i<n_sf; i++){
             for (unsigned int j=0; j<n_sf; j++){
             // this is changed here due the Petrov-Galerkin scheme. and works with finite and infinite elements.
