@@ -119,7 +119,7 @@ int main (int argc, char** argv){
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
-   ExodusII_IO (mesh).write("orig.mesh");
+   ExodusII_IO (mesh).write("orig2.mesh");
    if (infel){
       InfElemBuilder builder(mesh);
       builder.build_inf_elem(true);

@@ -432,9 +432,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                   weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
                   ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-phi[j][qp]*dphi[i][qp]));
             H(i,j) += JxW[qp]*( co0_5*temp + (pot- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
-            if (elem->infinite()){
-               std::cout<<JxW[qp]<<"  "<<phi[i][qp]<<"  "<<phi[j][qp]<<std::endl;
-            }
          }  }  
       }
       // On an unrefined mesh, constrain_element_matrix does
@@ -455,10 +452,10 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       matrix_B.add_matrix (Se, dof_indices);
 
    } // end of element loop
-   matrix_A.close();
-   matrix_B.close();
-   matrix_A.print();
-   matrix_B.print();
+   //matrix_A.close();
+   //matrix_B.close();
+   //matrix_A.print();
+   //matrix_B.print();
          
    /**
    * All done!

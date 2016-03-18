@@ -8,9 +8,10 @@ LIBMESH_DIR ?= /home/tm162/bin/libmesh/libmesh
 include $(LIBMESH_DIR)/Make.common
 
 #target	   := ./InSpect-$(METHOD)
-target	   := ./FrWll-$(METHOD)
+#target	   := ./FrWll-$(METHOD)
 #target	   := ./Mesh-$(METHOD)
 #target	   := ./misc-$(METHOD)
+target	   := ./test-$(METHOD)
 
 ###############################################################################
 # File management.  This is where the source, header, and object files are

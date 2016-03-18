@@ -53,21 +53,21 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, const Parallel::Communicator&
    // The volume constraint determines the max-allowed tetrahedral
    // volume in the Mesh.  TetGen will split cells which are larger than
    // this size
-   Real volume_constraint = 0.00001; 
+   Real volume_constraint = 0.1; 
    
    // Construct the Delaunay tetrahedralization
    TetGenMeshInterface t(mesh);
-   //t.triangulate_conformingDelaunayMesh(quality_constraint, volume_constraint);
    
    t.pointset_convexhull();
    mesh.find_neighbors();
-   t.triangulate_conformingDelaunayMesh();
+   t.triangulate_conformingDelaunayMesh(quality_constraint, volume_constraint);
+   
    
    // Find neighbors, etc in preparation for writing out the Mesh
    mesh.prepare_for_use();
    
    // Finally, write out the result
-   //mesh.write("sphere_3D.e");
+   mesh.write("sphere_3D.e");
    #else
    // Avoid compiler warnings
    libmesh_ignore(comm);
@@ -110,9 +110,17 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real radius, unsign
    }
    // set up the molecule: water
    std::vector<libMesh::Point> geometry ;
-   geometry.resize(3);
-   //geometry[0] = Point(1., 0.2, 7.0);
    geometry = get_water();
+   //  geometry.resize(9);
+   //  geometry[0]= Point(0.,0.,0.);
+   //  geometry[1]= Point(1.,0.,0.);
+   //  geometry[2]= Point(-1.,0.,0.);
+   //  geometry[3]= Point(0, 1.,0.);
+   //  geometry[4]= Point(0,-1.,0.);
+   //  geometry[5]= Point(1, 1.,0.);
+   //  geometry[6]= Point(1,-1.,0.);
+   //  geometry[7]= Point(-1, 1.,0.);
+   //  geometry[8]= Point(-1,-1.,0.);
    Point xxx;
    // play with the following parameters:
    const double L=1.; // gives curvature: the larger L, the more straight line is obtained.
@@ -151,6 +159,9 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real radius, unsign
                
                // Track ID value of new_node in map
                (*it).second = new_node->id();
+            }
+            else{
+               out<<"foo bar!"<<std::endl;
             }
             old_node->operator-= (geometry[i]);
             old_node->operator/= (scale);
