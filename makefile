@@ -1,21 +1,22 @@
 ######################################################################
 #
 # Template libMesh application Makefile
-LIBMESH_DIR ?= /home/tm162/bin/libmesh/libmesh
+LIBMESH_DIR ?= /home/tm162/bin/libmesh/my_libmesh
 
 
 # include the library options determined by configure
 include $(LIBMESH_DIR)/Make.common
 
-target	   := ./InSpect-$(METHOD)
-#target	   := ./FrWll-$(METHOD)
+#target	   := ./InSpect-$(METHOD)
+#target	   := ./test-$(METHOD)
+target	   := ./FrWll-$(METHOD)
 #target	   := ./Mesh-$(METHOD)
 #target	   := ./misc-$(METHOD)
 ###############################################################################
 # File management.  This is where the source, header, and object files are
 # defined
 
-srcfiles	:= InSpectOR.C assembles.C
+srcfiles	:= FreeWilly.C assembles.C
 #srcfiles	:= eigenproblems_ex3.C
 #srcfiles	:= InSpectOR.C
 #srcfiles	:= FreeWilly.C
