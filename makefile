@@ -12,14 +12,20 @@ include $(LIBMESH_DIR)/Make.common
 target	   := ./FrWll-$(METHOD)
 #target	   := ./Mesh-$(METHOD)
 #target	   := ./misc-$(METHOD)
+target	   := ./test-$(METHOD)
+
 ###############################################################################
 # File management.  This is where the source, header, and object files are
 # defined
 
-srcfiles	:= FreeWilly.C assembles.C
+#srcfiles	:= FreeWilly.C assembles.C
 #srcfiles	:= eigenproblems_ex3.C
 #srcfiles	:= InSpectOR.C
 #srcfiles	:= FreeWilly.C
+#srcfiles	:= eigenproblems_ex3.C
+#srcfiles	:= InspectOR.C assembles.C
+#srcfiles	:= FreeWilly.C assembles.C Mesh.C FreeWilly.h assembles.h Mesh.h
+srcfiles	:= FreeWilly.C assembles.C Mesh.C
 #srcfiles	:= misc1.C
 #srcfiles	:= Mesh.C
 
@@ -78,10 +84,6 @@ complete: $(wildcard *.in)
 	@echo "* Done Running App " $(notdir $(target))
 	@echo "***************************************************************"
 
-gmv:
-	@$(MAKE) -C $(LIBMESH_DIR)/roy/meshplot/ meshplot-$(METHOD)
-	@for file in out.mesh.*; do ${LIBMESH_RUN} $(LIBMESH_DIR)/roy/meshplot/meshplot-$(METHOD) $$file out.soln.$${file##out.mesh.} out.gmv.$${file:9:4}; done
-
 # include the dependency list
 -include .depend
 
@@ -92,4 +94,3 @@ gmv:
 	@$(perl) $(LIBMESH_DIR)/contrib/bin/make_dependencies.pl -I. $(foreach i, $(LIBMESH_DIR)/include $(wildcard $(LIBMESH_DIR)/include/*), -I$(i)) "-S\$$(obj-suffix)" $(srcfiles) > .depend
 
 ###############################################################################
-
