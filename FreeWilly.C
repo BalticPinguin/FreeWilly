@@ -29,6 +29,7 @@ using namespace libMesh;
 
 // Function prototype.  This is the function that will assemble
 // the eigen system. Here, we will simply assemble a mass matrix.
+std::vector<Point> getGeometry(GetPot cl);
 
 //prototypes of functions in assemble.C (that are called from out of it)
 void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::set<unsigned int>&);
@@ -105,75 +106,14 @@ int main (int argc, char** argv){
       MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
       out<<"box"<<std::endl;}
    else if (mesh_geom=="own"){
-      // extract the given geometry:
-      std::string x=cl("x", ".");
-      std::string y=cl("y", ".");
-      std::string z=cl("z", ".");
-      // get number of values. Therefore, count spaces in the string.
-      int length_x=0;
-      int length_y=0;
-      int length_z=0;
-      int strlength=x.length();
-      for(int i=0; i<strlength; i++){
-         if (x[i] == ',')
-              length_x++; 
-         if (y[i] == ',')
-              length_y++; 
-         if (z[i] == ',')
-              length_z++; 
-      }
-      assert (length_x== length_y);
-      assert (length_x== length_z);
-      length_x++;
-      //put them into a vector:
-      std::string x_i, y_i, z_i;
-      int x_j=0, y_j=0, z_j=0;
-      std::vector<double> x_v(length_x), y_v(length_x), z_v(length_x);
-      for(int i=0; i<strlength; i++){
-         if (x[i] == ','){
-            out<<x_i<<"  ";
-            x_v[x_j]=atof(x_i.c_str());
-            out<<x_v[x_j]<<std::endl;
-            x_i="";
-            x_j++; }
-         else
-            x_i.append(& x[i]);
-         if (y[i] == ','){
-            out<<y_i<<"  ";
-            y_v[y_j]=atof(y_i.c_str());
-            out<<y_v[y_j]<<std::endl;
-            y_i="";
-            y_j++;}
-         else
-            y_i.append(& y[i]);
-         if (z[i] == ','){
-            out<<z_i<<"  ";
-            z_v[z_j]=atof(z_i.c_str());
-            out<<z_v[z_j]<<std::endl;
-            z_i="";
-            z_j++;}
-         else
-            z_i.append(& z[i]);
-      }
-      x_v[x_j]=atof(x_i.c_str());
-      y_v[y_j]=atof(y_i.c_str());
-      z_v[z_j]=atof(z_i.c_str());
-      out<<x_v[x_j]<<std::endl;
-      out<<y_v[y_j]<<std::endl;
-      out<<z_v[z_j]<<std::endl;
+      std::vector<Point> geometry;
+      geometry=getGeometry(cl);
       
-      std::vector<Point> geometry(length_x);
-      out<<"geometry"<<std::endl;
-      for(int i=0; i<length_x; i++){
-         geometry[i]=Point(x_v[i], y_v[i], z_v[i]);
-         out<<geometry[i]<<std::endl;
-      }
       // the function below creates a mesh using the molecular structure.
-      tetrahedralise_sphere( mesh, geometry);
+      tetrahedralise_sphere(mesh, geometry);
    }
    else
       libmesh_error_msg("\nUnknown geometry of the finite element region.\n");
-
 
    // Print information about the mesh to the screen.
    mesh.print_info();
@@ -319,3 +259,59 @@ int main (int argc, char** argv){
    return 0;
 }
 #endif // LIBMESH_HAVE_SLEPC
+      
+std::vector<Point> getGeometry(GetPot cl){
+   // extract the given geometry:
+   std::string x=cl("x", ".");
+   std::string y=cl("y", ".");
+   std::string z=cl("z", ".");
+   // get number of values. Therefore, count spaces in the string.
+   int length_x=0;
+   int length_y=0;
+   int length_z=0;
+   int strlength=x.length();
+   for(int i=0; i<strlength; i++){
+      if (x[i] == ',')
+            length_x++; 
+      if (y[i] == ',')
+            length_y++; 
+      if (z[i] == ',')
+            length_z++; 
+   }
+   assert (length_x== length_y);
+   assert (length_x== length_z);
+   length_x++;
+   //put them into a vector:
+   std::string x_i, y_i, z_i;
+   int x_j=0, y_j=0, z_j=0;
+   std::vector<double> x_v(length_x), y_v(length_x), z_v(length_x);
+   for(int i=0; i<strlength; i++){
+      if (x[i] == ','){
+         x_v[x_j]=atof(x_i.c_str());
+         x_i="";
+         x_j++; }
+      else
+         x_i.append(& x[i]);
+      if (y[i] == ','){
+         y_v[y_j]=atof(y_i.c_str());
+         y_i="";
+         y_j++;}
+      else
+         y_i.append(& y[i]);
+      if (z[i] == ','){
+         z_v[z_j]=atof(z_i.c_str());
+         z_i="";
+         z_j++;}
+      else
+         z_i.append(& z[i]);
+   }
+   x_v[x_j]=atof(x_i.c_str());
+   y_v[y_j]=atof(y_i.c_str());
+   z_v[z_j]=atof(z_i.c_str());
+   
+   std::vector<Point> geometry(length_x);
+   for(int i=0; i<length_x; i++){
+      geometry[i]=Point(x_v[i], y_v[i], z_v[i]);
+   }
+   return geometry;
+}
