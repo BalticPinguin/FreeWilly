@@ -5,3 +5,9 @@ pot = coul      # morse, harm, coul
 spect =sr       #  sm, lm, (magnitude) sr, lr, (real) si, li, (imaginary) 
 Energy = -0.50  # set the energy-offset ( target energy: Energy= ... and spect = sm, sr or similar)
 infinite =false  # only false allowed here!
+mesh_geom=own     #box, sphere, own
+
+   O      H       H
+x=0.000,0.76263,-0.76263
+y=0.000,0.00000,0.000000
+z=0.120,-0.4772,-0.47720
