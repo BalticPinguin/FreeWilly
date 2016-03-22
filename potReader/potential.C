@@ -4,7 +4,8 @@
 #include "libmesh/mesh.h"  // for 'mesh'
 #include "libmesh/elem.h"
 #include "libmesh/cell_hex8.h"
-#include "libmesh/face_quad4.h"  // this is only dummy and will be removed later.
+#include "libmesh/cell_hex27.h"  // this is only dummy and will be removed later.
+#include "libmesh/nanoflann.hpp"  // for FindeNeighors()
 
 using namespace libMesh;
 
@@ -12,15 +13,39 @@ using namespace libMesh;
 
 struct ESP{
    std::vector<Point> node;
+   // k-th node opens an element, if there are 7 elements with distance <=3^1/2*min_dist
+   // whose components are >= the components of k-th node.
+   std::vector<std::vector<unsigned int>> neighbour; // fill this with nanoflann!
+   std::vector<std::vector<unsigned int>> setup_elem; 
    std::vector<double> potential;
    unsigned int size;
+   double dist;
+
+   template <class BBOX>
+   bool kdtree_get_bbox(BBOX&) const {return false;}
+   
+   inline unsigned int kdtree_get_point_count() const { return this->size;}
+
+   inline double kdtree_get_pt(const unsigned int  idx, int dim) const{
+         if (dim==0) return node[idx](0);
+         else if (dim==1) return node[idx](1);
+         else return node[idx](2);
+    }
+
+   // return the distance between a point and a second point with index idx.
+   inline double kdtree_distance(const Point point, const unsigned int idx) const {
+      double x,y,z;
+      x=point(0)-this->node[idx](0);
+      y=point(1)-this->node[idx](1);
+      z=point(2)-this->node[idx](2);
+      return x*x+y*y+z*z;
+   }
 };
 
-ESP Read(std::string input_file){
+void Read(ESP& esp, std::string input_file){
    double noonecares;
    double x,y,z,v;
    std::ifstream esp_file;
-   struct ESP esp;
 
    esp_file.open(input_file.c_str() );
    if (!esp_file.is_open()){
@@ -38,25 +63,41 @@ ESP Read(std::string input_file){
       esp.node[i]=Point(x,y,z);
       esp.potential[i]=v;
    }
+   esp.dist=esp.node[1](0)-esp.node[0](0);
    esp_file.close();
-   return esp;
 }
 
-unsigned int idx(const ElemType type, const unsigned int nx,
-                const unsigned int ny, const unsigned int i,
-                const unsigned int j, const unsigned int k){
-   // this function is just a shortened copy of a function of same name in namespace 
-   // MeshTools::Generation::Private.
-   switch (type){
-      case HEX8:{
-         return i+(nx+1)*(j+k*(ny+1));
+void FindNeighbors(ESP & esp){
+   const unsigned int search_radius = esp.dist*1.733; //sqrt(3)
+   std::vector<std::pair<long unsigned int, double> > ret_matches;
+
+   nanoflann::SearchParams params;
+   params.sorted = false;
+   esp.neighbour.resize(esp.size);
+   esp.setup_elem.resize(esp.size);
+
+   // construct a kd-tree index:
+   typedef nanoflann::KDTreeSingleIndexAdaptor<
+                      nanoflann::L2_Simple_Adaptor<double, ESP > ,
+                      ESP, 3/* dim */ > esp_kd_tree_t;
+   esp_kd_tree_t index(3 /*dim*/, esp , nanoflann::KDTreeSingleIndexAdaptorParams(27 /* max leaf */ ) );
+   index.buildIndex();
+
+   for(unsigned int i=0; i<esp.size; i++){
+      const size_t nMatches = index.radiusSearch(esp.node[i], search_radius, ret_matches, params);
+      //index.knnSearch(&esp->node[i], 27, matches, search_radius
+      for (unsigned int j=0; j<nMatches; j++){
+         esp.neighbour[i].push_back(ret_matches[j].first);
+         if ((      esp.node[ret_matches[j].first](0)>=esp.node[i](0))
+                && (esp.node[ret_matches[j].first](1)>=esp.node[i](1))
+                && (esp.node[ret_matches[j].first](2)>=esp.node[i](2))){
+            esp.setup_elem[i].push_back(ret_matches[j].first);
+         }
       }
-      default:
-      libmesh_error_msg("ERROR: Unrecognized element type.");
    }
 }
 
-void MakeMesh(const ESP esp, libMesh::UnstructuredMesh& mesh, const ElemType Eltype=HEX8){
+void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh, const ElemType Eltype=HEX8){
    unsigned int node_id = 0;
 
    for (unsigned int i=0; i<esp.size; i++){
@@ -83,48 +124,15 @@ void MakeMesh(const ESP esp, libMesh::UnstructuredMesh& mesh, const ElemType Elt
    boundary_info.nodeset_name(5) = "front";
 
    switch (Eltype){
-      case QUAD4:{ // this is hex8 actually as well.
-         const unsigned int nx=2,ny=2,nz=2;
-         for(unsigned int k=0; k<nz; k++){
-            for(unsigned int j=0; j<ny; j++){
-               for(unsigned int i=0; i<nx; i++){
-                  Elem* elem=mesh.add_elem(new Quad4);
-                  elem->set_node(0)=mesh.node_ptr(idx(Eltype,nx,ny,i  ,j  ,k  ) );
-                  elem->set_node(1)=mesh.node_ptr(idx(Eltype,nx,ny,i+1,j  ,k  ) );
-                  elem->set_node(2)=mesh.node_ptr(idx(Eltype,nx,ny,i+1,j+1,k  ) );
-                  elem->set_node(3)=mesh.node_ptr(idx(Eltype,nx,ny,i  ,j+1,k  ) );
-                  elem->set_node(4)=mesh.node_ptr(idx(Eltype,nx,ny,i  ,j  ,k+1) );
-                  elem->set_node(5)=mesh.node_ptr(idx(Eltype,nx,ny,i+1,j  ,k+1) );
-                  elem->set_node(6)=mesh.node_ptr(idx(Eltype,nx,ny,i+1,j+1,k+1) );
-                  elem->set_node(7)=mesh.node_ptr(idx(Eltype,nx,ny,i  ,j+1,k+1) );
-                  if (k == 0)
-                    boundary_info.add_side(elem, 0, 0);
-
-                  if (k == (nz-1))
-                    boundary_info.add_side(elem, 5, 5);
-
-                  if (j == 0)
-                    boundary_info.add_side(elem, 1, 1);
-
-                  if (j == (ny-1))
-                    boundary_info.add_side(elem, 3, 3);
-
-                  if (i == 0)
-                    boundary_info.add_side(elem, 4, 4);
-
-                  if (i == (nx-1))
-                    boundary_info.add_side(elem, 2, 2);
-               }
-            }
-         }
-         break;
-      }
-      case HEX8:{
+      case HEX27:{
+         // the '-1' below is wrong, but maybe leads to not having the error!
          for(unsigned int k=0; k<esp.size; k++){
             Elem* elem=mesh.add_elem(new Hex8);
-            out<<k<<std::endl;
             for (unsigned int j=0; j<8; j++){
+               out<<k<<"  "<<j<<"  "<<k*8+j<<std::endl;
+               //elem->set_node(j)=mesh.node_ptr(complicated function of);
                elem->set_node(j)=mesh.node_ptr(k*8+j);
+               // do I need to enumerate tham as above??
             }
             if (k==0){
                boundary_info.add_side(elem, 0, 0);
@@ -153,6 +161,67 @@ void MakeMesh(const ESP esp, libMesh::UnstructuredMesh& mesh, const ElemType Elt
             }
          }
       }
+      case HEX8:{
+         //find all elements that are left bottom front corner of a HEX-element
+         FindNeighbors( esp);
+         bool x_min, x_max, y_min, y_max, z_min, z_max;
+         // first set up all elements:
+         for(unsigned int k=0; k<esp.size; k++){
+            if (esp.setup_elem[k].size()==7){
+               Elem* elem=mesh.add_elem(new Hex8);
+               for (unsigned int j=0; j<8; j++){
+                  elem->set_node(j)=mesh.node_ptr(esp.neighbour[k][j]);
+               }
+               if (esp.neighbour[k].size()<27){
+                  x_min=false;
+                  y_min=false;
+                  z_min=false;
+                  x_max=false;
+                  y_max=false;
+                  z_max=false;
+                  for(unsigned int j=0; j<esp.neighbour[k].size(); j++){
+                     if (esp.node[esp.neighbour[k][j]](0)<esp.node[k](0)){
+                        x_min=true;
+                     }
+                     if (esp.node[esp.neighbour[k][j]](1)<esp.node[k](1)){
+                        y_min=true;
+                     }
+                     if (esp.node[esp.neighbour[k][j]](2)<esp.node[k](2)){
+                        z_min=true;
+                     }
+                     if (esp.node[esp.neighbour[k][j]](0)>esp.node[k](0)){
+                        x_max=true;
+                     }
+                     if (esp.node[esp.neighbour[k][j]](1)>esp.node[k](1)){
+                        y_max=true;
+                     }
+                     if (esp.node[esp.neighbour[k][j]](2)>esp.node[k](2)){
+                        z_max=true;
+                     }
+                  }
+                  // no neighbour has larger y-value
+                  if (!y_max)
+                     boundary_info.add_side(elem, 0, 0);
+                  // no neighbour has smaller z-value
+                  if (!z_min)
+                     boundary_info.add_side(elem, 1, 1);
+                  // no neighbour has larger x-value
+                  if (!x_max)
+                     boundary_info.add_side(elem, 2, 2);
+                  // no neighbour has larger z-value
+                  if (!z_max)
+                     boundary_info.add_side(elem, 3, 3);
+                  // no neighbour has smaller x-value
+                  if (!x_min)
+                     boundary_info.add_side(elem, 4, 4);
+                  // no neighbour has smaller y-value
+                  if (!y_min)
+                     boundary_info.add_side(elem, 5, 5);
+            
+               }
+            }
+         }
+      }
       default:
          libmesh_error_msg("only HEX8 is available now.");
    }
@@ -160,7 +229,7 @@ void MakeMesh(const ESP esp, libMesh::UnstructuredMesh& mesh, const ElemType Elt
 
 int main (int argc, char** argv){
    struct ESP esp;
-   esp=Read("K_esp.grid");
+   Read(esp, "K_esp.grid");
    LibMeshInit init (argc, argv);
    Mesh mesh(init.comm(), 3);
    MakeMesh(esp, mesh);
