@@ -137,14 +137,12 @@ void FindNeighbours(ESP& esp){
             // so adjust overhang_y accordingly and move on!
             if (esp.node[i](0)>esp.node[z+i-z_new](0)){
                // the last line started more left of it:
-               out<<"adjust overhang_z+"<<std::endl;
                while (esp.node[i](0)>esp.node[z+overhang_z+i-z_new](0))
                   overhang_z++;
                overhang_z=-overhang_z;
             }
             else if (esp.node[i](0)<esp.node[z+i-z_new](0)){
                // the last line started more right of it:
-               out<<"adjust overhang_z-"<<std::endl;
                while (esp.node[i+overhang_z](0)>esp.node[z+i-z_new](0))
                   overhang_z++;
             }
@@ -211,7 +209,7 @@ void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh, const ElemType Eltype=
          // first set up all elements:
          for(unsigned int k=0; k<esp.size; k++){
             // in other case this index will not be able to span an element.
-            if (esp.neighbour[k].size()>8){
+            if (esp.neighbour[k].size()>=7){
                //now check for nodes with coordinates with smaller values:
                span.clear();
                for(unsigned int i=0; i<esp.neighbour[k].size(); i++){
