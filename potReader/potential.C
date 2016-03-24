@@ -78,14 +78,18 @@ void FindNeighbors(ESP & esp){
 
    // construct a kd-tree index:
    typedef nanoflann::KDTreeSingleIndexAdaptor<
-                      nanoflann::L2_Simple_Adaptor<double, ESP > ,
+                      nanoflann::L2_Simple_Adaptor<Real, ESP > ,
                       ESP, 3/* dim */ > esp_kd_tree_t;
    esp_kd_tree_t index(3 /*dim*/, esp , nanoflann::KDTreeSingleIndexAdaptorParams(27 /* max leaf */ ) );
    index.buildIndex();
 
    for(unsigned int i=0; i<esp.size; i++){
-      const size_t nMatches = index.radiusSearch(esp.node[i], search_radius, ret_matches, params);
-      //index.knnSearch(&esp->node[i], 27, matches, search_radius
+      //search for points that share a common cube with the i-th point:
+      Real* query_pt[3];
+      *query_pt[0]=esp.node[i](0);
+      *query_pt[1]=esp.node[i](1);
+      *query_pt[2]=esp.node[i](2);
+      const size_t nMatches = index.radiusSearch(query_pt[0], search_radius, ret_matches, params);
       for (unsigned int j=0; j<nMatches; j++){
          esp.neighbour[i].push_back(ret_matches[j].first);
          if ((      esp.node[ret_matches[j].first](0)>=esp.node[i](0))
