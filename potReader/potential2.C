@@ -229,7 +229,18 @@ void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh, const ElemType Eltype=
                   back= bottom= left= front= top= right=true;
                   Elem* elem=mesh.add_elem(new Hex8);
                   for (unsigned int j=0; j<8; j++){
-                     elem->set_node(j)=mesh.node_ptr(span[j]);
+                      // this is needed to fit the enumeration of nodes
+                      // in the Hex8-element as used in libmesh.
+                      if (j==2)
+                         elem->set_node(3)=mesh.node_ptr(span[j]);
+                      else if (j==3)                           
+                         elem->set_node(2)=mesh.node_ptr(span[j]);
+                      else if (j==6)                           
+                         elem->set_node(7)=mesh.node_ptr(span[j]);
+                      else if (j==7)                           
+                         elem->set_node(6)=mesh.node_ptr(span[j]);
+                     else
+                        elem->set_node(j)=mesh.node_ptr(span[j]);
                      // now, check if this element has a surface to outer region:
                      if(esp.neighbour[span[j]].size()>=26){
                         // this element has all possible neighbours
