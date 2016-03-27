@@ -63,9 +63,7 @@ void FindNeighbours(ESP& esp){
          esp.neighbour[i-1].push_back(i);
       }
       if (esp.node[i](1)!=esp.node[i-1](1)){
-         overhang_y=0; if (esp.node[i](0)>esp.node[y+i-y_new](0)+THRESHOLD){ // the last line started more left of it: while(esp.node[i](0)>esp.node[y+overhang_y+i-y_new](0)+THRESHOLD) overhang_y++; overhang_y=-overhang_y; } else if (esp.node[i](0)<esp.node[y+i-y_new](0)-THRESHOLD){ // the last line started more right of it: while (esp.node[i+overhang_y](0)>esp.node[y+i-y_new](0)-THRESHOLD)
-               overhang_y++;
-         }
+         overhang_y=0; 
          // y is the start-value of the last row.
          y=y_new;
          // y_new is the start-value of this row.
@@ -73,42 +71,26 @@ void FindNeighbours(ESP& esp){
       }
       if (esp.node[i](2)!=esp.node[i-1](2)){
          overhang_z=0;
-         // adjust myself with respect to x
-         // alignment wrt. to y is assumed to exist, since 
-         // otherwise there would be an empty line in y...
-         if (esp.node[i](0)>esp.node[z+(i-z_new)](0)){
-            // the last line started more left of it:
-            while (esp.node[i](0)>esp.node[z+overhang_z+(i-z_new)](0))
-               overhang_z++;
-            overhang_z=-overhang_z;
-         }
-         else if (esp.node[i](0)<esp.node[z+i-z_new](0)){
-            // the last line started more right of it:
-            while (esp.node[i+overhang_z](0)>esp.node[z+i-z_new](0))
-               overhang_z++;
-         }
          // z is the start-value of the last row.
          z=z_new;
          // z_new is the start-value of this row.
          z_new=i;
       }
 
-      if (y_new>0){
+      // there is no neighbour with lower y-value in this row if I just changed the
+      // z-value (and hence are in the row with smallest y-values!)
+      if (y_new!=z_new){
          // there might be a whole! it might be in this or in previous layer...
-         if (std::abs(esp.node[i](0)-esp.node[y+overhang_y+(i-y_new)](0))>step
-                       || std::abs(esp.node[i](1)-esp.node[y+overhang_y+i-y_new+1](1))>step){
+         if (std::abs(esp.node[i](0)-esp.node[y+overhang_y+(i-y_new)](0))>THRESHOLD){
             // so adjust overhang_y accordingly and move on!
-            if (esp.node[i](0)>esp.node[y+i-y_new](0)){
-               // the last line started more left of it:
-               while (esp.node[i](0)>esp.node[y+overhang_y+i-y_new](0))
-                  overhang_y++;
-            }
-            else if (esp.node[i](0)<esp.node[y+i-y_new](0)){
-               // the last line started more right of it:
-               while (esp.node[i+overhang_y](0)>esp.node[y+i-y_new](0))
-                  overhang_y++;
-               overhang_y=-overhang_y;
-            }
+            // the last line started more left of it:
+            while (esp.node[i](0)>esp.node[y+overhang_y+i-y_new](0))
+               overhang_y++;
+            while (esp.node[i](0)<esp.node[y+overhang_y+i-y_new](0) && (i-y_new+overhang_y)>0)
+               overhang_y--;
+            // if there is still an overhang: there is no nearest neighbour in this direction.
+            if (std::abs(esp.node[i](0)-esp.node[y+overhang_y+(i-y_new)](0))>step)
+               continue;
          }
          if (std::abs(esp.node[i](0)-esp.node[y+overhang_y+(i-y_new)](0))<=step
                 && std::abs(esp.node[i](1)-esp.node[y+overhang_y+(i-y_new)](1))<=step){
@@ -117,14 +99,15 @@ void FindNeighbours(ESP& esp){
             esp.neighbour[y+overhang_y+i-y_new].push_back(i);
          }
          // get the diagonal elements as well
-         if (i-y_new>0 && std::abs(esp.node[i](0)-esp.node[y+overhang_y+i-y_new-1](0))<=step
+         if (i-y_new+overhang_y >0 && std::abs(esp.node[i](0)-esp.node[y+overhang_y+i-y_new-1](0))<=step
                        && std::abs(esp.node[i](1)-esp.node[y+overhang_y+i-y_new-1](1))<=step){
             // the correct step-size in y- and z-direction is assured.
             esp.neighbour[i].push_back(y+overhang_y-1+i-y_new);
             esp.neighbour[y+overhang_y-1+i-y_new].push_back(i);
          }
          if (std::abs(esp.node[i](0)-esp.node[y+overhang_y+i-y_new+1](0))<=step
-                       && std::abs(esp.node[i](1)-esp.node[y+overhang_y+i-y_new+1](1))<=step){
+                       && std::abs(esp.node[i](1)-esp.node[y+overhang_y+i-y_new+1](1))<=step
+                       && y+overhang_y+i-y_new <y_new ){
             // the correct step-size in y- and z-direction is assured.
             esp.neighbour[i].push_back(y+overhang_y+1+i-y_new);
             esp.neighbour[y+overhang_y+1+i-y_new].push_back(i);
@@ -132,21 +115,25 @@ void FindNeighbours(ESP& esp){
       }
       if (z_new>0){
          // even in 3D, only the variable that changes fastest needs to be considered explicitly.
-         if (std::abs(esp.node[i](0)-esp.node[z+overhang_z+i-z_new](0))>step
-               || std::abs(esp.node[i](1)-esp.node[z+overhang_z+i-z_new](1))>step){
-            // so adjust overhang_y accordingly and move on!
-            if (esp.node[i](0)>esp.node[z+i-z_new](0)){
-               // the last line started more left of it:
-               while (esp.node[i](0)>esp.node[z+overhang_z+i-z_new](0))
-                  overhang_z++;
-               overhang_z=-overhang_z;
-            }
-            else if (esp.node[i](0)<esp.node[z+i-z_new](0)){
-               // the last line started more right of it:
-               while (esp.node[i+overhang_z](0)>esp.node[z+i-z_new](0))
-                  overhang_z++;
+         if (std::abs(esp.node[i](0)-esp.node[z+overhang_z+i-z_new](0))>THRESHOLD
+               || std::abs(esp.node[i](1)-esp.node[z+overhang_z+i-z_new](1))>THRESHOLD){
+            // so adjust overhang_z accordingly and move on!
+            while (esp.node[i](0)>(esp.node[z+overhang_z+i-z_new](0)+THRESHOLD)
+                     || esp.node[i](1)-esp.node[z+overhang_z+i-z_new](1)>THRESHOLD)
+               overhang_z++;
+            // the last line started more right of it:
+            while (esp.node[i](0)<(esp.node[z+overhang_z+i-z_new](0)-THRESHOLD) 
+                  /*the question below makes sence because it is unsigned int!*/
+                  && z+overhang_z+i-z_new>0){
+               // is the x-value smaller than that of the element below and is the y-value
+               // of that the same?
+               if ((esp.node[i](1)-esp.node[z+overhang_z+i-z_new-1](1))<THRESHOLD)
+                  overhang_z--;
+               else
+                  break;
             }
          }
+         // if this is reached now:
          elem_below=z+overhang_z+i-z_new;
          if (std::abs(esp.node[i](0)-esp.node[elem_below](0))<=step
                && std::abs(esp.node[i](1)-esp.node[elem_below](1))<=step
@@ -157,6 +144,7 @@ void FindNeighbours(ESP& esp){
                layer_below<esp.neighbour[elem_below].size(); 
                layer_below++){
                // the first two conditions might be tautologies.
+               out<<esp.neighbour[elem_below][layer_below]<<std::endl;
                if (std::abs(esp.node[i](0)-esp.node[esp.neighbour[elem_below][layer_below]](0))<=step 
                        && std::abs(esp.node[i](1)-esp.node[esp.neighbour[elem_below][layer_below]](1))<=step
                        && std::abs(esp.node[elem_below](2)-esp.node[esp.neighbour[elem_below][layer_below]](2))
