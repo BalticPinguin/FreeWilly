@@ -85,11 +85,18 @@ void FindNeighbours(ESP& esp){
             // so adjust offset_y accordingly and move on!
             // the last line started more left of it:
             while (esp.node[i](0)>esp.node[y+offset_y+i-y_new](0) 
-                     && esp.node[i](1)>esp.node[y+offset_y+i-y_new+1](1) +THRESHOLD)
+                     && esp.node[i](1)>esp.node[y+offset_y+i-y_new+1](1) +THRESHOLD){
                offset_y++;
-            while ((esp.node[i](0)<esp.node[y+offset_y+i-y_new](0) && (i-y_new+offset_y)>0)
-                        || esp.node[i](1)-esp.node[y+offset_y+i-y_new+1](1)<THRESHOLD )
+               //out<<"      "<<offset_y<<std::endl;
+            }
+           // while ((esp.node[i](0)<esp.node[y+offset_y+i-y_new](0) && (i-y_new+offset_y)>0)
+           //             || esp.node[i](1)-esp.node[y+offset_y+i-y_new-1](1)<THRESHOLD){
+            while ( (i-y_new+offset_y)>0
+                   && (esp.node[i]-esp.node[y+offset_y+i-y_new]).size()
+                   >(esp.node[i]-esp.node[y+offset_y+i-y_new-1]).size()){
                offset_y--;
+               //out<<"             "<<offset_y<<std::endl;
+            }
             // if there is still an offset: there is no nearest neighbour in this direction.
             if (std::abs(esp.node[i](0)-esp.node[y+offset_y+(i-y_new)](0))>step)
                continue;
@@ -119,20 +126,28 @@ void FindNeighbours(ESP& esp){
          // even in 3D, only the variable that changes fastest needs to be considered explicitly.
          if (std::abs(esp.node[i](0)-esp.node[z+offset_z+i-z_new](0))>THRESHOLD
                || std::abs(esp.node[i](1)-esp.node[z+offset_z+i-z_new](1))>THRESHOLD){
-            // so adjust offset_z accordingly and move on!
-            while (esp.node[i](0)>(esp.node[z+offset_z+i-z_new](0)+THRESHOLD)
-                     || esp.node[i](1)-esp.node[z+offset_z+i-z_new](1)>THRESHOLD)
-               offset_z++;
-            // the last line started more right of it:
-            while (esp.node[i](0)<(esp.node[z+offset_z+i-z_new](0)-THRESHOLD) 
-                  /*the question below makes sence because it is unsigned int!*/
-                  && z+offset_z+i-z_new>0){
-               // is the x-value smaller than that of the element below and is the y-value
-               // of that the same?
-               if ((esp.node[i](1)-esp.node[z+offset_z+i-z_new-1](1))<THRESHOLD)
-                  offset_z--;
-               else
-                  break;
+            // for efficiency: check first, if the previous element fits better:
+            if (z+offset_z+i-z_new>0 
+                  && (esp.node[i]-esp.node[z+offset_z+i-z_new]).size()
+                    >(esp.node[i]-esp.node[z+offset_z+i-z_new-1]).size()+THRESHOLD)
+               offset_z--;
+            // so adjust offset_z accordingly and move on. Therefore, search neighbours
+            // that are closer to the current element.
+            if (std::abs(esp.node[i](0)-esp.node[z+offset_z+i-z_new](0))>THRESHOLD
+                  || std::abs(esp.node[i](1)-esp.node[z+offset_z+i-z_new](1))>THRESHOLD){
+               double oldDist=(esp.node[i]-esp.node[z+offset_z+i-z_new]).size();
+               for (unsigned int layer_below=0; 
+                        layer_below<esp.neighbour[z+offset_z+i-z_new].size(); 
+                        layer_below++){
+                  if (oldDist>(esp.node[i]-esp.node[esp.neighbour[z+offset_z+i-z_new][layer_below]]).size() 
+                     &&(esp.node[i](2)-esp.node[esp.neighbour[z+offset_z+i-z_new][layer_below]](2)>THRESHOLD)){
+
+                     // readjust offset_z and start the search in its neighbours from the beginning.
+                     offset_z=esp.neighbour[z+offset_z+i-z_new][layer_below]-z-i+z_new;
+                     oldDist=(esp.node[i]-esp.node[z+offset_z+i-z_new]).size();
+                     layer_below=0;
+                  }
+               }
             }
          }
          // if this is reached now:
@@ -152,6 +167,7 @@ void FindNeighbours(ESP& esp){
                              <=THRESHOLD){
                   esp.neighbour[i].push_back(esp.neighbour[elem_below][layer_below]);
                   esp.neighbour[esp.neighbour[elem_below][layer_below]].push_back(i);
+                  //out<<esp.neighbour[elem_below][layer_below]<<std::endl;
                }
             }
             // the correct step-size in y- and z-direction is assured.
