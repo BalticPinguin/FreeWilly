@@ -4,8 +4,11 @@
 #include "libmesh/mesh.h"  // for 'mesh'
 #include "libmesh/elem.h"
 #include "libmesh/cell_hex8.h"
-#include "libmesh/cell_hex27.h"  // this is only dummy and will be removed later.
-#include "libmesh/nanoflann.hpp"  // for FindeNeighors()
+// for GetPotential:
+#include "libmesh/equation_systems.h"
+#include "libmesh/numeric_vector.h"
+#include "libmesh/dense_vector.h"
+#include "libmesh/explicit_system.h"
 #include <cmath> // needed for abs().
 
 using namespace libMesh;
@@ -48,7 +51,13 @@ void Read(ESP& esp, std::string input_file){
 }
 
 void FindNeighbours(ESP& esp){
-   // idea of the function:
+   // idea of the function: find neighbours, always looking back (smaller coordinate values)
+   // the strategy in different directions is different:
+   // x-direction: if previous element is close enough: accept it as neighbour.
+   // y-direction: try to find element in last row at same position and check elements 
+   //        with indices 1 larger and 1 smaller as well.
+   // z-direction: try to find element that is below the current one (or closest to it)
+   //        and test all of its neighbours as own neighbours.
 
    unsigned int y=0, z=0, y_new=0, z_new=0, elem_below;
    int offset_y, offset_z;
@@ -178,7 +187,7 @@ void FindNeighbours(ESP& esp){
    }
 }
 
-void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh, const ElemType Eltype=HEX8){
+void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh){
    unsigned int node_id = 0;
 
    for (unsigned int i=0; i<esp.size; i++){
@@ -204,132 +213,146 @@ void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh, const ElemType Eltype=
    boundary_info.nodeset_name(4) = "left";
    boundary_info.nodeset_name(5) = "front";
 
-   switch (Eltype){
-      case HEX8:{
-         //find all elements that are left bottom front corner of a HEX-element
-         double THRESHOLD=0.00001;
-         double step=esp.node[1](0)-esp.node[0](0)+THRESHOLD; // add some tolerance
-         std::vector<unsigned int> span;
-         bool back, bottom, left, front, top, right;
-         // first set up all elements:
-         for(unsigned int k=0; k<esp.size; k++){
-            // in other case this index will not be able to span an element.
-            if (esp.neighbour[k].size()>=7){
-               //now check for nodes with coordinates with smaller values:
-               span.clear();
-               for(unsigned int i=0; i<esp.neighbour[k].size(); i++){
-                  if (esp.node[k](0)>=esp.node[esp.neighbour[k][i]](0)
-                        && esp.node[k](1)>=esp.node[esp.neighbour[k][i]](1)
-                        && esp.node[k](2)>=esp.node[esp.neighbour[k][i]](2)){
-                     span.push_back(esp.neighbour[k][i]);
-                     if (span.size()==7)
-                        continue;
-                  }
-               }
-               // the element itself is also part of the element!
-               span.push_back(k);
-               //sort the span-vector:
-               std::sort (span.begin(), span.end());
-               if (span.size()>=8){ // '>' should never be true!
-                  back= bottom= left= front= top= right=true;
-                  Elem* elem=mesh.add_elem(new Hex8);
-                  for (unsigned int j=0; j<8; j++){
-                      // this is needed to fit the enumeration of nodes
-                      // in the Hex8-element as used in libmesh.
-                      if (j==2)
-                         elem->set_node(3)=mesh.node_ptr(span[j]);
-                      else if (j==3)                           
-                         elem->set_node(2)=mesh.node_ptr(span[j]);
-                      else if (j==6)                           
-                         elem->set_node(7)=mesh.node_ptr(span[j]);
-                      else if (j==7)                           
-                         elem->set_node(6)=mesh.node_ptr(span[j]);
-                     else
-                        elem->set_node(j)=mesh.node_ptr(span[j]);
-                     // now, check if this element has a surface to outer region:
-                     if(esp.neighbour[span[j]].size()>=26){
-                        // this element has all possible neighbours
-                        // and hence has no surface.
-                        continue;
-                     }
-                     //
-                     for(unsigned int i=0; i<esp.neighbour[span[j]].size(); i++){
-                        //check, if it is a nearest neighbour:
-                        if ((esp.node[esp.neighbour[span[j]][i]]-esp.node[span[j]]).size_sq()<step*step){
-                           if (esp.node[esp.neighbour[span[j]][i]](0)!=esp.node[k](0)){
-                              if (esp.node[esp.neighbour[span[j]][i]](0)>esp.node[k](0)){
-                                 right=false;
-                                 continue;
-                              }
-                              else if (esp.node[esp.neighbour[span[j]][i]](0)<esp.node[k](0)-step){
-                                 left=false;
-                                 continue;
-                              }
-                           }
-                           if (esp.node[esp.neighbour[span[j]][i]](1)!=esp.node[k](1)){
-                              if (esp.node[esp.neighbour[span[j]][i]](1)>esp.node[k](1)){
-                                 back=false;
-                                 continue;
-                              }
-                              else if (esp.node[esp.neighbour[span[j]][i]](1)<esp.node[k](1)-step){
-                                 front=false;
-                                 continue;
-                              }
-                           }
-                           if (esp.node[esp.neighbour[span[j]][i]](2)!=esp.node[k](2)){
-                              if (esp.node[esp.neighbour[span[j]][i]](2)>esp.node[k](2))
-                                 top=false;
-                              else if (esp.node[esp.neighbour[span[j]][i]](2)<esp.node[k](2)-step)
-                                 bottom=false;
-                           }
-                        }
-                     }
-                  }
-                  if (bottom)
-                     boundary_info.add_side(elem, 1, 1);
-                  if (top)
-                     boundary_info.add_side(elem, 3, 3);
-                  if (left)
-                     boundary_info.add_side(elem, 4, 4);
-                  if (right)
-                     boundary_info.add_side(elem, 2, 2);
-                  if (front)
-                     boundary_info.add_side(elem, 5, 5);
-                  if (back)
-                     boundary_info.add_side(elem, 0, 0);
-               }
+   //find all elements that are left bottom front corner of a HEX-element
+   double THRESHOLD=0.00001;
+   double step=esp.node[1](0)-esp.node[0](0)+THRESHOLD; // add some tolerance
+   std::vector<unsigned int> span;
+   bool back, bottom, left, front, top, right;
+   // first set up all elements:
+   for(unsigned int k=0; k<esp.size; k++){
+      // in other case this index will not be able to span an element.
+      if (esp.neighbour[k].size()>=7){
+         //now check for nodes with coordinates with smaller values:
+         span.clear();
+         for(unsigned int i=0; i<esp.neighbour[k].size(); i++){
+            if (esp.node[k](0)>=esp.node[esp.neighbour[k][i]](0)
+                  && esp.node[k](1)>=esp.node[esp.neighbour[k][i]](1)
+                  && esp.node[k](2)>=esp.node[esp.neighbour[k][i]](2)){
+               span.push_back(esp.neighbour[k][i]);
+               if (span.size()==7)
+                  continue;
             }
          }
-         break;
+         // the element itself is also part of the element!
+         span.push_back(k);
+         //sort the span-vector:
+         std::sort (span.begin(), span.end());
+         if (span.size()>=8){ // '>' should never be true!
+            back= bottom= left= front= top= right=true;
+            Elem* elem=mesh.add_elem(new Hex8);
+            for (unsigned int j=0; j<8; j++){
+                // this is needed to fit the enumeration of nodes
+                // in the Hex8-element as used in libmesh.
+                if (j==2)
+                   elem->set_node(3)=mesh.node_ptr(span[j]);
+                else if (j==3)                           
+                   elem->set_node(2)=mesh.node_ptr(span[j]);
+                else if (j==6)                           
+                   elem->set_node(7)=mesh.node_ptr(span[j]);
+                else if (j==7)                           
+                   elem->set_node(6)=mesh.node_ptr(span[j]);
+               else
+                  elem->set_node(j)=mesh.node_ptr(span[j]);
+               // now, check if this element has a surface to outer region:
+               if(esp.neighbour[span[j]].size()>=26){
+                  // this element has all possible neighbours
+                  // and hence has no surface.
+                  continue;
+               }
+               //
+               for(unsigned int i=0; i<esp.neighbour[span[j]].size(); i++){
+                  //check, if it is a nearest neighbour:
+                  if ((esp.node[esp.neighbour[span[j]][i]]-esp.node[span[j]]).size_sq()<step*step){
+                     if (esp.node[esp.neighbour[span[j]][i]](0)!=esp.node[k](0)){
+                        if (esp.node[esp.neighbour[span[j]][i]](0)>esp.node[k](0)){
+                           right=false;
+                           continue;
+                        }
+                        else if (esp.node[esp.neighbour[span[j]][i]](0)<esp.node[k](0)-step){
+                           left=false;
+                           continue;
+                        }
+                     }
+                     if (esp.node[esp.neighbour[span[j]][i]](1)!=esp.node[k](1)){
+                        if (esp.node[esp.neighbour[span[j]][i]](1)>esp.node[k](1)){
+                           back=false;
+                           continue;
+                        }
+                        else if (esp.node[esp.neighbour[span[j]][i]](1)<esp.node[k](1)-step){
+                           front=false;
+                           continue;
+                        }
+                     }
+                     if (esp.node[esp.neighbour[span[j]][i]](2)!=esp.node[k](2)){
+                        if (esp.node[esp.neighbour[span[j]][i]](2)>esp.node[k](2))
+                           top=false;
+                        else if (esp.node[esp.neighbour[span[j]][i]](2)<esp.node[k](2)-step)
+                           bottom=false;
+                     }
+                  }
+               }
+            }
+            if (bottom)
+               boundary_info.add_side(elem, 1, 1);
+            if (top)
+               boundary_info.add_side(elem, 3, 3);
+            if (left)
+               boundary_info.add_side(elem, 4, 4);
+            if (right)
+               boundary_info.add_side(elem, 2, 2);
+            if (front)
+               boundary_info.add_side(elem, 5, 5);
+            if (back)
+               boundary_info.add_side(elem, 0, 0);
+         }
       }
-      default:
-         libmesh_error_msg("only HEX8 is available now.");
+   }
+}
+
+void GetPotential(ESP& esp, libMesh::UnstructuredMesh& mesh){
+   EquationSystems equation_systems (mesh);
+   // create an explicit system to load the solution into:
+   ExplicitSystem & pot = equation_systems.add_system<ExplicitSystem> ("esp");
+
+   // assemble the rhs-vector.
+   DenseVector<Number> Fe;
+   std::vector<dof_id_type> dof_indices;
+   
+   MeshBase::const_element_iterator el= mesh.active_local_elements_begin();
+   const MeshBase::const_element_iterator end_el =  mesh.active_local_elements_end();
+   for ( ; el != end_el; ++el){
+      const Elem* elem = *el;
+      if (not elem->infinite()){
+         // This is a conventional finite element.  Let \p fe handle it.
+         Fe.resize (dof_indices.size());
+         pot.rhs->add_vector (Fe, dof_indices);
+        } // if not (elem->infinite())
+   } // end loop over elements
+
+   {
+      MeshBase::const_node_iterator           nd = mesh.local_nodes_begin();
+      const MeshBase::const_node_iterator nd_end = mesh.local_nodes_end();
+      unsigned int dn=0;
+      for (; nd != nd_end; ++nd)
+        {
+        // this may work, if the elements are not renumbered already.
+         pot.rhs->add (dn, esp.potential[dn]);
+         dn++;
+        }
    }
 }
 
 int main (int argc, char** argv){
    struct ESP esp;
    Read(esp, "K_esp.grid");
-   //for(unsigned int i=0; i<esp.size; i++){
-   //   out<<esp.node[i](0)<<"  ";
-   //   out<<esp.node[i](1)<<"  ";
-   //   out<<esp.node[i](2)<<"  "<<std::endl;
-   //}
    FindNeighbours(esp);
-   //for(unsigned int i=0; i<esp.size; i++){
-   //   out<<esp.node[i](0)<<"  ";
-   //   out<<esp.node[i](1)<<"  ";
-   //   out<<esp.node[i](2)<<"  "<<std::endl;
-   //   out<<"   neighbours:\n    ";
-   //   for (unsigned int j=0;j<esp.neighbour[i].size(); j++){
-   //      out<<esp.neighbour[i][j]<<"  ";
-   //   }
-   //   out<<std::endl;
-   //}
-
    LibMeshInit init (argc, argv);
    Mesh mesh(init.comm(), 3);
    MakeMesh(esp, mesh);
+   GetPotential(esp,mesh);
+   // find neighbours, renumber nodes and other things:
+   // do NOT renumber!
+   mesh.prepare_for_use();
    mesh.write("foobar.e");
    return 0;
 }
