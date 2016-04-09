@@ -12,6 +12,8 @@
 #include "libmesh/dof_map.h"
 #include "libmesh/quadrature_gauss.h" // Define Gauss quadrature rules.
 #include <cmath> // needed for abs().
+// for printing the equation system
+#include "libmesh/exodusII_io.h"
 
 using namespace libMesh;
 
@@ -317,58 +319,6 @@ void GetPotential(ESP& esp, EquationSystems& equation_systems){
    // create an explicit system to load the solution into:
    ExplicitSystem & pot = equation_systems.get_system<ExplicitSystem> ("esp");
 
-   // assemble the rhs-vector.
-   DenseVector<Number> Fe;
-   std::vector<dof_id_type> dof_indices;
-   
-   //A reference to the \p DofMap object for this system.  The \p DofMap
-   // object handles the index translation from node and element numbers
-   // to degree of freedom numbers.
-   const DofMap & dof_map = pot.get_dof_map();
-   
-   // Get a constant reference to the Finite Element type
-   // for the first (and only) variable in the system.
-   const FEType & fe_type = dof_map.variable_type(0);  //   ---> I need a variable here... This part causes errors.
- 
-   // Build a Finite Element object of the specified type.  Since the
-   // \p FEBase::build() member dynamically creates memory we will
-   // store the object as an \p UniquePtr<FEBase>.  Check ex5 for details.
-   UniquePtr<FEBase> fe (FEBase::build(3, fe_type));
-    
-   // A 2nd order Gauss quadrature rule for numerical integration.
-   QGauss qrule (3, FIRST);
- 
-   // Tell the finite element object to use our quadrature rule.
-   fe->attach_quadrature_rule (&qrule);
-     
-   MeshBase::const_element_iterator el= mesh.elements_begin();
-   const MeshBase::const_element_iterator end_el =  mesh.elements_end();
-   for ( ; el != end_el; ++el){
-      const Elem* elem = *el;
-       
-      // Get the degree of freedom indices for the
-      // current element.  These define where in the global
-      // matrix and right-hand-side this element will
-      // contribute to.
-      dof_map.dof_indices (elem, dof_indices);
-
-      // The mesh contains both finite and infinite elements.  These
-      // elements are handled through different classes, namely
-      // \p FE and \p InfFE, respectively.  However, since both
-      // are derived from \p FEBase, they share the same interface,
-      // and overall burden of coding is @e greatly reduced through
-      // using a pointer, which is adjusted appropriately to the
-      // current element type.
-      FEBase * cfe = libmesh_nullptr;
-
-      if (not elem->infinite()){
-         cfe = fe.get();
-         // This is a conventional finite element.  Let \p fe handle it.
-         Fe.resize (dof_indices.size());
-         pot.rhs->add_vector (Fe, dof_indices);
-        } // if not (elem->infinite())
-   } // end loop over elements
-
    {
       MeshBase::const_node_iterator           nd = mesh.local_nodes_begin();
       const MeshBase::const_node_iterator nd_end = mesh.local_nodes_end();
@@ -376,7 +326,7 @@ void GetPotential(ESP& esp, EquationSystems& equation_systems){
       for (; nd != nd_end; ++nd)
         {
         // this may work, if the elements are not renumbered already.
-         pot.rhs->set (dn, esp.potential[dn]);
+         pot.solution->set (dn, esp.potential[dn]);
          dn++;
         }
    }
@@ -436,9 +386,11 @@ int main (int argc, char** argv){
    pot.add_variable("p", fe_type);
    // Initialize the data structures for the equation system.
    equation_systems.init();
-
+   equation_systems.print_info();
+  
    GetPotential(esp,equation_systems);
    mesh.write("foobar.e");
+   ExodusII_IO (mesh).write_equation_systems( "system.e", equation_systems);
    // for checking, if everything worked,
    // try to reconstruct K_esp.grid, just using the mesh:
    writeESP(equation_systems);
