@@ -19,6 +19,7 @@
 #include "libmesh/condensed_eigen_system.h"
 #include "libmesh/fe_interface.h" // for dirichlet boundary conditions
 #include "libmesh/error_vector.h" // for dirichlet boundary conditions
+#include "libmesh/explicit_system.h"
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
@@ -42,6 +43,9 @@ void assemble_InfFullSE(libMesh::EquationSystems & es, const std::string & syste
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
 // void tetrahedralise_sphere(mesh, const libMesh::Parallel::Communicator& comm);
 void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry);
+
+// function to read the potential from file and create an equation system for it.
+EquationSystems & InsertPot(std::string, const Parallel::Communicator& );
 
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
@@ -100,7 +104,7 @@ int main (int argc, char** argv){
    //MeshTools::Generation::build_cube (mesh, 20, 20, 20, -20., 20., -20., 20., -20., 20., PRISM6);
    //MeshTools::Generation::build_cube (mesh, 1, 1, 1, -2., 2., -2., 2., -2., 2., PRISM6);
    if (mesh_geom=="sphere"){
-      MeshTools::Generation::build_sphere(mesh, 2., 2, HEX8, 2, true);
+      MeshTools::Generation::build_sphere(mesh, 7., 3, HEX8, 2, true);
       out<<"sphere"<<std::endl;}
    else if (mesh_geom=="box"){
       MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
@@ -108,6 +112,9 @@ int main (int argc, char** argv){
    else if (mesh_geom=="own"){
       std::vector<Point> geometry;
       geometry=getGeometry(cl);
+      std::string pot_file=cl("mesh_file", "none");
+      
+      EquationSystems& pot_system=InsertPot(pot_file, mesh.comm());
       
       // the function below creates a mesh using the molecular structure.
       tetrahedralise_sphere(mesh, geometry);
@@ -222,11 +229,11 @@ int main (int argc, char** argv){
    equation_systems.print_info();
 
     // add boundary conditions if not infinite elements used. In the latter case ...
-   //if (not infel){
+   if (not infel){
       std::set<unsigned int> dirichlet_dof_ids;
       get_dirichlet_dofs(equation_systems, "EigenSE" ,dirichlet_dof_ids);
       eigen_system.initialize_condensed_dofs(dirichlet_dof_ids);
-   //}
+   }
    // Solve the system "Eigensystem".
    eigen_system.solve();
 

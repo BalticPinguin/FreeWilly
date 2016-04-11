@@ -8,11 +8,10 @@ LIBMESH_DIR ?= /home/tm162/bin/libmesh/my_libmesh
 include $(LIBMESH_DIR)/Make.common
 
 #target	   := ./InSpect-$(METHOD)
-#target	   := ./test-$(METHOD)
 target	   := ./FrWll-$(METHOD)
 #target	   := ./Mesh-$(METHOD)
 #target	   := ./misc-$(METHOD)
-target	   := ./test-$(METHOD)
+#target	   := ./test-$(METHOD)
 
 ###############################################################################
 # File management.  This is where the source, header, and object files are
@@ -20,12 +19,11 @@ target	   := ./test-$(METHOD)
 
 #srcfiles	:= FreeWilly.C assembles.C
 #srcfiles	:= eigenproblems_ex3.C
-#srcfiles	:= InSpectOR.C
 #srcfiles	:= FreeWilly.C
 #srcfiles	:= eigenproblems_ex3.C
 #srcfiles	:= InspectOR.C assembles.C
 #srcfiles	:= FreeWilly.C assembles.C Mesh.C FreeWilly.h assembles.h Mesh.h
-srcfiles	:= FreeWilly.C assembles.C Mesh.C
+srcfiles	:= FreeWilly.C assembles.C Mesh.C potential.C
 #srcfiles	:= misc1.C
 #srcfiles	:= Mesh.C
 
