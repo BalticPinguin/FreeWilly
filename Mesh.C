@@ -67,8 +67,8 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry){
    // Find neighbors, etc in preparation for writing out the Mesh
    mesh.prepare_for_use();
    
-   // Finally, write out the result
-   mesh.write("sphere_3D.e");
+   // Finally, write out the result --> is done in main already.
+   //mesh.write("sphere_3D.e");
    #else
    // Avoid compiler warnings
    libmesh_ignore(mesh.comm);

@@ -44,9 +44,6 @@ void assemble_InfFullSE(libMesh::EquationSystems & es, const std::string & syste
 // void tetrahedralise_sphere(mesh, const libMesh::Parallel::Communicator& comm);
 void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry);
 
-// function to read the potential from file and create an equation system for it.
-EquationSystems & InsertPot(std::string, const Parallel::Communicator& );
-
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
    LibMeshInit init (argc, argv);
@@ -112,12 +109,10 @@ int main (int argc, char** argv){
    else if (mesh_geom=="own"){
       std::vector<Point> geometry;
       geometry=getGeometry(cl);
-      std::string pot_file=cl("mesh_file", "none");
-      
-      EquationSystems& pot_system=InsertPot(pot_file, mesh.comm());
-      
       // the function below creates a mesh using the molecular structure.
       tetrahedralise_sphere(mesh, geometry);
+      std::string pot_file=cl("mesh_file", "none");
+      assert(pot_file!="none");
    }
    else
       libmesh_error_msg("\nUnknown geometry of the finite element region.\n");
@@ -127,7 +122,7 @@ int main (int argc, char** argv){
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
-   ExodusII_IO (mesh).write("orig_mesh.e");
+   ExodusII_IO (mesh).write("Molec_Mesh.e");
    if (infel){
       InfElemBuilder builder(mesh);
       builder.build_inf_elem(true);
@@ -156,8 +151,16 @@ int main (int argc, char** argv){
    // Create a EigenSystem named "Eigensystem" and (for convenience)
    // use a reference to the system we create.
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
-   //EigenSystem & eigen_system = equation_systems.add_system<EigenSystem> ("EigenSE");
 
+   equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
+   if (mesh_geom=="own"){
+      // can I set a parameter to a MeshFunction object? seemingly not!
+      std::string pot_file=cl("mesh_file", "none");
+      equation_systems.parameters.set<std::string>("potential")=pot_file;
+      //out<<pot_file<<std::endl;
+   }
+   else
+      equation_systems.parameters.set<std::string>("potential")=cl("pot","coul");
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
@@ -182,9 +185,6 @@ int main (int argc, char** argv){
    // ncv >= nev must hold and ncv >= 2*nev is recommended.
    equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
-
-   // set the potential
-   equation_systems.parameters.set<std::string>("potential")= cl("pot", "none");
 
    // set energy-offset
    equation_systems.parameters.set<Number>("offset")= cl("Energy", 0.0);
@@ -253,7 +253,7 @@ int main (int argc, char** argv){
           }
           else{
              //eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
-             eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf2.e" ;
+             eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
              //eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
           }
           ExodusII_IO (mesh).write_equation_systems ( eigenvector_output_name.str(), equation_systems);

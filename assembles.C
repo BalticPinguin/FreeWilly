@@ -22,10 +22,15 @@
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
 #include <complex.h> // the infinite element version requires complex numbers explicitly.
-
+#include "libmesh/mesh_function.h"
+#include "libmesh/explicit_system.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
+
+// function to read the potential from file and create an equation system for it.
+MeshFunction & ProjectPot(const MeshBase&, EquationSystems &);
+EquationSystems & InsertPot(std::string potfile, Mesh&, EquationSystems &);
 
 double Harm(Real x, Real y, Real z){
    const Real x0=0.0;
@@ -71,7 +76,24 @@ void assemble_EigenSE(EquationSystems & es, const std::string & system_name){
    //EigenSystem & eigen_system = es.get_system<EigenSystem> (system_name);
    CondensedEigenSystem & eigen_system = es.get_system<CondensedEigenSystem> (system_name);
       
+   const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & Pot = es.parameters.get<std::string>("potential");
+   //out<<Pot<<std::endl;
+   //if (mesh_origin=="own") {
+      Mesh pot_mesh(mesh.comm(), 3);
+      EquationSystems equation_systems(pot_mesh);
+
+      EquationSystems& esp_system=InsertPot(Pot, pot_mesh, equation_systems);
+
+      //MeshFunction & potential= ProjectPot(mesh, pot_system);
+      // do it in here; might help!?
+      ExplicitSystem & esp = esp_system.get_system<ExplicitSystem> ("esp");
+      //const MeshBase& pot_mesh = pot_system.get_mesh();
+      //NumericVector<Number>* pot_rhs= pot.rhs;
+      MeshFunction potential(esp_system, * esp.rhs, esp.get_dof_map(), 0);
+      potential.init();
+      potential.enable_out_of_mesh_mode(0.);
+   //}
    Number E = es.parameters.get<Number>("offset");
    // Get a constant reference to the Finite Element type
    // for the first (and only) variable in the system.
@@ -99,7 +121,7 @@ void assemble_EigenSE(EquationSystems & es, const std::string & system_name){
    // The element shape functions evaluated at the quadrature points.
    const std::vector<std::vector<Real> >& phi = fe->get_phi();
    const std::vector<std::vector<RealGradient> >& dphi = fe->get_dphi();
-   const std::vector<Point>& q_point = fe->get_xyz();
+   const std::vector<Point> q_point = fe->get_xyz();
       
    libMesh::Number co0_5= 0.5;
    
@@ -125,7 +147,7 @@ void assemble_EigenSE(EquationSystems & es, const std::string & system_name){
    MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
    const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
       
-   Real pot=0;
+   Number pot=0;
          
    for ( ; el != end_el; ++el){
       // Store a pointer to the element we are currently
@@ -160,25 +182,26 @@ void assemble_EigenSE(EquationSystems & es, const std::string & system_name){
       // a double loop to integrate the test funcions (i) against
       // the trial functions (j).
       for (unsigned int qp=0; qp<qrule.n_points(); qp++){
-        if (Pot == "harm"){
-		pot=Harm(q_point[qp](0), q_point[qp](1), q_point[qp](2));
-	}
-        else if (Pot == "coul"){
-		pot=Coul(q_point[qp](0), q_point[qp](1), q_point[qp](2));
-	}
-        else if (Pot == "morse"){
-		pot=Morse(q_point[qp](0), q_point[qp](1), q_point[qp](2));
-	}
-	else{
-		pot=0;
-        }
-        //const Real pot=V(q_point[qp](0), q_point[qp](1), q_point[qp](2));
-        for (unsigned int i=0; i<phi.size(); i++){
-          for (unsigned int j=0; j<phi.size(); j++){
+         if (mesh_origin=="own") {
+            pot=potential(q_point[qp]); //doesn't accept easier call.
+         }
+         else{
+            if (Pot == "harm")
+               pot=Harm(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+            else if (Pot == "coul")
+               pot=Coul(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+            else if (Pot == "morse")
+               pot=Morse(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+            else
+               pot=0;
+         }
+         //const Real pot=V(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+         for (unsigned int i=0; i<phi.size(); i++){
+            for (unsigned int j=0; j<phi.size(); j++){
             Se(i,j) += JxW[qp]*(phi[i][qp]*phi[j][qp]);
             H(i,j)  += JxW[qp]*(co0_5*(dphi[i][qp]*dphi[j][qp]) +(pot- E)*phi[i][qp]*phi[j][qp]);
-          }
-        }
+            }
+         }
       }
 
       // On an unrefined mesh, constrain_element_matrix does
@@ -286,8 +309,20 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       
    // Get a reference to our system.
    CondensedEigenSystem & eigen_system = es.get_system<CondensedEigenSystem> (system_name);
-      
+
+   const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & Pot = es.parameters.get<std::string>("potential");
+   //if (mesh_origin=="own") {
+      Mesh pot_mesh(mesh.comm(), 3);
+      EquationSystems equation_systems(pot_mesh);
+
+      EquationSystems& esp_system=InsertPot(Pot, pot_mesh, equation_systems);
+      ExplicitSystem & esp = esp_system.get_system<ExplicitSystem> ("esp");
+      MeshFunction potential(esp_system, * esp.rhs, esp.get_dof_map(), 0);
+      potential.init();
+      potential.enable_out_of_mesh_mode(0.);
+   //}
+      
    Number E = es.parameters.get<Number>("offset");
    // Get a constant reference to the Finite Element type
    // for the first (and only) variable in the system.
@@ -345,7 +380,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    MeshBase::const_element_iterator       el  = mesh.active_local_elements_begin();
    const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
       
-   Real pot=0;
+   Number pot=0;
       
    for ( ; el != end_el; ++el){
       // Store a pointer to the element we are currently
@@ -400,27 +435,24 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       Se.resize (dof_indices.size(), dof_indices.size());
       H.resize (dof_indices.size(), dof_indices.size());
 
-      //out<<"index size: "<<dof_indices.size()<<std::endl;
-   
       // Now loop over the quadrature points.  This handles
       // the numeric integration.
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
-         //if (elem->infinite()){
-         //   std::cout<<q_point[qp](0)<<"  ";
-         //   std::cout<<q_point[qp](1)<<"  ";
-         //   std::cout<<q_point[qp](2)<<"  ";
-         //   std::cout<<dphase[qp]<<"  "<<weight[qp]<<std::endl;
-         //}
-         if (Pot == "harm")
-            pot=Harm(q_point[qp](0), q_point[qp](1), q_point[qp](2));
-         else if (Pot == "coul")
-            pot=Coul(q_point[qp](0), q_point[qp](1), q_point[qp](2));
-         else if (Pot == "morse")
-            pot=Morse(q_point[qp](0), q_point[qp](1), q_point[qp](2));
-         else
-            pot=0;
+         if (mesh_origin=="own") {
+            pot=potential(q_point[qp]); //doesn't accept easier call.
+         }
+         else{
+            if (Pot == "harm")
+               pot=Harm(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+            else if (Pot == "coul")
+               pot=Coul(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+            else if (Pot == "morse")
+               pot=Morse(q_point[qp](0), q_point[qp](1), q_point[qp](2));
+            else
+               pot=0;
+         }
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();
          // loop over it:
