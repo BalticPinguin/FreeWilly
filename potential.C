@@ -392,6 +392,20 @@ unsigned int findIndex(Point q_point, unsigned int  guessind, ESP& esp){
    }
    return guessind;
 }
+         
+double interpolate(ESP& esp, unsigned int dn, Point qp){
+   double pot=esp.potential[dn]/(qp - esp.node[dn]).norm_sq();
+   double norm=1/(qp - esp.node[dn]).norm_sq();
+ // // a) weighted mean value:
+ //  for(unsigned int i=0; i<esp.neighbour[dn].size(); i++){
+ //     //-> interpolate using some interpolation formula:
+ //     pot+=esp.potential[esp.neighbour[dn][i]]/(qp - esp.node[esp.neighbour[dn][i]]).norm_sq();
+ //     norm+=1/(qp - esp.node[esp.neighbour[dn][i]]).norm_sq();
+ //  }
+ // // b) linear interpolation
+ // // c) 1/r interpolation!?
+   return pot/norm;
+}
 
 void GetPotential2(ESP& esp, EquationSystems& equation_systems){
    const MeshBase& mesh = equation_systems.get_mesh();
@@ -428,6 +442,7 @@ void GetPotential2(ESP& esp, EquationSystems& equation_systems){
    inf_fe->attach_quadrature_rule (&qrule);
    
    unsigned int dn;
+   double espot;
 
    MeshBase::const_element_iterator el= mesh.elements_begin();
    const MeshBase::const_element_iterator end_el =  mesh.elements_end();
@@ -454,11 +469,14 @@ void GetPotential2(ESP& esp, EquationSystems& equation_systems){
       for (unsigned int qp=0; qp<max_qp; qp++){
 
          unsigned int n_sf = cfe->n_shape_functions();
+         dn=findIndex(q_point[qp], dn+1, esp);
+         espot=interpolate(esp, dn, q_point[qp]);
          for (unsigned int i=0; i<n_sf; i++){
             //dn=findIndex(q_point[qp], dof_indices[i], esp);
-            dn=findIndex(q_point[qp], dn, esp);
-            pot.rhs->set(dof_indices[i], esp.potential[dn]);
-            pot.solution->set(dof_indices[i], esp.potential[dn]);
+            //pot.rhs->set(dof_indices[i], esp.potential[dn]);
+            //pot.solution->set(dof_indices[i], esp.potential[dn]);
+            pot.rhs->set(dof_indices[i], espot);
+            pot.solution->set(dof_indices[i], espot);
          }
       }
    }
@@ -519,6 +537,74 @@ void writeESP(EquationSystems & equation_systems){
    }
 }
 
+void writeESP2(EquationSystems & equation_systems){
+   const MeshBase& mesh = equation_systems.get_mesh();
+
+   // create an explicit system to load the solution into:
+   ExplicitSystem & pot = equation_systems.get_system<ExplicitSystem> ("esp");
+   
+   MeshBase::const_node_iterator           nd = mesh.nodes_begin();
+   const MeshBase::const_node_iterator nd_end = mesh.nodes_end();
+   DofMap& dof_map=pot.get_dof_map();
+
+   // This vector will hold the degree of freedom indices for
+   // the element.  These define where in the global system
+   // the element degrees of freedom get mapped.
+   std::vector<dof_id_type> dof_indices;
+   
+   // Get a constant reference to the Finite Element type
+   // for the first (and only) variable in the system.
+   FEType fe_type = pot.get_dof_map().variable_type(0);
+      
+   // Build a Finite Element object of the specified type.  Since the
+   // \p FEBase::build() member dynamically creates memory we will
+   // store the object as an \p UniquePtr<FEBase>.  This can be thought
+   // of as a pointer that will clean up after itself.
+   UniquePtr<FEBase> fe (FEBase::build(3, fe_type));  // here, try AutoPtr instead...
+   UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(3, fe_type));
+   
+   // A  Gauss quadrature rule for numerical integration.
+   // Use the default quadrature order.
+   QGauss qrule (3, fe_type.default_quadrature_order());
+      
+   // Tell the finite element object to use our quadrature rule.
+   fe->attach_quadrature_rule (&qrule);
+   inf_fe->attach_quadrature_rule (&qrule);
+
+   MeshBase::const_element_iterator el= mesh.elements_begin();
+   const MeshBase::const_element_iterator end_el =  mesh.elements_end();
+      
+   for ( ; el != end_el; ++el){
+      const Elem* elem = *el;
+      
+      dof_map.dof_indices (elem, dof_indices);
+      
+      // unifyging finite and infinite elements
+      FEBase * cfe = libmesh_nullptr;
+
+      if (elem->infinite()){
+         cfe = inf_fe.get();
+      }
+      else{
+        cfe = fe.get();
+      }
+
+      const std::vector<Point>& q_point = cfe->get_xyz();
+      cfe->reinit (elem);
+
+      unsigned int max_qp = cfe->n_quadrature_points();
+      for (unsigned int qp=0; qp<max_qp; qp++){
+
+         unsigned int n_sf = cfe->n_shape_functions();
+         for (unsigned int i=0; i<n_sf; i++){
+            out<<dof_indices[i]<<"   ";
+            out<<q_point[qp]<<"   ";
+            out<<pot.rhs->operator()(dof_indices[i])<<std::endl;
+         }
+      }
+   }
+}
+
 EquationSystems & InsertPot(std::string potfile, Mesh& pot_mesh, EquationSystems & equation_systems){
    struct ESP esp;
    Read(esp, potfile);
@@ -546,5 +632,6 @@ EquationSystems & InsertPot(std::string potfile, Mesh& pot_mesh, EquationSystems
    // for checking, if everything worked,
    // try to reconstruct K_esp.grid, just using the pot_mesh:
    //writeESP(equation_systems);
+   writeESP2(equation_systems);
    return equation_systems;
 }

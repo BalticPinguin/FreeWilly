@@ -36,12 +36,12 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry){
    // 4.) A vector of hole points is created.
    // 5.) The domain is tetrahedralized, the mesh is written out, etc.
    
-   libMesh::Real r=2.;
+   libMesh::Real r=4.;
    
    // Lower and Upper bounding box limits for a rectangular hole within the unit cube.
    
    // 2.) Generate elements comprising the outer boundary of the domain.
-   add_sphere_convex_hull_to_mesh(mesh, r, 3, geometry);
+   add_sphere_convex_hull_to_mesh(mesh, r, 4, geometry);
    
    // 3.) Update neighbor information so that TetGen can verify there is a convex hull.
    //mesh.find_neighbors();
@@ -54,7 +54,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry){
    // The volume constraint determines the max-allowed tetrahedral
    // volume in the Mesh.  TetGen will split cells which are larger than
    // this size
-   Real volume_constraint = 0.1; 
+   Real volume_constraint = 0.05; 
    
    // Construct the Delaunay tetrahedralization
    TetGenMeshInterface t(mesh);
@@ -83,7 +83,7 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real radius, unsign
       out<<"You must enable adaptive mesh refinement for this to be working."<<std::endl;
    #endif
    // I don't know, what the last two arguments stand for.
-   MeshTools::Generation::build_sphere(sphere_mesh, radius, points_on_sphere, HEX8, 2, true);
+   MeshTools::Generation::build_sphere(sphere_mesh, radius, points_on_sphere, HEX8, 4, true);
    
    // The pointset_convexhull() algorithm will ignore the Hex8s
    // in the Mesh, and just construct the triangulation
@@ -126,7 +126,7 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real radius, unsign
    // play with the following parameters:
    const double L=1.; // gives curvature: the larger L, the more straight line is obtained.
    const double r_max = 1.; // map to interval [0:r_max]
-   const int N= 3;
+   const int N= 1;
    double x, scale;
    // For each node in the map, insert it into the input mesh and copy it to all nuclear sites.
    // keep track of the ID assigned.
