@@ -36,6 +36,7 @@ std::vector<Point> getGeometry(GetPot cl);
 void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::set<unsigned int>&);
 void assemble_EigenSE(libMesh::EquationSystems& , const std::string&);
 void assemble_InfSE(libMesh::EquationSystems & es, const std::string & system_name);
+void assemble_ESP(EquationSystems & es, const std::string & system_name);
 // this one maybe will never work!?
 void assemble_InfFullSE(libMesh::EquationSystems & es, const std::string & system_name);
 
@@ -151,6 +152,8 @@ int main (int argc, char** argv){
    // Create a EigenSystem named "Eigensystem" and (for convenience)
    // use a reference to the system we create.
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
+   ExplicitSystem & ESP = equation_systems.add_system<ExplicitSystem> ("ESP");
+   //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
    if (mesh_geom=="own"){
@@ -166,7 +169,9 @@ int main (int argc, char** argv){
    // will be approximated using second-order approximation.
    //eigen_system.add_variable("phi", SECOND);
    eigen_system.add_variable("phi", FIRST);
-   
+   ESP.add_variable("esp", FIRST);
+   //DO.add_variable("do", FIRST);
+ 
    // Give the system a pointer to the matrix assembly
    // function defined below.
    if( infel ){
@@ -176,6 +181,8 @@ int main (int argc, char** argv){
      eigen_system.attach_assemble_function (assemble_InfSE);
      //eigen_system.attach_assemble_function (assemble_EigenSE);
    }
+   ESP.attach_assemble_function (assemble_ESP);
+   //DO.attach_assemble_function (assemble_DO);
    eigen_system.set_eigenproblem_type(GHEP);
    //eigen_system.set_eigenproblem_type(GNHEP);
    
@@ -192,7 +199,6 @@ int main (int argc, char** argv){
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
    //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI); // this is default
    //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS); // this is default
-   // other options: Power, Lapack, subscape, Arnoldi, Lanczoc, Krylovschur 
 
    const std::string spect = cl("spect","sm");
    if (spect=="sm"){
@@ -236,6 +242,7 @@ int main (int argc, char** argv){
    }
    // Solve the system "Eigensystem".
    eigen_system.solve();
+   ESP.solve();
 
    // Get the number of converged eigen pairs.
    unsigned int nconv = eigen_system.get_n_converged();

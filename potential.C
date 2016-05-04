@@ -15,6 +15,8 @@
 // for printing the equation system
 #include "libmesh/exodusII_io.h"
 
+#include <libmesh/mesh_function.h>
+
 using namespace libMesh;
 
 //function to read the data from file and feed a mesh with respective nodes. After this, a .rhs is taken and the values are added:
@@ -47,9 +49,11 @@ void Read(ESP& esp, std::string input_file){
    esp.potential.resize(esp.size+1);
    //for(std::string line; getline(esp_file, line); i++){
    for(unsigned int i=0; !esp_file.eof() ; i++){
-      esp_file >> x>>y>>z>>v;
+     esp_file >> x>>y>>z>>v;
       esp.node[i]=Point(x,y,z);
-      esp.potential[i]=v;
+      // the given potential seems to be the negative of the
+      // normal potential; at least the numbers of He+ are all positive...
+      esp.potential[i]=-v;
    }
    esp_file.close();
 }
@@ -68,7 +72,7 @@ void FindNeighbours(ESP& esp){
    esp.neighbour.resize(esp.size);
    // this will fail when the first two elements are not neighours.
    // I am quite sure this will never happen but this can cause trouble!
-   double THRESHOLD=0.00001;
+   double THRESHOLD=0.0001;
    double step=esp.node[1](0)-esp.node[0](0)+THRESHOLD; // add some tolerance
    for(unsigned int i=1; i<esp.size; i++){
       if(esp.node[i](0)-esp.node[i-1](0)<=step && esp.node[i](0)-esp.node[i-1](0)> 0){
@@ -215,7 +219,7 @@ void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh){
    boundary_info.nodeset_name(5) = "front";
 
    //find all elements that are left bottom front corner of a HEX-element
-   double THRESHOLD=0.00001;
+   double THRESHOLD=0.0001;
    double step=esp.node[1](0)-esp.node[0](0)+THRESHOLD; // add some tolerance
    std::vector<unsigned int> span;
    esp.used.resize(esp.size);
@@ -315,7 +319,7 @@ void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh){
    }
 }
 
-void GetPotential(ESP& esp, EquationSystems& equation_systems){
+void GetPotential1(ESP& esp, EquationSystems& equation_systems){
    const MeshBase& mesh = equation_systems.get_mesh();
 
    // create an explicit system to load the solution into:
@@ -326,18 +330,169 @@ void GetPotential(ESP& esp, EquationSystems& equation_systems){
    unsigned int dn=0;
    for (; nd != nd_end; ++nd)
      {
-      const Node & node = **nd;
-      out<< node(0)<<"   ";
-      out<< node(1)<<"   ";
-      out<< node(2)<<"         \t ";
-      out<< esp.node[dn](0)<<"   ";
-      out<< esp.node[dn](1)<<"   ";
-      out<< esp.node[dn](2)<<std::endl;
 
+      if (dn >=pot.rhs->size()){
+         out<<"error with the sizes"<<std::endl;
+         break;
+      }
       //this may work, if the elements are not renumbered already.
+      pot.rhs->set(dn, esp.potential[dn]);
       pot.solution->set(dn, esp.potential[dn]);
       dn++;
      }
+}
+
+unsigned int minind(Point q_point, ESP& esp, unsigned int guessind){
+   int mini=-20;
+   Real dist=(q_point-esp.node[guessind]).norm_sq();
+   //out<<" ._.  "<<dist<<std::endl;
+   Real distTest;
+   for(unsigned int i=0; i<esp.neighbour[guessind].size(); i++){
+      distTest=(q_point - esp.node[esp.neighbour[guessind][i]]).norm_sq();
+      //out<<" ...  "<<distTest<<std::endl;
+      if (distTest< dist){
+         dist=distTest;
+         mini=esp.neighbour[guessind][i];
+      }
+   }
+   //out<<" ._.  "<<dist<<std::endl;
+   if (mini> -10)
+      return mini;
+   else
+      return guessind;
+}
+
+unsigned int findIndex(Point q_point, unsigned int  guessind, ESP& esp){
+   unsigned int oldguess=guessind+2;
+   //out<<" ->   "<<guessind<<std::endl;
+   //while (!q_point.absolute_fuzzy_equals(esp.node[guessind], 0.005)){ //--> deltax + deltay + deltaz < tolerance.
+   int  plus=0;
+   //while ((q_point - esp.node[guessind]).norm_sq() > 0.005){
+   while ((q_point - esp.node[guessind]).norm_sq() > 0.03571*0.866025){ // 0.03571 is the square of distance between NN
+      oldguess=guessind;
+      guessind=minind(q_point, esp, guessind);
+      //if I didn't make progress, try to start at an other point:
+      if(guessind==oldguess){
+         if (plus==0){
+            guessind-=2; // just lets try this!
+            plus=1;
+         }
+         else if (plus==1){
+            guessind+=2; // just lets try this!
+            plus=2;
+         }
+         else{
+            // I have no solution to this problem.
+            out<<"stuck in loop!   ";
+            out<<guessind<<"  "<<q_point;
+            out<<"   "<<(q_point - esp.node[guessind]).norm_sq()<<std::endl;
+            break;
+         }
+      }
+   }
+   return guessind;
+}
+
+void GetPotential2(ESP& esp, EquationSystems& equation_systems){
+   const MeshBase& mesh = equation_systems.get_mesh();
+
+   // create an explicit system to load the solution into:
+   ExplicitSystem & pot = equation_systems.get_system<ExplicitSystem> ("esp");
+   
+   MeshBase::const_node_iterator           nd = mesh.nodes_begin();
+   const MeshBase::const_node_iterator nd_end = mesh.nodes_end();
+   DofMap& dof_map=pot.get_dof_map();
+
+   // This vector will hold the degree of freedom indices for
+   // the element.  These define where in the global system
+   // the element degrees of freedom get mapped.
+   std::vector<dof_id_type> dof_indices;
+   
+   // Get a constant reference to the Finite Element type
+   // for the first (and only) variable in the system.
+   FEType fe_type = pot.get_dof_map().variable_type(0);
+      
+   // Build a Finite Element object of the specified type.  Since the
+   // \p FEBase::build() member dynamically creates memory we will
+   // store the object as an \p UniquePtr<FEBase>.  This can be thought
+   // of as a pointer that will clean up after itself.
+   UniquePtr<FEBase> fe (FEBase::build(3, fe_type));  // here, try AutoPtr instead...
+   UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(3, fe_type));
+   
+   // A  Gauss quadrature rule for numerical integration.
+   // Use the default quadrature order.
+   QGauss qrule (3, fe_type.default_quadrature_order());
+      
+   // Tell the finite element object to use our quadrature rule.
+   fe->attach_quadrature_rule (&qrule);
+   inf_fe->attach_quadrature_rule (&qrule);
+   
+   unsigned int dn;
+
+   MeshBase::const_element_iterator el= mesh.elements_begin();
+   const MeshBase::const_element_iterator end_el =  mesh.elements_end();
+      
+   for ( ; el != end_el; ++el){
+      const Elem* elem = *el;
+      
+      dof_map.dof_indices (elem, dof_indices);
+      
+      // unifyging finite and infinite elements
+      FEBase * cfe = libmesh_nullptr;
+
+      if (elem->infinite()){
+         cfe = inf_fe.get();
+      }
+      else{
+        cfe = fe.get();
+      }
+      
+      const std::vector<Point>& q_point = cfe->get_xyz();
+      cfe->reinit (elem);
+
+      unsigned int max_qp = cfe->n_quadrature_points();
+      for (unsigned int qp=0; qp<max_qp; qp++){
+
+         unsigned int n_sf = cfe->n_shape_functions();
+         for (unsigned int i=0; i<n_sf; i++){
+            //dn=findIndex(q_point[qp], dof_indices[i], esp);
+            dn=findIndex(q_point[qp], dn, esp);
+            pot.rhs->set(dof_indices[i], esp.potential[dn]);
+            pot.solution->set(dof_indices[i], esp.potential[dn]);
+         }
+      }
+   }
+}
+
+void GetPotential3(ESP& esp, EquationSystems& equation_systems){
+   const MeshBase& mesh = equation_systems.get_mesh();
+
+   // create an explicit system to load the solution into:
+   ExplicitSystem & pot = equation_systems.get_system<ExplicitSystem> ("esp");
+   
+   MeshBase::const_node_iterator           nd = mesh.nodes_begin();
+   const MeshBase::const_node_iterator nd_end = mesh.nodes_end();
+   DofMap& dofs=pot.get_dof_map();
+   out<<mesh.n_nodes()<<"   "<<esp.size<<"    "<<pot.rhs->size()<<std::endl;
+   out<<dofs.n_dofs()<<std::endl;
+   MeshBase::const_element_iterator el= mesh.elements_begin();
+   const MeshBase::const_element_iterator end_el =  mesh.elements_end();
+   //bool same;
+   std::vector<dof_id_type> id;
+   for ( ; el != end_el; ++el){
+      const Elem* elem = *el;
+      dofs.dof_indices(elem, id);
+      for (unsigned int i=0; i<id.size(); i++){
+         //Node* node=elem->get_node(i);
+         //same=node->relative_fuzzy_equals(esp.node[id[i]], 0.001);
+         //if (same){
+         pot.rhs->set(id[i], esp.potential[id[i]]);
+         pot.solution->set(id[i], esp.potential[id[i]]);
+         //}
+         //else
+         //   out<<"error finding the correct node"<<std::endl;
+      }
+   }
 }
 
 void writeESP(EquationSystems & equation_systems){
@@ -364,21 +519,15 @@ void writeESP(EquationSystems & equation_systems){
    }
 }
 
-EquationSystems & InsertPot(std::string potfile, const Parallel::Communicator& comm){
+EquationSystems & InsertPot(std::string potfile, Mesh& pot_mesh, EquationSystems & equation_systems){
    struct ESP esp;
    Read(esp, potfile);
-   //Read(esp, "K_esp.grid");
-   //Read(esp, "H2O.grid");
-   //Read(esp, "test_pot2.grid");
    FindNeighbours(esp);
-   Mesh pot_mesh(comm, 3);
    MakeMesh(esp, pot_mesh);
 
    // find neighbours and other things:
    pot_mesh.prepare_for_use(true, false);
-   EquationSystems equation_systems (pot_mesh);
    // create an explicit system to load the solution into:
-   //ExplicitSystem & pot = equation_systems.add_system<ExplicitSystem> ("esp");
    ExplicitSystem& pot = equation_systems.add_system<ExplicitSystem> ("esp");
 
    // Create an FEType describing the approximation
@@ -387,17 +536,15 @@ EquationSystems & InsertPot(std::string potfile, const Parallel::Communicator& c
    // sensible values.  But use \p FIRST order
    // approximation.
    FEType fe_type(FIRST);
-   pot.add_variable("p", fe_type);
+   pot.add_variable("potential", fe_type);
    // Initialize the data structures for the equation system.
    equation_systems.init();
    equation_systems.print_info();
   
-   GetPotential(esp,equation_systems);
-   ExodusII_IO (pot_mesh).write_equation_systems( "system2.e", equation_systems);
+   GetPotential2(esp,equation_systems);
+   ExodusII_IO (pot_mesh).write_equation_systems("potential.e", equation_systems);
    // for checking, if everything worked,
    // try to reconstruct K_esp.grid, just using the pot_mesh:
    //writeESP(equation_systems);
    return equation_systems;
 }
-
-// b potential2.C:59
