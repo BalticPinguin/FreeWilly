@@ -24,6 +24,9 @@
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
 #include <complex.h> // the infinite element version requires complex numbers explicitly.
+// for refinement:
+#include "libmesh/mesh_refinement.h"
+#include "libmesh/kelly_error_estimator.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -195,6 +198,8 @@ int main (int argc, char** argv){
 
    // set energy-offset
    equation_systems.parameters.set<Number>("offset")= cl("Energy", 0.0);
+
+   bool refinement=cl("refine", false);
    
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
    //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI); // this is default
@@ -231,6 +236,7 @@ int main (int argc, char** argv){
    // Initialize the data structures for the equation system.
    equation_systems.init();
 
+
    // Prints information about the system to the screen.
    equation_systems.print_info();
 
@@ -240,9 +246,43 @@ int main (int argc, char** argv){
       get_dirichlet_dofs(equation_systems, "EigenSE" ,dirichlet_dof_ids);
       eigen_system.initialize_condensed_dofs(dirichlet_dof_ids);
    }
+
    // Solve the system "Eigensystem".
-   eigen_system.solve();
-   ESP.solve();
+
+   //now, do refinement loop, if refinement is allowd:
+   if (refinement){
+      MeshRefinement mesh_refinement(mesh);
+      //refine and coarsen elements with errors in 30-ths percentile:
+      // in general: more coarsening than refinement!
+      mesh_refinement.refine_fraction()=0.75;
+      mesh_refinement.coarsen_fraction()=0.3;
+      // maximum number of refinements:
+      mesh_refinement.max_h_level()=7;
+      unsigned int r_max=7;
+      for(unsigned int r=0; r<=r_max; r++){
+         eigen_system.solve();
+         if (r<r_max){
+            ErrorVector error;
+            KellyErrorEstimator error_estimator;
+            error_estimator.estimate_error(eigen_system, error);
+            out<<"error estimate \n l2 norm="
+               <<error.l2_norm()
+               <<"\n maximum norm = "
+               <<error.maximum()
+               <<std::endl;
+            mesh_refinement.flag_elements_by_error_fraction(error);
+            equation_systems.reinit();
+         }
+      }
+      // reinitialise and estimate the esp-system
+      ESP.reinit();
+      ESP.solve();
+   }
+   else{
+      // else: simply solve the system
+      eigen_system.solve();
+      ESP.solve();
+   }
 
    // Get the number of converged eigen pairs.
    unsigned int nconv = eigen_system.get_n_converged();

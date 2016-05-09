@@ -36,7 +36,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry){
    // 4.) A vector of hole points is created.
    // 5.) The domain is tetrahedralized, the mesh is written out, etc.
    
-   libMesh::Real r=4.;
+   libMesh::Real r=10.;
    
    // Lower and Upper bounding box limits for a rectangular hole within the unit cube.
    
@@ -126,7 +126,7 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real radius, unsign
    // play with the following parameters:
    const double L=1.; // gives curvature: the larger L, the more straight line is obtained.
    const double r_max = 1.; // map to interval [0:r_max]
-   const int N= 1;
+   const int N= 3;
    double x, scale;
    // For each node in the map, insert it into the input mesh and copy it to all nuclear sites.
    // keep track of the ID assigned.
@@ -176,6 +176,94 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real radius, unsign
    #endif // LIBMESH_HAVE_TETGEN
 }
 
+vector<Node*> fibonacci(unsigend int points_on_sphere){
+   vector<Node*> points(points_on_sphere);
+   double x,y,z,r,phi;
+   double pi=3.1415926;
+   for (unsigned int i=0; i<points_on_sphere; i++}{
+      y=2*i/points_on_sphere-1;
+      r=sqrt(1-y*y);
+      phi=i*pi*(3-sqrt(5));
+      z=r*sin(phi);
+      x=r*cos(phi);
+      points[i]=Node*(x,y,z);
+   }
+   return points;
+}
+
+vector<Node*> archimedes(unsigend int points_on_sphere){
+   vector<Node*> points(points_on_sphere);
+   double n=sqrt(points_on_sphere);
+   double theta, phi;
+   for(int i=0; i<sqrt(points_on_sphere); i++){
+      theta=i/n;
+      for(int j=0; j<sqrt(points_on_sphere); j++){
+         phi=acos(2*j/n-1);
+         points[i]=Node*(cos(theta)*sin(phi),
+                   sin(theta)*sin(phi),cos(phi));
+      }
+   }
+   return points;
+}
+
+vector<Node*> spiral(unsigend int points_on_sphere){
+   vector<Node*> points(points_on_sphere);
+   double dl=pi*(3-sqrt(5));
+   double dz=2/points_on_sphere;
+   double z, l, r;
+   for(unsigend int i=0; i<points_on_sphere; i++){
+      z=1-dz/2*i;
+      l=i*dl;
+      r=sqrt(1-z*z);
+      points[i]=Node*(r*cos(l),r*sin(l),z);
+   }
+   return points;
+}
+
+void add_sphere_convex_hull_to_mesh2(MeshBase& mesh, libMesh::Real radius, unsigned int points_on_sphere, std::vector<Point> geometry){
+   #ifdef LIBMESH_HAVE_TETGEN
+   vector<Node*> nodes=fibonacci(points_on_sphere);
+   //vector<Node*> nodes=archimedes(points_on_sphere);
+   //vector<Node*> nodes=spiral(points_on_sphere);
+   // play with the following parameters:
+   const double L=1.; // gives curvature: the larger L, the more straight line is obtained.
+   const double r_max = radius.; // map to interval [0:r_max]
+   const int N= 3;
+   double x, scale;
+   // For each node in the map, insert it into the input mesh and copy it to all nuclear sites.
+   // keep track of the ID assigned.
+   unsigned int molsize=geometry.size();
+   //most outer loop: nuclear sites
+   for(unsigned int i=0; i<molsize; i++){
+      for (unsigned int it=0; it<nodes.size(); i++){
+         //scale the radius differently
+         for( unsigned int circle=0; circle<N; circle++){
+            // Pointer to node in the spherical mesh
+            Node* old_node = nodes[i];
+            x = (double)(2.*circle)/N - 1.;
+            scale = L*(1-x)/(1+x+2*L/r_max);
+            if (scale == 0.)
+               continue;
+            old_node->operator*=(scale);
+            old_node->add(geometry[i]);
+            if (i==closest(geometry,sphere_mesh.point(id))){
+               mesh.add_point( *old_node );
+            }
+            old_node->operator-= (geometry[i]);
+            old_node->operator/= (scale);
+         }
+         // else: ignore it and go on with next value.
+      }
+   }
+   // now, the point set is in mesh and we can call triangulate_pointset().
+   #else
+   // Avoid compiler warnings
+   libmesh_ignore(mesh);
+   libmesh_ignore(lower_limit);
+   libmesh_ignore(upper_limit);
+   #endif // LIBMESH_HAVE_TETGEN
+}
+
 unsigned int closest(std::vector<Point> geom, Point pt){
    unsigned int molsize=geom.size();
    //most outer loop: nuclear sites
@@ -190,13 +278,4 @@ unsigned int closest(std::vector<Point> geom, Point pt){
       }
    }
    return closest;
-}
-
-std::vector<Point> get_water(){
-   std::vector<Point> geom;
-   geom.resize(3);
-   geom[0]= Point(0.,0.,0.12);
-   geom[1]= Point(0.76263,0.,-0.4772);
-   geom[2]= Point(-0.76263,0.,-0.4772);
-   return geom;
 }
