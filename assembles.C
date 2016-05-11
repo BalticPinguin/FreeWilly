@@ -78,7 +78,7 @@ void assemble_EigenSE(EquationSystems & es, const std::string & system_name){
       
    const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & Pot = es.parameters.get<std::string>("potential");
-   //out<<Pot<<std::endl;
+   out<<Pot<<std::endl;
    //if (mesh_origin=="own") {
       Mesh pot_mesh(mesh.comm(), 3);
       EquationSystems equation_systems(pot_mesh);
@@ -312,16 +312,15 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & Pot = es.parameters.get<std::string>("potential");
-   //if (mesh_origin=="own") {
-      Mesh pot_mesh(mesh.comm(), 3);
-      EquationSystems equation_systems(pot_mesh);
 
-      EquationSystems& esp_system=InsertPot(Pot, pot_mesh, equation_systems);
-      ExplicitSystem & esp = esp_system.get_system<ExplicitSystem> ("esp");
-      MeshFunction potential(esp_system, * esp.rhs, esp.get_dof_map(), 0);
-      potential.init();
-      potential.enable_out_of_mesh_mode(0.);
-   //}
+   Mesh pot_mesh(mesh.comm(), 3);
+   EquationSystems equation_systems(pot_mesh);
+
+   EquationSystems& esp_system=InsertPot(Pot, pot_mesh, equation_systems);
+   ExplicitSystem & esp = esp_system.get_system<ExplicitSystem> ("esp");
+   MeshFunction potential(esp_system, * esp.rhs, esp.get_dof_map(), 0);
+   potential.init();
+   potential.enable_out_of_mesh_mode(0.);
       
    Number E = es.parameters.get<Number>("offset");
    // Get a constant reference to the Finite Element type
@@ -489,8 +488,10 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       // that are there to ensure non-singular matrices for linear
       // solves but which would generate positive non-physical
       // eigenvalues for eigensolves.
-      dof_map.constrain_element_matrix(Se, dof_indices, false);
-      dof_map.constrain_element_matrix(H, dof_indices, false);
+      //dof_map.constrain_element_matrix(Se, dof_indices, false);
+      dof_map.constrain_element_matrix(Se, dof_indices, true);
+      //dof_map.constrain_element_matrix(H, dof_indices, false);
+      dof_map.constrain_element_matrix(H, dof_indices, true);
       //dof_map.constrain_element_vector(ESP, dof_indices, false); --> would need to be converted to DenseVector. 
       //  Do not constrain so far
 

@@ -46,7 +46,7 @@ void assemble_InfFullSE(libMesh::EquationSystems & es, const std::string & syste
 //This in the tetrahedralisation of a sphere
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
 // void tetrahedralise_sphere(mesh, const libMesh::Parallel::Communicator& comm);
-void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry);
+void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator);
 
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
@@ -110,17 +110,14 @@ int main (int argc, char** argv){
    else if (mesh_geom=="box"){
       MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
       out<<"box"<<std::endl;}
-   else if (mesh_geom=="own"){
+   else{
       std::vector<Point> geometry;
       geometry=getGeometry(cl);
       // the function below creates a mesh using the molecular structure.
-      tetrahedralise_sphere(mesh, geometry);
+      tetrahedralise_sphere(mesh, geometry, mesh_geom);
       std::string pot_file=cl("mesh_file", "none");
       assert(pot_file!="none");
    }
-   else
-      libmesh_error_msg("\nUnknown geometry of the finite element region.\n");
-
    // Print information about the mesh to the screen.
    mesh.print_info();
 
@@ -159,14 +156,10 @@ int main (int argc, char** argv){
    //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
-   if (mesh_geom=="own"){
-      // can I set a parameter to a MeshFunction object? seemingly not!
-      std::string pot_file=cl("mesh_file", "none");
-      equation_systems.parameters.set<std::string>("potential")=pot_file;
-      //out<<pot_file<<std::endl;
-   }
-   else
-      equation_systems.parameters.set<std::string>("potential")=cl("pot","coul");
+
+   // be aware: it is pot file, not pot whale!
+   std::string pot_file=cl("mesh_file", "none");
+   equation_systems.parameters.set<std::string>("potential")=pot_file;
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
@@ -265,12 +258,12 @@ int main (int argc, char** argv){
             ErrorVector error;
             KellyErrorEstimator error_estimator;
             error_estimator.estimate_error(eigen_system, error);
+            mesh_refinement.flag_elements_by_error_fraction(error);
             out<<"error estimate \n l2 norm="
                <<error.l2_norm()
                <<"\n maximum norm = "
                <<error.maximum()
                <<std::endl;
-            mesh_refinement.flag_elements_by_error_fraction(error);
             equation_systems.reinit();
          }
       }
