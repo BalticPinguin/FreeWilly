@@ -35,7 +35,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, 
    if (creator=="own")
       add_sphere_convex_hull_to_mesh(mesh, r, 4, geometry);
    else
-      add_sphere_convex_hull_to_mesh2(mesh, r, 30, geometry, creator);
+      add_sphere_convex_hull_to_mesh2(mesh, r, 90, geometry, creator);
    
    // 3.) Update neighbor information so that TetGen can verify there is a convex hull.
    mesh.find_neighbors();
@@ -48,7 +48,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, 
    // The volume constraint determines the max-allowed tetrahedral
    // volume in the Mesh.  TetGen will split cells which are larger than
    // this size
-   Real volume_constraint = 0.05; 
+   Real volume_constraint = 0.5; 
    
    // Construct the Delaunay tetrahedralization
    TetGenMeshInterface t(mesh);
@@ -198,13 +198,14 @@ std::vector<Point> spiral(unsigned int points_on_sphere){
 
 void add_sphere_convex_hull_to_mesh2(MeshBase& mesh, libMesh::Real r_max, unsigned int points_on_sphere, std::vector<Point> geometry, std::string creator){
    #ifdef LIBMESH_HAVE_TETGEN
-   std::vector<Point> point(points_on_sphere); // this is a dummy to avoid compiler warnings.
+   std::vector<Point> point;
    if (creator=="fibonacci")
-      std::vector<Point> point=fibonacci(points_on_sphere);
+      point=fibonacci(points_on_sphere);
    else if (creator=="archimedes")
-      std::vector<Point> point=archimedes(points_on_sphere);
+      point=archimedes(points_on_sphere);
    else if (creator=="spiral")
-      std::vector<Point> point=spiral(points_on_sphere);
+      point=spiral(points_on_sphere);
+
    // play with the following parameters:
    const double L=1.2; // gives curvature: the larger L, the more straight line is obtained.
    const int N= 9;
@@ -218,15 +219,18 @@ void add_sphere_convex_hull_to_mesh2(MeshBase& mesh, libMesh::Real r_max, unsign
          //scale the radius differently
          for( unsigned int circle=0; circle<N; circle++){
             // Pointer to node in the spherical mesh
+            //out<<"   "<<point[it]<<std::endl;
             x = (double)(2.*circle)/N - 1.;
             scale = L*(1.-x)/(1.+x+2.*L/r_max);
             if (scale == 0.)
                continue;
+            //out<<"    "<<scale<<std::endl;
+            //out<<"    "<<geometry[i]<<std::endl;
             point[it]*=scale;
-            point[it].add(geometry[i]);
+            point[it]+=geometry[i];
             if (i==closest(geometry, point[it])){
                mesh.add_point( point[it] );
-               out<<point[it]<<std::endl;
+               //out<<point[it]<<std::endl;
             }
             point[it]-= geometry[i];
             point[it]/= scale;

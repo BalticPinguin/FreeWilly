@@ -318,7 +318,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    EquationSystems& esp_system=InsertPot(Pot, pot_mesh, equation_systems);
    ExplicitSystem & esp = esp_system.get_system<ExplicitSystem> ("esp");
-   MeshFunction potential(esp_system, * esp.rhs, esp.get_dof_map(), 0);
+   MeshFunction potential(esp_system, *esp.solution , esp.get_dof_map(), 0);
+   ExodusII_IO (pot_mesh).write_equation_systems("potential2.e", esp_system);
    potential.init();
    potential.enable_out_of_mesh_mode(0.);
       

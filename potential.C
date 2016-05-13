@@ -632,6 +632,6 @@ EquationSystems & InsertPot(std::string potfile, Mesh& pot_mesh, EquationSystems
    // for checking, if everything worked,
    // try to reconstruct K_esp.grid, just using the pot_mesh:
    //writeESP(equation_systems);
-   writeESP2(equation_systems);
+   //writeESP2(equation_systems);
    return equation_systems;
 }

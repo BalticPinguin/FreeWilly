@@ -1,8 +1,8 @@
 ######################################################################
 #
 # Template libMesh application Makefile
-LIBMESH_DIR ?= /home/tm162/bin/libmesh/my_libmesh
-#LIBMESH_DIR ?= /home/tm162/bin/libmesh/libmesh
+#LIBMESH_DIR ?= /home/tm162/bin/libmesh/my_libmesh
+LIBMESH_DIR ?= /home/tm162/bin/libmesh/libmesh
 
 
 # include the library options determined by configure
