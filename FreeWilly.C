@@ -43,7 +43,7 @@ void assemble_InfFullSE(libMesh::EquationSystems & es, const std::string & syste
 //This in the tetrahedralisation of a sphere
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
 // void tetrahedralise_sphere(mesh, const libMesh::Parallel::Communicator& comm);
-void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry);
+void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator);
 
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
@@ -111,7 +111,7 @@ int main (int argc, char** argv){
       std::vector<Point> geometry;
       geometry=getGeometry(cl);
       // the function below creates a mesh using the molecular structure.
-      tetrahedralise_sphere(mesh, geometry);
+      tetrahedralise_sphere(mesh, geometry, "fibonacci");
       std::string pot_file=cl("mesh_file", "none");
       assert(pot_file!="none");
    }
