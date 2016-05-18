@@ -35,7 +35,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, 
    if (creator=="own")
       add_sphere_convex_hull_to_mesh(mesh, r, 4, geometry);
    else
-      add_sphere_convex_hull_to_mesh2(mesh, r, 90, geometry, creator);
+      add_sphere_convex_hull_to_mesh2(mesh, r, 70, geometry, creator);
    
    // 3.) Update neighbor information so that TetGen can verify there is a convex hull.
    mesh.find_neighbors();
@@ -48,7 +48,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, 
    // The volume constraint determines the max-allowed tetrahedral
    // volume in the Mesh.  TetGen will split cells which are larger than
    // this size
-   Real volume_constraint = 0.5; 
+   Real volume_constraint = 5.; 
    
    // Construct the Delaunay tetrahedralization
    TetGenMeshInterface t(mesh);
@@ -210,14 +210,16 @@ void add_sphere_convex_hull_to_mesh2(MeshBase& mesh, libMesh::Real r_max, unsign
       point=spiral(points_on_sphere);
 
    // play with the following parameters:
-   const double L=1.2; // gives curvature: the larger L, the more straight line is obtained.
-   const int N= 9;
+   const double L=2.1; // gives curvature: the larger L, the more straight line is obtained.
+   const int N= 12;
    double x, scale;
    // For each point in the map, insert it into the input mesh and copy it to all nuclear sites.
    // keep track of the ID assigned.
    unsigned int molsize=geometry.size();
    //most outer loop: nuclear sites
    for(unsigned int i=0; i<molsize; i++){
+      // add one point each at the nuclear position:
+      mesh.add_point( geometry[i] );
       for (unsigned int it=0; it<point.size(); it++){
          //scale the radius differently
          for( unsigned int circle=0; circle<N; circle++){

@@ -116,7 +116,7 @@ int main (int argc, char** argv){
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
-   ExodusII_IO (mesh).write("Molec_Mesh.e");
+   ExodusII_IO (mesh).write("Molec_Mesh2.e");
    if (infel){
       InfElemBuilder builder(mesh);
       builder.build_inf_elem(true);
@@ -126,10 +126,10 @@ int main (int argc, char** argv){
       MeshBase::element_iterator       elem_it  = mesh.elements_begin();
       const MeshBase::element_iterator elem_end = mesh.elements_end();
       for (; elem_it != elem_end; ++elem_it){
-          Elem* elem = *elem_it;
-          if(elem->infinite()){
-              elem->subdomain_id() = 1;
-            }
+         Elem* elem = *elem_it;
+         if(elem->infinite()){
+            elem->subdomain_id() = 1;
+         }
       }
 
       // print info on new mesh
@@ -278,14 +278,10 @@ int main (int argc, char** argv){
           std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
           std::cout<<"energy of state "<<i<<" = "<<eigpair.first+equation_systems.parameters.set<Number>("offset")<<std::endl;
           std::ostringstream eigenvector_output_name;
-          if (infel){
+          if (infel)
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
-          }
-          else{
-             //eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
+          else
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
-             //eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
-          }
           ExodusII_IO (mesh).write_equation_systems ( eigenvector_output_name.str(), equation_systems);
           //eigenvector_output_name<< i <<"_err.e";
           //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
