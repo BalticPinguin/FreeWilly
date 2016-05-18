@@ -160,7 +160,7 @@ std::vector<Point> fibonacci(unsigned int points_on_sphere){
       z=r*sin(phi);
       x=r*cos(phi);
       points[i]=Node(x,y,z);
-      out<<points[i]<<std::endl;
+      //out<<points[i]<<std::endl;
    }
    //out<<std::endl<<std::endl;
    return points;

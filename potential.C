@@ -24,7 +24,7 @@ using namespace libMesh;
 struct ESP{
    // these vectors store the points and potential (at the points) as given.
    std::vector<Point> node;
-   std::vector<double> potential;
+   std::vector<Number> potential;
    // k-th node opens an element, if there are 7 elements with distance <=3^1/2*min_dist
    // whose components are >= the components of k-th node.
    std::vector<std::vector<unsigned int>> neighbour;
@@ -370,9 +370,9 @@ unsigned int findIndex(Point q_point, unsigned int  guessind, ESP& esp){
    return guessind;
 }
          
-double interpolate(ESP& esp, unsigned int dn, Point qp){
-   double pot=esp.potential[dn]/(qp - esp.node[dn]).norm_sq();
-   double norm=1/(qp - esp.node[dn]).norm_sq();
+Number interpolate(ESP& esp, unsigned int dn, Point qp){
+   Number pot=esp.potential[dn]/(qp - esp.node[dn]).norm_sq();
+   Real norm=1/(qp - esp.node[dn]).norm_sq();
  // // a) weighted mean value:
  //  for(unsigned int i=0; i<esp.neighbour[dn].size(); i++){
  //     //-> interpolate using some interpolation formula:
@@ -419,7 +419,7 @@ void GetPotential(ESP& esp, EquationSystems& equation_systems){
    inf_fe->attach_quadrature_rule (&qrule);
    
    unsigned int dn;
-   double espot;
+   Number espot;
 
    MeshBase::const_element_iterator el= mesh.elements_begin();
    const MeshBase::const_element_iterator end_el =  mesh.elements_end();
@@ -522,6 +522,36 @@ void writeESP(EquationSystems & equation_systems){
          }
       }
    }
+}
+
+EquationSystems & InsertPot1(std::string potfile, Mesh& pot_mesh, EquationSystems & equation_systems){
+   struct ESP esp;
+   Read(esp, potfile);
+   FindNeighbours(esp);
+   MakeMesh(esp, pot_mesh);
+
+   // find neighbours and other things:
+   pot_mesh.prepare_for_use(true, false);
+   // create an explicit system to load the solution into:
+   ExplicitSystem& pot = equation_systems.add_system<ExplicitSystem> ("esp");
+
+   // Create an FEType describing the approximation
+   // characteristics of the InfFE object.  Note that
+   // the constructor automatically defaults to some
+   // sensible values.  But use \p FIRST order
+   // approximation.
+   FEType fe_type(FIRST);
+   pot.add_variable("potential", fe_type);
+   // Initialize the data structures for the equation system.
+   equation_systems.init();
+   equation_systems.print_info();
+  
+   GetPotential(esp,equation_systems);
+   //ExodusII_IO (pot_mesh).write_equation_systems("potential.e", equation_systems);
+   // for checking, if everything worked,
+   // try to reconstruct K_esp.grid, just using the pot_mesh:
+   //writeESP(equation_systems);
+   return equation_systems;
 }
 
 EquationSystems & InsertPot(std::string potfile, Mesh& pot_mesh, EquationSystems & equation_systems){

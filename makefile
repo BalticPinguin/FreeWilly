@@ -24,7 +24,7 @@ target	   := ./FrWll-$(METHOD)
 #srcfiles	:= eigenproblems_ex3.C
 #srcfiles	:= InspectOR.C assembles.C
 #srcfiles	:= FreeWilly.C assembles.C Mesh.C FreeWilly.h assembles.h Mesh.h
-srcfiles	:= FreeWilly.C assembles.C Mesh.C potential.C
+srcfiles	:= FreeWilly.C assembles.C Mesh.C
 #srcfiles	:= misc1.C
 #srcfiles	:= Mesh.C
 
