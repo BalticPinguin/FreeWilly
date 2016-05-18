@@ -35,7 +35,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, 
    if (creator=="own")
       add_sphere_convex_hull_to_mesh(mesh, r, 4, geometry);
    else
-      add_sphere_convex_hull_to_mesh2(mesh, r, 90, geometry, creator);
+      add_sphere_convex_hull_to_mesh2(mesh, r, 70, geometry, creator);
    
    // 3.) Update neighbor information so that TetGen can verify there is a convex hull.
    mesh.find_neighbors();
@@ -48,7 +48,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, 
    // The volume constraint determines the max-allowed tetrahedral
    // volume in the Mesh.  TetGen will split cells which are larger than
    // this size
-   Real volume_constraint = 0.5; 
+   Real volume_constraint = 5.; 
    
    // Construct the Delaunay tetrahedralization
    TetGenMeshInterface t(mesh);
@@ -162,20 +162,22 @@ std::vector<Point> fibonacci(unsigned int points_on_sphere){
       points[i]=Node(x,y,z);
       out<<points[i]<<std::endl;
    }
-   out<<std::endl<<std::endl;
+   //out<<std::endl<<std::endl;
    return points;
 }
 
 std::vector<Point> archimedes(unsigned int points_on_sphere){
-   std::vector<Point> points(points_on_sphere);
-   double n=sqrt(points_on_sphere);
+   int n=floor(sqrt(points_on_sphere));
+   std::vector<Point> points(n*n);
    double theta, phi;
-   for(int i=0; i<sqrt(points_on_sphere); i++){
-      theta=i/n;
-      for(int j=0; j<sqrt(points_on_sphere); j++){
-         phi=acos(2.*j/n-1.);
-         points[i]=Node(cos(theta)*sin(phi),
-                   sin(theta)*sin(phi),cos(phi));
+   for(int i=0; i<n; i++){
+      theta=i*6.2831852/n;
+      for(int j=1; j<=n; j++){
+         phi=acos(2.*j/(n+1)-1.);
+         points[i*n+j-1]=Node(cos(theta)*sin(phi),
+                   sin(theta)*sin(phi), 
+                   2.*j/(n+1)-1.);
+      //out<<points[i*n+j-1]<<std::endl;
       }
    }
    return points;
@@ -207,14 +209,16 @@ void add_sphere_convex_hull_to_mesh2(MeshBase& mesh, libMesh::Real r_max, unsign
       point=spiral(points_on_sphere);
 
    // play with the following parameters:
-   const double L=1.2; // gives curvature: the larger L, the more straight line is obtained.
-   const int N= 9;
+   const double L=2.1; // gives curvature: the larger L, the more straight line is obtained.
+   const int N= 12;
    double x, scale;
    // For each point in the map, insert it into the input mesh and copy it to all nuclear sites.
    // keep track of the ID assigned.
    unsigned int molsize=geometry.size();
    //most outer loop: nuclear sites
    for(unsigned int i=0; i<molsize; i++){
+      // add one point each at the nuclear position:
+      mesh.add_point( geometry[i] );
       for (unsigned int it=0; it<point.size(); it++){
          //scale the radius differently
          for( unsigned int circle=0; circle<N; circle++){

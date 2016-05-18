@@ -319,29 +319,6 @@ void MakeMesh(ESP & esp, libMesh::UnstructuredMesh& mesh){
    }
 }
 
-void GetPotential1(ESP& esp, EquationSystems& equation_systems){
-   const MeshBase& mesh = equation_systems.get_mesh();
-
-   // create an explicit system to load the solution into:
-   ExplicitSystem & pot = equation_systems.get_system<ExplicitSystem> ("esp");
-   
-   MeshBase::const_node_iterator           nd = mesh.nodes_begin();
-   const MeshBase::const_node_iterator nd_end = mesh.nodes_end();
-   unsigned int dn=0;
-   for (; nd != nd_end; ++nd)
-     {
-
-      if (dn >=pot.rhs->size()){
-         out<<"error with the sizes"<<std::endl;
-         break;
-      }
-      //this may work, if the elements are not renumbered already.
-      pot.rhs->set(dn, esp.potential[dn]);
-      pot.solution->set(dn, esp.potential[dn]);
-      dn++;
-     }
-}
-
 unsigned int minind(Point q_point, ESP& esp, unsigned int guessind){
    int mini=-20;
    Real dist=(q_point-esp.node[guessind]).norm_sq();
@@ -407,7 +384,7 @@ double interpolate(ESP& esp, unsigned int dn, Point qp){
    return pot/norm;
 }
 
-void GetPotential2(ESP& esp, EquationSystems& equation_systems){
+void GetPotential(ESP& esp, EquationSystems& equation_systems){
    const MeshBase& mesh = equation_systems.get_mesh();
 
    // create an explicit system to load the solution into:
@@ -472,9 +449,6 @@ void GetPotential2(ESP& esp, EquationSystems& equation_systems){
          dn=findIndex(q_point[qp], dn+1, esp);
          espot=interpolate(esp, dn, q_point[qp]);
          for (unsigned int i=0; i<n_sf; i++){
-            //dn=findIndex(q_point[qp], dof_indices[i], esp);
-            //pot.rhs->set(dof_indices[i], esp.potential[dn]);
-            //pot.solution->set(dof_indices[i], esp.potential[dn]);
             pot.rhs->set(dof_indices[i], espot);
             pot.solution->set(dof_indices[i], espot);
          }
@@ -482,62 +456,7 @@ void GetPotential2(ESP& esp, EquationSystems& equation_systems){
    }
 }
 
-void GetPotential3(ESP& esp, EquationSystems& equation_systems){
-   const MeshBase& mesh = equation_systems.get_mesh();
-
-   // create an explicit system to load the solution into:
-   ExplicitSystem & pot = equation_systems.get_system<ExplicitSystem> ("esp");
-   
-   MeshBase::const_node_iterator           nd = mesh.nodes_begin();
-   const MeshBase::const_node_iterator nd_end = mesh.nodes_end();
-   DofMap& dofs=pot.get_dof_map();
-   out<<mesh.n_nodes()<<"   "<<esp.size<<"    "<<pot.rhs->size()<<std::endl;
-   out<<dofs.n_dofs()<<std::endl;
-   MeshBase::const_element_iterator el= mesh.elements_begin();
-   const MeshBase::const_element_iterator end_el =  mesh.elements_end();
-   //bool same;
-   std::vector<dof_id_type> id;
-   for ( ; el != end_el; ++el){
-      const Elem* elem = *el;
-      dofs.dof_indices(elem, id);
-      for (unsigned int i=0; i<id.size(); i++){
-         //Node* node=elem->get_node(i);
-         //same=node->relative_fuzzy_equals(esp.node[id[i]], 0.001);
-         //if (same){
-         pot.rhs->set(id[i], esp.potential[id[i]]);
-         pot.solution->set(id[i], esp.potential[id[i]]);
-         //}
-         //else
-         //   out<<"error finding the correct node"<<std::endl;
-      }
-   }
-}
-
 void writeESP(EquationSystems & equation_systems){
-   const MeshBase& mesh = equation_systems.get_mesh();
-   const unsigned int n_nodes = mesh.n_nodes();
-   // print the head line. The number here will be smaller because not all
-   // points contribute to the mesh...
-   out<< n_nodes<<"      "<<1.000000<<std::endl;
-   ExplicitSystem & pot = equation_systems.get_system<ExplicitSystem> ("esp");
-     
-   MeshBase::const_element_iterator el= mesh.elements_begin();
-   const MeshBase::const_element_iterator end_el =  mesh.elements_end();
-   for ( ; el != end_el; ++el){
-      const Elem* elem = *el;
-      for(unsigned int i=0; i<elem->n_nodes(); i++){
-         Node* node=elem->get_node(i);
-         out<< node->id()<<"     ";
-         out<<node->operator() (0)<<"  ";
-         out<<node->operator() (1)<<"  ";
-         out<<node->operator() (2)<<"  ";
-         //out<<std::endl;
-         out<< pot.rhs->el(node->id())<<std::endl;
-      }
-   }
-}
-
-void writeESP2(EquationSystems & equation_systems){
    const MeshBase& mesh = equation_systems.get_mesh();
 
    // create an explicit system to load the solution into:
@@ -627,11 +546,10 @@ EquationSystems & InsertPot(std::string potfile, Mesh& pot_mesh, EquationSystems
    equation_systems.init();
    equation_systems.print_info();
   
-   GetPotential2(esp,equation_systems);
-   ExodusII_IO (pot_mesh).write_equation_systems("potential.e", equation_systems);
+   GetPotential(esp,equation_systems);
+   //ExodusII_IO (pot_mesh).write_equation_systems("potential.e", equation_systems);
    // for checking, if everything worked,
    // try to reconstruct K_esp.grid, just using the pot_mesh:
    //writeESP(equation_systems);
-   writeESP2(equation_systems);
    return equation_systems;
 }

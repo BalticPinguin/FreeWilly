@@ -24,6 +24,9 @@
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
 #include <complex.h> // the infinite element version requires complex numbers explicitly.
+// for refinement:
+#include "libmesh/mesh_refinement.h"
+#include "libmesh/kelly_error_estimator.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -94,36 +97,26 @@ int main (int argc, char** argv){
    std::string mesh_geom = cl("mesh_geom", "sphere");
    // Use the internal mesh generator to create a uniform
    // 2D grid on a square.
-   //MeshTools::Generation::build_square (mesh, 40, 40, 0., 1., 0, 1.1, QUAD4);
-   //MeshTools::Generation::build_cube (mesh, 20, 20, 20, 0., 1., 0, 1.1, 0, 1.1, PRISM15);
-   //MeshTools::Generation::build_sphere(mesh, 1., 10, HEX8, 20, false);
-   //MeshTools::Generation::build_cube (mesh, 50, 50, 50, -20., 20., -20., 20., -20., 20., PRISM6);
-   //MeshTools::Generation::build_cube (mesh, 1, 1, 1, -2., 2., -2., 2., -2., 2., HEX8);
-   //MeshTools::Generation::build_cube (mesh, 20, 20, 20, -20., 20., -20., 20., -20., 20., PRISM6);
-   //MeshTools::Generation::build_cube (mesh, 1, 1, 1, -2., 2., -2., 2., -2., 2., PRISM6);
+   // be aware: it is pot file, not pot whale!
+   std::string pot_file=cl("mesh_file", "none");
    if (mesh_geom=="sphere"){
       MeshTools::Generation::build_sphere(mesh, 7., 3, HEX8, 2, true);
       out<<"sphere"<<std::endl;}
    else if (mesh_geom=="box"){
       MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
       out<<"box"<<std::endl;}
-   else if (mesh_geom=="own"){
-      std::vector<Point> geometry;
-      geometry=getGeometry(cl);
+   else{
+      std::vector<Point> geometry=getGeometry(cl);
       // the function below creates a mesh using the molecular structure.
-      tetrahedralise_sphere(mesh, geometry, "fibonacci");
-      std::string pot_file=cl("mesh_file", "none");
+      tetrahedralise_sphere(mesh, geometry, mesh_geom);
       assert(pot_file!="none");
    }
-   else
-      libmesh_error_msg("\nUnknown geometry of the finite element region.\n");
-
    // Print information about the mesh to the screen.
    mesh.print_info();
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
-   ExodusII_IO (mesh).write("Molec_Mesh.e");
+   ExodusII_IO (mesh).write("Molec_Mesh2.e");
    if (infel){
       InfElemBuilder builder(mesh);
       builder.build_inf_elem(true);
@@ -133,10 +126,10 @@ int main (int argc, char** argv){
       MeshBase::element_iterator       elem_it  = mesh.elements_begin();
       const MeshBase::element_iterator elem_end = mesh.elements_end();
       for (; elem_it != elem_end; ++elem_it){
-          Elem* elem = *elem_it;
-          if(elem->infinite()){
-              elem->subdomain_id() = 1;
-            }
+         Elem* elem = *elem_it;
+         if(elem->infinite()){
+            elem->subdomain_id() = 1;
+         }
       }
 
       // print info on new mesh
@@ -156,14 +149,8 @@ int main (int argc, char** argv){
    //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
-   if (mesh_geom=="own"){
-      // can I set a parameter to a MeshFunction object? seemingly not!
-      std::string pot_file=cl("mesh_file", "none");
-      equation_systems.parameters.set<std::string>("potential")=pot_file;
-      //out<<pot_file<<std::endl;
-   }
-   else
-      equation_systems.parameters.set<std::string>("potential")=cl("pot","coul");
+
+   equation_systems.parameters.set<std::string>("potential")=pot_file;
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
@@ -195,6 +182,8 @@ int main (int argc, char** argv){
 
    // set energy-offset
    equation_systems.parameters.set<Number>("offset")= cl("Energy", 0.0);
+
+   bool refinement=cl("refine", false);
    
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
    //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI); // this is default
@@ -240,9 +229,43 @@ int main (int argc, char** argv){
       get_dirichlet_dofs(equation_systems, "EigenSE" ,dirichlet_dof_ids);
       eigen_system.initialize_condensed_dofs(dirichlet_dof_ids);
    }
+
    // Solve the system "Eigensystem".
-   eigen_system.solve();
-   ESP.solve();
+
+   //now, do refinement loop, if refinement is allowd:
+   if (refinement){
+      MeshRefinement mesh_refinement(mesh);
+      //refine and coarsen elements with errors in 30-ths percentile:
+      // in general: more coarsening than refinement!
+      mesh_refinement.refine_fraction()=0.75;
+      mesh_refinement.coarsen_fraction()=0.3;
+      // maximum number of refinements:
+      mesh_refinement.max_h_level()=7;
+      unsigned int r_max=7;
+      for(unsigned int r=0; r<=r_max; r++){
+         eigen_system.solve();
+         if (r<r_max){
+            ErrorVector error;
+            KellyErrorEstimator error_estimator;
+            error_estimator.estimate_error(eigen_system, error);
+            mesh_refinement.flag_elements_by_error_fraction(error);
+            out<<"error estimate \n l2 norm="
+               <<error.l2_norm()
+               <<"\n maximum norm = "
+               <<error.maximum()
+               <<std::endl;
+            equation_systems.reinit();
+         }
+      }
+      // reinitialise and estimate the esp-system
+      ESP.reinit();
+      ESP.solve();
+   }
+   else{
+      // else: simply solve the system
+      eigen_system.solve();
+      ESP.solve();
+   }
 
    // Get the number of converged eigen pairs.
    unsigned int nconv = eigen_system.get_n_converged();
@@ -255,14 +278,10 @@ int main (int argc, char** argv){
           std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
           std::cout<<"energy of state "<<i<<" = "<<eigpair.first+equation_systems.parameters.set<Number>("offset")<<std::endl;
           std::ostringstream eigenvector_output_name;
-          if (infel){
+          if (infel)
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
-          }
-          else{
-             //eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
+          else
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
-             //eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
-          }
           ExodusII_IO (mesh).write_equation_systems ( eigenvector_output_name.str(), equation_systems);
           //eigenvector_output_name<< i <<"_err.e";
           //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );

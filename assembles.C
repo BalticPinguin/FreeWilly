@@ -312,16 +312,16 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & Pot = es.parameters.get<std::string>("potential");
-   //if (mesh_origin=="own") {
-      Mesh pot_mesh(mesh.comm(), 3);
-      EquationSystems equation_systems(pot_mesh);
 
-      EquationSystems& esp_system=InsertPot(Pot, pot_mesh, equation_systems);
-      ExplicitSystem & esp = esp_system.get_system<ExplicitSystem> ("esp");
-      MeshFunction potential(esp_system, * esp.rhs, esp.get_dof_map(), 0);
-      potential.init();
-      potential.enable_out_of_mesh_mode(0.);
-   //}
+   Mesh pot_mesh(mesh.comm(), 3);
+   EquationSystems equation_systems(pot_mesh);
+
+   EquationSystems& esp_system=InsertPot(Pot, pot_mesh, equation_systems);
+   ExplicitSystem & esp = esp_system.get_system<ExplicitSystem> ("esp");
+   MeshFunction potential(esp_system, *esp.solution , esp.get_dof_map(), 0);
+   //ExodusII_IO (pot_mesh).write_equation_systems("potential2.e", esp_system);
+   potential.init();
+   potential.enable_out_of_mesh_mode(0.);
       
    Number E = es.parameters.get<Number>("offset");
    // Get a constant reference to the Finite Element type
@@ -447,10 +447,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
-         if (mesh_origin=="own") {
-            pot=potential(q_point[qp]); //doesn't accept easier call.
-         }
-         else{
+         if (mesh_origin=="sphere" or mesh_origin=="box") {
             if (Pot == "harm")
                pot=Harm(q_point[qp](0), q_point[qp](1), q_point[qp](2));
             else if (Pot == "coul")
@@ -460,25 +457,32 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
             else
                pot=0;
          }
+         else{
+            pot=potential(q_point[qp]); //doesn't accept easier call.
+            //if (pot==0){
+               //i.e. out of esp-mesh: close to nuclei or far away from them
+               // -> 1/r_{infinite} or if we are far away from molecule
+               // else: I am very close to nucleus: 
+               //pot=Coul(
+            //}
+         }
         // out<<q_point[qp](0)<<"  ";
         // out<<q_point[qp](1)<<"  ";
         // out<<q_point[qp](2)<<"  ";
         // out<<pot<<"  "<<std::endl;
-         //ESP(dof_indices[qp])=pot;
-         // Now, get number of shape functions:
+         // Now, get number of shape functions that are nonzero at this point::
          unsigned int n_sf = cfe->n_shape_functions();
-         // loop over it:
+         // loop over them:
          for (unsigned int i=0; i<n_sf; i++){
-            //ESP(dof_indices[i])=pot;
             for (unsigned int j=0; j<n_sf; j++){
                // this is changed here due the Petrov-Galerkin scheme. and works with finite and infinite elements.
                Se(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
                temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
                      weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
                      ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-phi[j][qp]*dphi[i][qp]));
-               H(i,j) += JxW[qp]*( co0_5*temp + (pot- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
-            }  
-         }  
+               H(i,j) += JxW[qp]*(co0_5*temp + (pot- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
+            }
+         }
       }
       // On an unrefined mesh, constrain_element_matrix does
       // nothing.  If this assembly function is ever repurposed to
@@ -491,8 +495,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       // eigenvalues for eigensolves.
       dof_map.constrain_element_matrix(Se, dof_indices, false);
       dof_map.constrain_element_matrix(H, dof_indices, false);
-      //dof_map.constrain_element_vector(ESP, dof_indices, false); --> would need to be converted to DenseVector. 
-      //  Do not constrain so far
 
       // Finally, simply add the element contribution to the
       // overall matrix.
@@ -500,10 +502,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       matrix_B.add_matrix (Se, dof_indices);
 
    } // end of element loop
-   //matrix_A.close();
-   //matrix_B.close();
-   //matrix_A.print();
-   //matrix_B.print();
          
    /**
    * All done!
