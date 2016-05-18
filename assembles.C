@@ -78,7 +78,7 @@ void assemble_EigenSE(EquationSystems & es, const std::string & system_name){
       
    const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & Pot = es.parameters.get<std::string>("potential");
-   out<<Pot<<std::endl;
+   //out<<Pot<<std::endl;
    //if (mesh_origin=="own") {
       Mesh pot_mesh(mesh.comm(), 3);
       EquationSystems equation_systems(pot_mesh);
@@ -447,10 +447,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
-         if (mesh_origin=="own") {
-            pot=potential(q_point[qp]); //doesn't accept easier call.
-         }
-         else{
+         if (mesh_origin=="sphere" or mesh_origin=="box") {
             if (Pot == "harm")
                pot=Harm(q_point[qp](0), q_point[qp](1), q_point[qp](2));
             else if (Pot == "coul")
@@ -459,6 +456,9 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                pot=Morse(q_point[qp](0), q_point[qp](1), q_point[qp](2));
             else
                pot=0;
+         }
+         else{
+            pot=potential(q_point[qp]); //doesn't accept easier call.
          }
         // out<<q_point[qp](0)<<"  ";
         // out<<q_point[qp](1)<<"  ";
@@ -474,7 +474,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                // this is changed here due the Petrov-Galerkin scheme. and works with finite and infinite elements.
                Se(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
                temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
-                     weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
+                     weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]-
                      ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-phi[j][qp]*dphi[i][qp]));
                H(i,j) += JxW[qp]*( co0_5*temp + (pot- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
             }  
@@ -489,12 +489,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       // that are there to ensure non-singular matrices for linear
       // solves but which would generate positive non-physical
       // eigenvalues for eigensolves.
-      //dof_map.constrain_element_matrix(Se, dof_indices, false);
-      dof_map.constrain_element_matrix(Se, dof_indices, true);
-      //dof_map.constrain_element_matrix(H, dof_indices, false);
-      dof_map.constrain_element_matrix(H, dof_indices, true);
-      //dof_map.constrain_element_vector(ESP, dof_indices, false); --> would need to be converted to DenseVector. 
-      //  Do not constrain so far
+      dof_map.constrain_element_matrix(Se, dof_indices, false);
+      dof_map.constrain_element_matrix(H, dof_indices, false);
 
       // Finally, simply add the element contribution to the
       // overall matrix.

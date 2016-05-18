@@ -97,13 +97,8 @@ int main (int argc, char** argv){
    std::string mesh_geom = cl("mesh_geom", "sphere");
    // Use the internal mesh generator to create a uniform
    // 2D grid on a square.
-   //MeshTools::Generation::build_square (mesh, 40, 40, 0., 1., 0, 1.1, QUAD4);
-   //MeshTools::Generation::build_cube (mesh, 20, 20, 20, 0., 1., 0, 1.1, 0, 1.1, PRISM15);
-   //MeshTools::Generation::build_sphere(mesh, 1., 10, HEX8, 20, false);
-   //MeshTools::Generation::build_cube (mesh, 50, 50, 50, -20., 20., -20., 20., -20., 20., PRISM6);
-   //MeshTools::Generation::build_cube (mesh, 1, 1, 1, -2., 2., -2., 2., -2., 2., HEX8);
-   //MeshTools::Generation::build_cube (mesh, 20, 20, 20, -20., 20., -20., 20., -20., 20., PRISM6);
-   //MeshTools::Generation::build_cube (mesh, 1, 1, 1, -2., 2., -2., 2., -2., 2., PRISM6);
+   // be aware: it is pot file, not pot whale!
+   std::string pot_file=cl("mesh_file", "none");
    if (mesh_geom=="sphere"){
       MeshTools::Generation::build_sphere(mesh, 7., 3, HEX8, 2, true);
       out<<"sphere"<<std::endl;}
@@ -111,11 +106,9 @@ int main (int argc, char** argv){
       MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
       out<<"box"<<std::endl;}
    else{
-      std::vector<Point> geometry;
-      geometry=getGeometry(cl);
+      std::vector<Point> geometry=getGeometry(cl);
       // the function below creates a mesh using the molecular structure.
       tetrahedralise_sphere(mesh, geometry, mesh_geom);
-      std::string pot_file=cl("mesh_file", "none");
       assert(pot_file!="none");
    }
    // Print information about the mesh to the screen.
@@ -157,8 +150,6 @@ int main (int argc, char** argv){
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
 
-   // be aware: it is pot file, not pot whale!
-   std::string pot_file=cl("mesh_file", "none");
    equation_systems.parameters.set<std::string>("potential")=pot_file;
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
@@ -228,7 +219,6 @@ int main (int argc, char** argv){
    
    // Initialize the data structures for the equation system.
    equation_systems.init();
-
 
    // Prints information about the system to the screen.
    equation_systems.print_info();

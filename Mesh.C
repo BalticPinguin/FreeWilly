@@ -167,15 +167,17 @@ std::vector<Point> fibonacci(unsigned int points_on_sphere){
 }
 
 std::vector<Point> archimedes(unsigned int points_on_sphere){
-   std::vector<Point> points(points_on_sphere);
-   double n=sqrt(points_on_sphere);
+   int n=floor(sqrt(points_on_sphere));
+   std::vector<Point> points(n*n);
    double theta, phi;
-   for(int i=0; i<sqrt(points_on_sphere); i++){
-      theta=i/n;
-      for(int j=0; j<sqrt(points_on_sphere); j++){
-         phi=acos(2.*j/n-1.);
-         points[i]=Node(cos(theta)*sin(phi),
-                   sin(theta)*sin(phi),cos(phi));
+   for(int i=0; i<n; i++){
+      theta=i*6.2831852/n;
+      for(int j=1; j<=n; j++){
+         phi=acos(2.*j/(n+1)-1.);
+         points[i*n+j-1]=Node(cos(theta)*sin(phi),
+                   sin(theta)*sin(phi), 
+                   2.*j/(n+1)-1.);
+      out<<points[i*n+j-1]<<std::endl;
       }
    }
    return points;
@@ -188,10 +190,11 @@ std::vector<Point> spiral(unsigned int points_on_sphere){
    double dz=2./points_on_sphere;
    double z, l, r;
    for(unsigned int i=0; i<points_on_sphere; i++){
-      z=1.-dz/2.*i;
+      z=1.-dz*i;
       l=i*dl;
       r=sqrt(1.-z*z);
       points[i]=Node(r*cos(l),r*sin(l),z);
+      out<<points[i]<<std::endl;
    }
    return points;
 }
