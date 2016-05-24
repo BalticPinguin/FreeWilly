@@ -37,11 +37,8 @@ std::vector<Point> getGeometry(GetPot cl);
 
 //prototypes of functions in assemble.C (that are called from out of it)
 void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::set<unsigned int>&);
-void assemble_EigenSE(libMesh::EquationSystems& , const std::string&);
 void assemble_InfSE(libMesh::EquationSystems & es, const std::string & system_name);
 void assemble_ESP(EquationSystems & es, const std::string & system_name);
-// this one maybe will never work!?
-void assemble_InfFullSE(libMesh::EquationSystems & es, const std::string & system_name);
 
 //This in the tetrahedralisation of a sphere
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
@@ -113,6 +110,10 @@ int main (int argc, char** argv){
    }
    // Print information about the mesh to the screen.
    mesh.print_info();
+ 
+   //convert element to second-order mesh.
+   // In case of tetrahedra: from Tet4 to Tet10
+   mesh.all_second_order();
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
@@ -147,6 +148,15 @@ int main (int argc, char** argv){
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
    ExplicitSystem & ESP = equation_systems.add_system<ExplicitSystem> ("ESP");
    //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
+  
+    // Create an FEType describing the approximation
+    // characteristics of the InfFE object. Note that
+    // the constructor automatically defaults to some
+    // sensible values.  But use FIRST order
+    // approximation.
+    FEType fe_type(FIRST);
+    //Order radial_order=THIRD; // default value.
+    //FEType fe_type(FIRST, LAGRANGE, radial_order);
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
 
@@ -161,7 +171,7 @@ int main (int argc, char** argv){
  
    // Give the system a pointer to the matrix assembly
    // function defined below.
-   if( infel ){
+   if(infel){
      eigen_system.attach_assemble_function (assemble_InfSE);
    }
    else {

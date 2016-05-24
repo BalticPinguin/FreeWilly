@@ -10,7 +10,9 @@
 #include "libmesh/node.h"
 #include "libmesh/serial_mesh.h"
 
+// Bring in everything from the libMesh namespace
 using namespace libMesh;
+
 //This in the tetrahedralisation of a sphere
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
 //void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, const libMesh::Parallel::Communicator& comm);
@@ -22,11 +24,6 @@ void add_sphere_convex_hull_to_mesh(libMesh::MeshBase& mesh, libMesh::Real radiu
 void add_sphere_convex_hull_to_mesh2(libMesh::MeshBase& , libMesh::Real radius, unsigned int , std::vector<Point>, std::string creator);
 
 unsigned int closest(std::vector<libMesh::Point> geom, libMesh::Point pt);
-std::vector<libMesh::Point> get_water();
-
-// Bring in everything from the libMesh namespace
-
-//void add_sphere_convex_hull_to_mesh(MeshBase& mesh, Point lower_limit, Point upper_limit);
 
 void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator){
    #ifdef LIBMESH_HAVE_TETGEN
