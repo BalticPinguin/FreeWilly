@@ -1,11 +1,10 @@
+#include <math.h> // needed for sqrt function
+#include <iostream> 
+#include <complex.h> 
 // libMesh include files.
-// #include "assembles.h"
-#include <math.h> // needed for sqrt function in Coul()
 #include "libmesh/libmesh.h"
-#include "libmesh/getpot.h" // for input-argument parsing
 #include "libmesh/mesh.h"
 #include "libmesh/mesh_generation.h"
-#include "libmesh/exodusII_io.h"
 #include "libmesh/eigen_system.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/fe.h"
@@ -21,10 +20,15 @@
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
+// for the ESP system
+#include "libmesh/explicit_system.h"
+
+#include "libmesh/getpot.h" // for input-argument parsing
+#include "libmesh/exodusII_io.h"
 #include <complex.h> // the infinite element version requires complex numbers explicitly.
 #include "libmesh/mesh_function.h"
 #include "libmesh/meshfree_interpolation.h"
-#include "libmesh/explicit_system.h"
+
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -60,34 +64,6 @@ void Read(ESP& esp, std::string input_file){
       esp.potential[i]=-v;
    }
    esp_file.close();
-}
-
-double Harm(Real x, Real y, Real z){
-   const Real x0=0.0;
-   const Real y0=0.0;
-   const Real z0=0.0;
-   const Real a=10;
-   const Real b=10;
-   const Real c=10;
-   const Real V0=(-a-b-c)*10;
-   return V0+a*(x-x0)*(x-x0)+b*(y-y0)*(y-y0)+c*(z-z0)*(z-z0);
-}
-
-double Coul(Real x, Real y, Real z){
-   const Real x0=0.0;
-   const Real y0=0.0;
-   const Real z0=0.0;
-   const Real Z=1.;
-   return -Z/sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0));
-}
-
-double Morse(Real x, Real y, Real z){
-   const Real x0=0.0;
-   const Real y0=0.0;
-   const Real z0=0.0;
-   const Real D=5.3;
-   const Real a=0.5;
-   return -D*( 1-exp(-a*sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0))) );
 }
 
 void get_dirichlet_dofs(EquationSystems & es, const std::string & system_name, std::set<unsigned int>& dirichlet_dof_ids){

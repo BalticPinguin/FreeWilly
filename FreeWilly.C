@@ -113,7 +113,7 @@ int main (int argc, char** argv){
  
    //convert element to second-order mesh.
    // In case of tetrahedra: from Tet4 to Tet10
-   mesh.all_second_order();
+   //mesh.all_second_order();
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
@@ -154,7 +154,7 @@ int main (int argc, char** argv){
     // the constructor automatically defaults to some
     // sensible values.  But use FIRST order
     // approximation.
-    FEType fe_type(FIRST);
+    //FEType fe_type(FIRST);
     //Order radial_order=THIRD; // default value.
     //FEType fe_type(FIRST, LAGRANGE, radial_order);
 
