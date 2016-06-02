@@ -43,7 +43,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name);
 //This in the tetrahedralisation of a sphere
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
 // void tetrahedralise_sphere(mesh, const libMesh::Parallel::Communicator& comm);
-void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator);
+//void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator);
+void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, int N);
 
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
@@ -91,7 +92,14 @@ int main (int argc, char** argv){
    // default MPI communicator.
    Mesh mesh(init.comm(), dim);
 
+   Real E = cl("Energy", 0.0);
    std::string mesh_geom = cl("mesh_geom", "sphere");
+   Real r=cl("radius", 20.);
+   int NrBall=cl("points", 50);
+   Real VolConst= cl("maxVol", 1./(32.*sqrt(E*E*E)) );
+   Real L=cl("bending", 2.);
+   int N=cl("circles", 5);
+   int maxiter=cl("maxiter", 700);
    // Use the internal mesh generator to create a uniform
    // 2D grid on a square.
    // be aware: it is pot file, not pot whale!
@@ -105,15 +113,28 @@ int main (int argc, char** argv){
    else{
       std::vector<Point> geometry=getGeometry(cl);
       // the function below creates a mesh using the molecular structure.
-      tetrahedralise_sphere(mesh, geometry, mesh_geom);
+      //tetrahedralise_sphere(mesh, geometry, mesh_geom);
+      tetrahedralise_sphere(mesh, geometry, mesh_geom, r, NrBall, VolConst, L, N);
       assert(pot_file!="none");
    }
    // Print information about the mesh to the screen.
    mesh.print_info();
- 
-   //convert element to second-order mesh.
-   // In case of tetrahedra: from Tet4 to Tet10
-   //mesh.all_second_order();
+   
+   int order=cl("order", 1);
+   FEType fe_type(FIRST);
+   if (order==2){
+      //convert element to second-order mesh.
+      // In case of tetrahedra: from Tet4 to Tet10
+      mesh.all_second_order();
+      // Create an FEType describing the approximation
+      // characteristics of the InfFE object. Note that
+      // the constructor automatically defaults to some
+      // sensible values.  But use FIRST order
+      // approximation.
+      FEType fe_type(SECOND);
+      //Order radial_order=THIRD; // default value.
+      //FEType fe_type(FIRST, LAGRANGE, radial_order);
+   }
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
@@ -148,15 +169,6 @@ int main (int argc, char** argv){
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
    ExplicitSystem & ESP = equation_systems.add_system<ExplicitSystem> ("ESP");
    //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
-  
-    // Create an FEType describing the approximation
-    // characteristics of the InfFE object. Note that
-    // the constructor automatically defaults to some
-    // sensible values.  But use FIRST order
-    // approximation.
-    //FEType fe_type(FIRST);
-    //Order radial_order=THIRD; // default value.
-    //FEType fe_type(FIRST, LAGRANGE, radial_order);
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
 
@@ -164,10 +176,10 @@ int main (int argc, char** argv){
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
-   //eigen_system.add_variable("phi", SECOND);
-   eigen_system.add_variable("phi", FIRST);
-   ESP.add_variable("esp", FIRST);
-   //DO.add_variable("do", FIRST);
+   //eigen_system.add_variable("phi", fe_type);
+   eigen_system.add_variable("phi", fe_type);
+   ESP.add_variable("esp", fe_type);
+   //DO.add_variable("do", fe_type);
  
    // Give the system a pointer to the matrix assembly
    // function defined below.
@@ -191,7 +203,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
 
    // set energy-offset
-   equation_systems.parameters.set<Number>("offset")= cl("Energy", 0.0);
+   equation_systems.parameters.set<Number>("offset")=E;
 
    bool refinement=cl("refine", false);
    
@@ -225,7 +237,7 @@ int main (int argc, char** argv){
    
    // Set the solver tolerance and the maximum number of iterations.
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
-   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 10000;
+   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = maxiter;
    
    // Initialize the data structures for the equation system.
    equation_systems.init();
