@@ -28,6 +28,7 @@
 #include <complex.h> // the infinite element version requires complex numbers explicitly.
 #include "libmesh/mesh_function.h"
 #include "libmesh/meshfree_interpolation.h"
+#include "radial_interpolation.h"
 
 
 // Bring in everything from the libMesh namespace
@@ -149,7 +150,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    struct ESP esp;
    Read(esp, potfile);
 
-   InverseDistanceInterpolation<3> potential(mesh.comm());
+   //InverseDistanceInterpolation<3> potential(mesh.comm());
+   RadialInterpolation<3> potential(mesh.comm());
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -282,10 +284,12 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
-        // out<<q_point[qp](0)<<"  ";
-        // out<<q_point[qp](1)<<"  ";
-        // out<<q_point[qp](2)<<"  ";
-        // out<<potval[qp]<<"  "<<std::endl;
+         out<<q_point[qp](0)<<"  ";
+         out<<q_point[qp](1)<<"  ";
+         out<<q_point[qp](2)<<"  ";
+         //out<<potval[qp]<<"  "<<std::endl;
+         out<<potval[qp]<<"     ";
+         out<<1/(q_point[qp].norm())<<std::endl;
          // Now, get number of shape functions that are nonzero at this point::
          unsigned int n_sf = cfe->n_shape_functions();
          // loop over them:
@@ -339,7 +343,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    struct ESP esp;
    Read(esp, potfile);
 
-   InverseDistanceInterpolation<3> potential(mesh.comm());
+   //InverseDistanceInterpolation<3> potential(mesh.comm());
+   RadialInterpolation<3> potential(mesh.comm());
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
