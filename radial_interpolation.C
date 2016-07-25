@@ -160,7 +160,7 @@ void RBFInterpolation<KDDim>::interpolate_field_data (const std::vector<std::str
 template <unsigned int KDDim>
 void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
                                                        const std::vector<size_t> & src_indices,
-                                                       const std::vector<Real>   & src_dist_sqr,
+                                                       const std::vector<Real>   & /*src_dist_sqr*/,
                                                        std::vector<Number>::iterator & out_it) const
 {
   // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
@@ -235,11 +235,9 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
      w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
   }
   else{
-     out<<"outer";
      w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
-     out<<"  done"<<std::endl;
   }
-  
+ 
   /*
     xi: points where I want to know the values?
   */
