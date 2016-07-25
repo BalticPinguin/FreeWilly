@@ -4,7 +4,7 @@
 
 Willy is an electron of course!
 
-This programme requires libmesh with some non-standard functions. These are, among some options in the
+This program requires libmesh with some non-standard functions. These are, among some options in the
 configuration preinstalled the libraries petsc and slepc.
 To make sure it will work for you as well, please install it using the 'install.sh' script.
 Check your configuration of libmesh comparing with the 'configs.conf' file.
@@ -38,7 +38,7 @@ points to your libmesh installation.
 Good luck!
 
 ==================================================================================================
-*****************************  Description of the Programme  *************************************
+******************************  Description of the Program  **************************************
 ==================================================================================================
 
 All quantities specified are in atomic units here.

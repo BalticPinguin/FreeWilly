@@ -41,7 +41,7 @@ namespace libMesh
  * Radias basis interplation.
  */
 template <unsigned int KDDim>
-class RBFInterpolation : public MeshfreeInterpolation
+class NNInterpolation : public MeshfreeInterpolation
 {
 protected:
 
@@ -189,18 +189,7 @@ public:
    * Constructor. Takes the inverse distance power,
    * which defaults to 2.
    */
-  // RBFInterpolation (const libMesh::Parallel::Communicator & comm_in,
-  //                              const unsigned int n_interp_pts = 8,
-  //                              const Real  power               = 2) :
-  //    MeshfreeInterpolation(comm_in),
-  // #if LIBMESH_HAVE_NANOFLANN
-  //  _point_list_adaptor(_src_pts),
-  // #endif
-  //  _n_interp_pts(n_interp_pts) {}
-   
-   /* this is constructor as I will use it here:
-   */
-   RBFInterpolation (const libMesh::Parallel::Communicator & comm_in,
+   NNInterpolation (const libMesh::Parallel::Communicator & comm_in,
                                  const unsigned int n_interp_pts ,
                                  const Real  power               ,
                                  const std::vector<Node> geometry) :

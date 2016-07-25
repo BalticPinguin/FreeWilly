@@ -20,12 +20,12 @@
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
+#include <complex.h> // the infinite element version requires complex numbers explicitly.
 // for the ESP system
 #include "libmesh/explicit_system.h"
 
 #include "libmesh/getpot.h" // for input-argument parsing
 #include "libmesh/exodusII_io.h"
-#include <complex.h> // the infinite element version requires complex numbers explicitly.
 #include "libmesh/mesh_function.h"
 #include "libmesh/meshfree_interpolation.h"
 #include "radial_interpolation.h"
@@ -146,12 +146,18 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    //const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & potfile = es.parameters.get<std::string>("potential");
+   bool cap=es.parameters.get<bool >("cap");
+   Real radius=es.parameters.get<Real>("radius");
+   Real gamma =es.parameters.get<Real>("gamma");
+   Real power=es.parameters.get<Real>("power");
+   out<<"Power: "<<power<<std::endl;
+   std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
 
    struct ESP esp;
    Read(esp, potfile);
 
-   //InverseDistanceInterpolation<3> potential(mesh.comm());
-   RadialInterpolation<3> potential(mesh.comm());
+   //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
+   RBFInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -177,6 +183,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    // A  Gauss quadrature rule for numerical integration.
    // Use the default quadrature order.
    QGauss qrule (dim, fe_type.default_quadrature_order());
+   //QGauss qrule (dim, TWENTIETH);
       
    // Tell the finite element object to use our quadrature rule.
    fe->attach_quadrature_rule (&qrule);
@@ -284,12 +291,24 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
+         out<<"quadrature: ";
          out<<q_point[qp](0)<<"  ";
          out<<q_point[qp](1)<<"  ";
          out<<q_point[qp](2)<<"  ";
-         //out<<potval[qp]<<"  "<<std::endl;
-         out<<potval[qp]<<"     ";
-         out<<1/(q_point[qp].norm())<<std::endl;
+         out<<potval[qp]<<"  "<<std::endl;
+         //out<<1/(q_point[qp].norm())<<std::endl;
+         if (cap){
+            Real mindist=0;
+            for(unsigned int site=0; site<mol_geom.size(); site++){
+               if ((q_point[qp]-mol_geom[site]).norm()<mindist)
+                  mindist=(q_point[qp]-mol_geom[site]).norm();
+               if ((q_point[qp]-mol_geom[site]).norm()<radius)
+                  break;
+               if (site==mol_geom.size()-1)
+                  potval[qp]+=(0,gamma*mindist*mindist);
+            }
+         }
+
          // Now, get number of shape functions that are nonzero at this point::
          unsigned int n_sf = cfe->n_shape_functions();
          // loop over them:
@@ -338,13 +357,15 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    // Get a reference to our system.
    ExplicitSystem & eigen_system = es.get_system<ExplicitSystem> (system_name);
 
+   Real power=es.parameters.get<Real>("power");
    const std::string & potfile = es.parameters.get<std::string>("potential");
+   std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
    
    struct ESP esp;
    Read(esp, potfile);
 
-   //InverseDistanceInterpolation<3> potential(mesh.comm());
-   RadialInterpolation<3> potential(mesh.comm());
+   //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
+   RBFInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);

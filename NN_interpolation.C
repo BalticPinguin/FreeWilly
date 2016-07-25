@@ -33,13 +33,13 @@ namespace libMesh
 {
 
 //--------------------------------------------------------------------------------
-// RBFInterpolation methods
+// NNInterpolation methods
 template <unsigned int KDDim>
-void RBFInterpolation<KDDim>::construct_kd_tree ()
+void NNInterpolation<KDDim>::construct_kd_tree ()
 {
 #ifdef LIBMESH_HAVE_NANOFLANN
 
-  LOG_SCOPE ("construct_kd_tree()", "RBFInterpolation<>");
+  LOG_SCOPE ("construct_kd_tree()", "NNInterpolation<>");
 
   // Initialize underlying KD tree
   if (_kd_tree.get() == libmesh_nullptr)
@@ -56,7 +56,7 @@ void RBFInterpolation<KDDim>::construct_kd_tree ()
 
 
 template <unsigned int KDDim>
-void RBFInterpolation<KDDim>::clear()
+void NNInterpolation<KDDim>::clear()
 {
 #ifdef LIBMESH_HAVE_NANOFLANN
   // Delete the KD Tree and start fresh
@@ -70,7 +70,7 @@ void RBFInterpolation<KDDim>::clear()
 
 
 template <unsigned int KDDim>
-void RBFInterpolation<KDDim>::interpolate_field_data (const std::vector<std::string> & field_names,
+void NNInterpolation<KDDim>::interpolate_field_data (const std::vector<std::string> & field_names,
                                                                   const std::vector<Point> & tgt_pts,
                                                                   std::vector<Number> & tgt_vals) const
 {
@@ -79,10 +79,10 @@ void RBFInterpolation<KDDim>::interpolate_field_data (const std::vector<std::str
   // forcibly initialize, if needed
 #ifdef LIBMESH_HAVE_NANOFLANN
   if (_kd_tree.get() == libmesh_nullptr)
-    const_cast<RBFInterpolation<KDDim> *>(this)->construct_kd_tree();
+    const_cast<NNInterpolation<KDDim> *>(this)->construct_kd_tree();
 #endif
 
-  LOG_SCOPE ("interpolate_field_data()", "RBFInterpolation<>");
+  LOG_SCOPE ("interpolate_field_data()", "NNInterpolation<>");
 
   libmesh_assert_equal_to (field_names.size(), this->n_field_variables());
 
@@ -114,40 +114,8 @@ void RBFInterpolation<KDDim>::interpolate_field_data (const std::vector<std::str
 
         _kd_tree->knnSearch(&query_pt[0], num_results, &ret_index[0], &ret_dist_sqr[0]);
 
-        //inserted by HUBERT
-         //out<<"query point: ";
-        //out<<tgt;
-        //out<<std::endl;
-        //out<<"interpolation_points: ";
-        //for(unsigned int aoe=0; aoe<ret_index.size(); aoe++){
-        //   out<<_src_pts[ret_index[aoe]];
-        //   out<<_src_vals[ret_index[aoe]]<<std::endl;
-        //}
-        //out<<std::endl;
-        //inserted by HUBERT
-
         this->interpolate (tgt, ret_index, ret_dist_sqr, out_it);
-
-       // libMesh::out << "knnSearch(): num_results=" << num_results << "\n";
-       // for (size_t i=0;i<num_results;i++)
-       //   libMesh::out << "pt[" << i << "]="
-       //       << std::setw(6) <<_src_pts[ret_index[i]]
-       //       << "\t dist["<< i << "]=" << ret_dist_sqr[i]
-       //       << "\t val[" << std::setw(6) << ret_index[i] << "]=" << _src_vals[ret_index[i]]
-       //       << std::endl;
-       // libMesh::out << "\n";
-       // libMesh::out << "ipt=" << &tgt;
-       // libMesh::out << "\t ival=" << _vals[0] << '\n';
-
       }
-        //inserted by HUBERT
-        //out<<"value: ";
-        //for(unsigned int aoe=0; aoe<tgt_vals.size(); aoe++){
-        //   out<<tgt_pts[aoe];
-        //   out<<tgt_vals[aoe];
-        //   out<<std::endl;
-        //}
-        //inserted by HUBERT
   }
 #else
 
@@ -158,7 +126,7 @@ void RBFInterpolation<KDDim>::interpolate_field_data (const std::vector<std::str
 }
 
 template <unsigned int KDDim>
-void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
+void NNInterpolation<KDDim>::interpolate (const Point               &  pt ,
                                                        const std::vector<size_t> & src_indices,
                                                        const std::vector<Real>   & src_dist_sqr,
                                                        std::vector<Number>::iterator & out_it) const
@@ -172,109 +140,24 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
 
   // xd= point values 
   const unsigned int n_src=src_indices.size();
-  Real* xd= new Real[n_src*KDDim];
-  Real* fd= new Real[n_src*KDDim];
-  // convert (input) vector to pointer-notation for rbf-functions:
-  //out<<"scr-points:  \n";
-  for (unsigned int i=0; i<n_src; i++){
-     //out<<_src_pts[src_indices[i]]<<"  ";
-     for (unsigned int j=0; j<KDDim; j++){
-         xd[j+KDDim*i]=_src_pts[src_indices[i]](j)-pt(j);
-         //out<<xd[j+KDDim*i]<<" ";
-     }
-     fd[i]=_src_vals[src_indices[i]].real();
-     //out<<"  ";
-     //out<<fd[i]<<std::endl;
-  }
-  //out<<"done.";
   
-  int closest=-1;
-  double minnorm=1e42; // larger than distance to all atoms
-  for (unsigned int i=0; i<_geom.size(); i++){
-     if ((_geom[i]-pt).norm()<minnorm){
-        closest=i;
-        minnorm=(_geom[i]-pt).norm();
-     }
+  unsigned int min=0;
+  for (unsigned int i=1; i<src_dist_sqr.size(); i++){
+     if (src_dist_sqr[i]<src_dist_sqr[min])
+        min=i;
   }
-  //out<<"min norm: "<<minnorm;
-  //out<<" closest: "<<closest<<std::endl;
-
-  Real r0=_power;
-  Real inner_range=1.2; // about half of the typical binding length...
-  if (minnorm<inner_range){
-      for (unsigned int i=0; i<n_src; i++){
-         fd[i]+=(Real)_geom[closest].id()/(_src_pts[src_indices[i]]-_geom[closest]).norm();
-         //out<<"distance: "<< (_src_pts[src_indices[i]]-_geom[closest]).norm()<<std::endl;
-      }
-      r0*=0.2;
-  }
-  else if (minnorm > 8.){
-      r0=0.6;
-  }
-  else{
-      // intermediate case.
-  }
-
-  // Compute the interpolation weights & interpolated value
-  //---> this needs to be changed accordingly. HUBERT
-
-  /*  m:  dimension (?)
-      nd: #points (?)
-      xd: points (?)
-      fd: function values at points
-      r0: parameter.
-      phi1: function type (brought from rdb-intperp
-      xi: where I want to know point?
-  */
-  Real *w;
-  //w = rbf_weight ( m, nd, xd, r0, phi1, fd );
-  if (minnorm<inner_range){
-     w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
-  }
-  else if (minnorm > 8.){
-     w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
-  }
-  else{
-     out<<"outer";
-     w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
-     out<<"  done"<<std::endl;
-  }
-  
-  /*
-    xi: points where I want to know the values?
-  */
-  Real* xi= new Real[KDDim];//{0,0,0};  // interpolation point is '0' always
-  for(unsigned int i=0; i<KDDim; i++){
-     xi[i]=0;
-  }
-  unsigned int ni = 1;
-  Real* fi;
-  //fi = rbf_interp_nd ( m, nd, xd, r0, phi1, w, ni, xi );
-  if (minnorm<inner_range){
-     fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
-     out<<fi[0]<<"  ";
-     fi[0]-=(Real)_geom[closest].id()/(pt-_geom[closest]).norm(); //correct for the potential that was removed before.
-     //out<<"dist:     "<< (pt-_geom[closest]).norm()<<std::endl;
-     out<<fi[0]<<std::endl;
-  }
-  else if (minnorm > 8.)
-     fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
-  else 
-     fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
-  delete xi;
-  // don't forget setting the output buffer!
 
   for (unsigned int v=0; v<n_fv; v++, ++out_it)
     {
-    _vals[v] = fi[v];
+    _vals[v] = _src_vals[src_indices[min]];
     *out_it = _vals[v];
   }
 }
 
 // ------------------------------------------------------------
 // Explicit Instantiations
-template class RBFInterpolation<1>;
-template class RBFInterpolation<2>;
-template class RBFInterpolation<3>;
+template class NNInterpolation<1>;
+template class NNInterpolation<2>;
+template class NNInterpolation<3>;
 
 } // namespace libMesh

@@ -33,7 +33,7 @@ using namespace libMesh;
 
 // Function prototype.  This is the function that will assemble
 // the eigen system. Here, we will simply assemble a mass matrix.
-std::vector<Point> getGeometry(GetPot cl);
+std::vector<Node> getGeometry(GetPot cl);
 
 //prototypes of functions in assemble.C (that are called from out of it)
 void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::set<unsigned int>&);
@@ -44,7 +44,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name);
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
 // void tetrahedralise_sphere(mesh, const libMesh::Parallel::Communicator& comm);
 //void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator);
-void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, int N);
+void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, int N);
 
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
@@ -100,6 +100,8 @@ int main (int argc, char** argv){
    Real L=cl("bending", 2.);
    int N=cl("circles", 5);
    int maxiter=cl("maxiter", 700);
+   bool cap = cl("cap", false);
+   std::vector<Node> geometry=getGeometry(cl);
    // Use the internal mesh generator to create a uniform
    // 2D grid on a square.
    // be aware: it is pot file, not pot whale!
@@ -111,7 +113,6 @@ int main (int argc, char** argv){
       MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
       out<<"box"<<std::endl;}
    else{
-      std::vector<Point> geometry=getGeometry(cl);
       // the function below creates a mesh using the molecular structure.
       //tetrahedralise_sphere(mesh, geometry, mesh_geom);
       tetrahedralise_sphere(mesh, geometry, mesh_geom, r, NrBall, VolConst, L, N);
@@ -138,7 +139,7 @@ int main (int argc, char** argv){
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
-   ExodusII_IO (mesh).write("Molec_Mesh2.e");
+   //ExodusII_IO (mesh).write("Molec_Mesh2.e");
    if (infel){
       InfElemBuilder builder(mesh);
       builder.build_inf_elem(true);
@@ -171,6 +172,7 @@ int main (int argc, char** argv){
    //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
+   equation_systems.parameters.set<bool >("cap")=cap;
 
    equation_systems.parameters.set<std::string>("potential")=pot_file;
    // Declare the system variables.
@@ -238,6 +240,13 @@ int main (int argc, char** argv){
    // Set the solver tolerance and the maximum number of iterations.
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
    equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = maxiter;
+   equation_systems.parameters.set<Real> ("radius") = r;
+   Real power=cl("power",12.);
+   equation_systems.parameters.set<Real> ("power") = power;
+   Real gamma=cl("gamma",0.);
+   equation_systems.parameters.set<Real> ("gamma") = gamma;
+   equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = geometry;
+   equation_systems.parameters.set<bool> ("cap") = cap;
    
    // Initialize the data structures for the equation system.
    equation_systems.init();
@@ -315,15 +324,17 @@ int main (int argc, char** argv){
 }
 #endif // LIBMESH_HAVE_SLEPC
       
-std::vector<Point> getGeometry(GetPot cl){
+std::vector<Node> getGeometry(GetPot cl){
    // extract the given geometry:
    std::string x=cl("x", ".");
    std::string y=cl("y", ".");
    std::string z=cl("z", ".");
+   std::string q=cl("charge", ".");
    // get number of values. Therefore, count spaces in the string.
    int length_x=0;
    int length_y=0;
    int length_z=0;
+   int length_q=0;
    int strlength=x.length();
    for(int i=0; i<strlength; i++){
       if (x[i] == ',')
@@ -332,14 +343,18 @@ std::vector<Point> getGeometry(GetPot cl){
             length_y++; 
       if (z[i] == ',')
             length_z++; 
+      if (q[i] == ',')
+            length_q++; 
    }
    assert (length_x== length_y);
    assert (length_x== length_z);
+   assert (length_x== length_q);
    length_x++;
    //put them into a vector:
-   std::string x_i, y_i, z_i;
-   int x_j=0, y_j=0, z_j=0;
-   std::vector<double> x_v(length_x), y_v(length_x), z_v(length_x);
+   std::string x_i, y_i, z_i, q_i;
+   unsigned int x_j=0, y_j=0, z_j=0, q_j=0;
+   std::vector<Real> x_v(length_x), y_v(length_x), z_v(length_x);
+   std::vector<dof_id_type> q_v(length_x); // this rapes the type node but ...
    for(int i=0; i<strlength; i++){
       if (x[i] == ','){
          x_v[x_j]=atof(x_i.c_str());
@@ -359,14 +374,27 @@ std::vector<Point> getGeometry(GetPot cl){
          z_j++;}
       else
          z_i.append(& z[i]);
+      if (q[i] == ','){
+         q_v[q_j]=atoi(q_i.c_str());
+         q_i="";
+         q_j++;}
+      else
+         q_i.append(& q[i]);
    }
    x_v[x_j]=atof(x_i.c_str());
    y_v[y_j]=atof(y_i.c_str());
    z_v[z_j]=atof(z_i.c_str());
+   q_v[z_j]=atoi(q_i.c_str());
    
-   std::vector<Point> geometry(length_x);
+   //std::vector<Node> geometry(length_x);
+   std::vector<Node> geometry;
    for(int i=0; i<length_x; i++){
-      geometry[i]=Point(x_v[i], y_v[i], z_v[i]);
+      //geometry[i]= Point(x_v[i], y_v[i], z_v[i]);
+      //geometry[i]._id=q_v[i];
+      //geometry.push_back(x_v[i], y_v[i], z_v[i], q_v[i]);
+      Node tmpnd(x_v[i], y_v[i], z_v[i], q_v[i]);
+      //geometry[i]=tmpnd;
+      geometry.push_back(tmpnd);
    }
    return geometry;
 }

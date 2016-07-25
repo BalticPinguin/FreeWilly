@@ -10,23 +10,16 @@ include $(LIBMESH_DIR)/Make.common
 
 #target	   := ./InSpect-$(METHOD)
 target	   := ./FrWll-$(METHOD)
-#target	   := ./Mesh-$(METHOD)
-#target	   := ./misc-$(METHOD)
 #target	   := ./test-$(METHOD)
 
 ###############################################################################
 # File management.  This is where the source, header, and object files are
 # defined
 
-#srcfiles	:= FreeWilly.C assembles.C
-#srcfiles	:= eigenproblems_ex3.C
-#srcfiles	:= FreeWilly.C
-#srcfiles	:= eigenproblems_ex3.C
-#srcfiles	:= InspectOR.C assembles.C
-#srcfiles	:= FreeWilly.C assembles.C Mesh.C FreeWilly.h assembles.h Mesh.h
-srcfiles	:= FreeWilly.C assembles.C Mesh.C
-#srcfiles	:= misc1.C
-#srcfiles	:= Mesh.C
+#srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.cpp
+srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C r8lib.C rbf_interp_nd.C NN_interpolation.C
+#srcfiles	:= test.C radial_interpolation.C r8lib.C rbf_interp_nd.C
+#srcfiles	:= test.C radial_interpolation.C r8lib.C rbf_interp_nd.C
 
 objects		:= $(patsubst %.C, %.$(obj-suffix), $(srcfiles))
 ###############################################################################
