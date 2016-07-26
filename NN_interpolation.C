@@ -18,12 +18,8 @@
 // C++ includes
 #include <iomanip>
 
-// include functions for rbf-interpolation
-# include "rbf_interp_nd.hpp"
-# include "r8lib.hpp"
-
 // Local includes
-#include "radial_interpolation.h"
+#include "NN_interpolation.h"
 #include "libmesh/point.h"
 #include "libmesh/libmesh_logging.h"
 #include "libmesh/parallel.h"
@@ -33,13 +29,13 @@ namespace libMesh
 {
 
 //--------------------------------------------------------------------------------
-// NNInterpolation methods
+// NeNeInterpolation methods
 template <unsigned int KDDim>
-void NNInterpolation<KDDim>::construct_kd_tree ()
+void NeNeInterpolation<KDDim>::construct_kd_tree ()
 {
 #ifdef LIBMESH_HAVE_NANOFLANN
 
-  LOG_SCOPE ("construct_kd_tree()", "NNInterpolation<>");
+  LOG_SCOPE ("construct_kd_tree()", "NeNeInterpolation<>");
 
   // Initialize underlying KD tree
   if (_kd_tree.get() == libmesh_nullptr)
@@ -56,7 +52,7 @@ void NNInterpolation<KDDim>::construct_kd_tree ()
 
 
 template <unsigned int KDDim>
-void NNInterpolation<KDDim>::clear()
+void NeNeInterpolation<KDDim>::clear()
 {
 #ifdef LIBMESH_HAVE_NANOFLANN
   // Delete the KD Tree and start fresh
@@ -70,7 +66,7 @@ void NNInterpolation<KDDim>::clear()
 
 
 template <unsigned int KDDim>
-void NNInterpolation<KDDim>::interpolate_field_data (const std::vector<std::string> & field_names,
+void NeNeInterpolation<KDDim>::interpolate_field_data (const std::vector<std::string> & field_names,
                                                                   const std::vector<Point> & tgt_pts,
                                                                   std::vector<Number> & tgt_vals) const
 {
@@ -79,10 +75,10 @@ void NNInterpolation<KDDim>::interpolate_field_data (const std::vector<std::stri
   // forcibly initialize, if needed
 #ifdef LIBMESH_HAVE_NANOFLANN
   if (_kd_tree.get() == libmesh_nullptr)
-    const_cast<NNInterpolation<KDDim> *>(this)->construct_kd_tree();
+    const_cast<NeNeInterpolation<KDDim> *>(this)->construct_kd_tree();
 #endif
 
-  LOG_SCOPE ("interpolate_field_data()", "NNInterpolation<>");
+  LOG_SCOPE ("interpolate_field_data()", "NeNeInterpolation<>");
 
   libmesh_assert_equal_to (field_names.size(), this->n_field_variables());
 
@@ -101,7 +97,7 @@ void NNInterpolation<KDDim>::interpolate_field_data (const std::vector<std::stri
   {
     std::vector<Number>::iterator out_it = tgt_vals.begin();
 
-    const size_t num_results = std::min((size_t) _n_interp_pts, _src_pts.size());
+    const size_t num_results = (size_t) _src_pts.size();
 
     std::vector<size_t> ret_index(num_results);
     std::vector<Real>   ret_dist_sqr(num_results);
@@ -126,7 +122,7 @@ void NNInterpolation<KDDim>::interpolate_field_data (const std::vector<std::stri
 }
 
 template <unsigned int KDDim>
-void NNInterpolation<KDDim>::interpolate (const Point               &  pt ,
+void NeNeInterpolation<KDDim>::interpolate (const Point               &  /*pt*/ ,
                                                        const std::vector<size_t> & src_indices,
                                                        const std::vector<Real>   & src_dist_sqr,
                                                        std::vector<Number>::iterator & out_it) const
@@ -134,12 +130,8 @@ void NNInterpolation<KDDim>::interpolate (const Point               &  pt ,
   // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
   libmesh_assert_equal_to (this->n_field_variables(),1);
   // Compute the interpolation weights & interpolated value
-  //const unsigned int n_fv = this->n_field_variables();
   const unsigned int n_fv = 1;
   _vals.resize(n_fv); /**/ std::fill (_vals.begin(), _vals.end(), Number(0.));
-
-  // xd= point values 
-  const unsigned int n_src=src_indices.size();
   
   unsigned int min=0;
   for (unsigned int i=1; i<src_dist_sqr.size(); i++){
@@ -156,8 +148,8 @@ void NNInterpolation<KDDim>::interpolate (const Point               &  pt ,
 
 // ------------------------------------------------------------
 // Explicit Instantiations
-template class NNInterpolation<1>;
-template class NNInterpolation<2>;
-template class NNInterpolation<3>;
+template class NeNeInterpolation<1>;
+template class NeNeInterpolation<2>;
+template class NeNeInterpolation<3>;
 
 } // namespace libMesh

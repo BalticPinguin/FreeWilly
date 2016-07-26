@@ -29,6 +29,7 @@
 #include "libmesh/mesh_function.h"
 #include "libmesh/meshfree_interpolation.h"
 #include "radial_interpolation.h"
+#include "NN_interpolation.h"
 
 
 // Bring in everything from the libMesh namespace
@@ -157,7 +158,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
-   RBFInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   //RBFInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -292,10 +294,10 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
          out<<"quadrature: ";
-         out<<q_point[qp](0)<<"  ";
-         out<<q_point[qp](1)<<"  ";
-         out<<q_point[qp](2)<<"  ";
-         out<<potval[qp]<<"  "<<std::endl;
+         out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
+         out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
+         out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
+         out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
          //out<<1/(q_point[qp].norm())<<std::endl;
          if (cap){
             Real mindist=0;
@@ -365,7 +367,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
-   RBFInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   //RBFInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);

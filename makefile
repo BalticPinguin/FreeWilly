@@ -17,7 +17,7 @@ target	   := ./FrWll-$(METHOD)
 # defined
 
 #srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.cpp
-srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C r8lib.C rbf_interp_nd.C NN_interpolation.C
+srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C r8lib.C rbf_interp_nd.C
 #srcfiles	:= test.C radial_interpolation.C r8lib.C rbf_interp_nd.C
 #srcfiles	:= test.C radial_interpolation.C r8lib.C rbf_interp_nd.C
 

@@ -15,8 +15,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef RADIAL_BASIS_INTERPOLATION_H
-#define RADIAL_BASIS_INTERPOLATION_H
+#ifndef NEARES_NEIGHBOURS_INTERPOLATION_H
+#define NEARES_NEIGHBOURS_INTERPOLATION_H
 
 // includes from libmesh
 #include "libmesh/point.h"
@@ -41,7 +41,7 @@ namespace libMesh
  * Radias basis interplation.
  */
 template <unsigned int KDDim>
-class NNInterpolation : public MeshfreeInterpolation
+class NeNeInterpolation : public MeshfreeInterpolation
 {
 protected:
 
@@ -158,7 +158,6 @@ protected:
       
    mutable UniquePtr<kd_tree_t> _kd_tree;
    std::vector<Node> _geom;
-   Real _power;
    
    #endif // LIBMESH_HAVE_NANOFLANN
    
@@ -176,8 +175,6 @@ protected:
                             const std::vector<Real>   & src_dist_sqr,
                             std::vector<Number>::iterator & out_it) const;
    
-   const unsigned int _n_interp_pts;
-   
    /**
    * Temporary work array.  Object level scope to avoid cache thrashing.
    */
@@ -189,17 +186,16 @@ public:
    * Constructor. Takes the inverse distance power,
    * which defaults to 2.
    */
-   NNInterpolation (const libMesh::Parallel::Communicator & comm_in,
-                                 const unsigned int n_interp_pts ,
-                                 const Real  power               ,
-                                 const std::vector<Node> geometry) :
-      MeshfreeInterpolation(comm_in),
+   NeNeInterpolation (const libMesh::Parallel::Communicator & comm_in,
+                                 const unsigned int /*n_interp_pts*/ ,
+                                 const Real  /*power    */           ,
+                                 const std::vector<Node> /*geometry*/) :
    #if LIBMESH_HAVE_NANOFLANN
-      _point_list_adaptor(_src_pts),
+       MeshfreeInterpolation(comm_in),
+      _point_list_adaptor(_src_pts)
+   #else 
+       MeshfreeInterpolation(comm_in)
    #endif
-   _geom(geometry),
-   _power(power),
-   _n_interp_pts(n_interp_pts)
    {}
    
    /**
@@ -220,4 +216,4 @@ public:
 } // namespace libMesh
 
 
-#endif // #define RADIAL_BASIS_INTERPOLATION_H
+#endif // #define NEARES_NEIGHBOURS_INTERPOLATION_H
