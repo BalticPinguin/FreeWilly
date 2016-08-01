@@ -336,7 +336,6 @@ double dnrm2 ( int n, double x[], int incx )
   double norm;
   double scale;
   double ssq;
-  double value;
 
   if ( n < 1 || incx < 1 )
   {
@@ -823,7 +822,6 @@ int dsvdc ( double a[], int lda, int m, int n, double s[], double e[],
   int mm;
   int mm1;
   int mn;
-  int mp1;
   int nct;
   int nctp1;
   int ncu;
@@ -1126,8 +1124,6 @@ int dsvdc ( double a[], int lda, int m, int n, double s[], double e[],
     }
     else
     {
-      mp1 = mn + 1;
-
       for ( lls = l+1; lls <= mn+1; lls++ )
       {
         ls = mn - lls + l + 1;
@@ -1742,7 +1738,6 @@ double *r8mat_solve_svd ( int m, int n, double a[], double b[] )
   int ldu;
   int ldv;
   int job;
-  int lwork;
   double *s;
   double *sp;
   double *sdiag;
@@ -1768,12 +1763,15 @@ double *r8mat_solve_svd ( int m, int n, double a[], double b[] )
 
   if ( info != 0 )
   {
+    // info flag gives number of wrong vectors/values. 
+    // It is non-zero, if dsvdc needs more than 30 iterations.
     cerr << "\n";
     cerr << "R8MAT_SOLVE_SVD - Fatal error!\n";
     cerr << "  The SVD could not be calculated.\n";
     cerr << "  LINPACK routine DSVDC returned a nonzero\n";
     cerr << "  value of the error flag, INFO = " << info << "\n";
-    exit ( 1 );
+    //exit ( 1 );
+    throw 1;
   }
 
   s = new double [ m * n ];
@@ -2028,7 +2026,13 @@ double *rbf_weight ( int m, int nd, double xd[], double r0,
 //
 //  Solve for the weights.
 //
-  w = r8mat_solve_svd ( nd, nd, a, fd );
+  try{
+     w = r8mat_solve_svd ( nd, nd, a, fd );
+  }
+  catch(...){
+      throw 1;
+  }
+
 
   delete [] a;
   delete [] r;
