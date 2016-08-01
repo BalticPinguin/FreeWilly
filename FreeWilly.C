@@ -17,6 +17,7 @@
 #include "libmesh/numeric_vector.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/condensed_eigen_system.h"
+#include "libmesh/linear_implicit_system.h"
 #include "libmesh/fe_interface.h" // for dirichlet boundary conditions
 #include "libmesh/error_vector.h" // for dirichlet boundary conditions
 #include "libmesh/explicit_system.h"
@@ -44,7 +45,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name);
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
 // void tetrahedralise_sphere(mesh, const libMesh::Parallel::Communicator& comm);
 //void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator);
-void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, int N);
+void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, unsigned int N);
 
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
@@ -114,7 +115,6 @@ int main (int argc, char** argv){
       out<<"box"<<std::endl;}
    else{
       // the function below creates a mesh using the molecular structure.
-      //tetrahedralise_sphere(mesh, geometry, mesh_geom);
       tetrahedralise_sphere(mesh, geometry, mesh_geom, r, NrBall, VolConst, L, N);
       assert(pot_file!="none");
    }
@@ -168,7 +168,7 @@ int main (int argc, char** argv){
    // Create a EigenSystem named "Eigensystem" and (for convenience)
    // use a reference to the system we create.
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
-   ExplicitSystem & ESP = equation_systems.add_system<ExplicitSystem> ("ESP");
+   LinearImplicitSystem & ESP = equation_systems.add_system<LinearImplicitSystem> ("ESP");
    //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
@@ -252,7 +252,7 @@ int main (int argc, char** argv){
    equation_systems.init();
 
    // Prints information about the system to the screen.
-   equation_systems.print_info();
+   //equation_systems.print_info();
 
     // add boundary conditions if not infinite elements used. In the latter case ...
    if (not infel){
@@ -297,6 +297,8 @@ int main (int argc, char** argv){
       eigen_system.solve();
       ESP.solve();
    }
+   out<<"solution"<<std::endl;
+   ESP.solution->print();
 
    // Get the number of converged eigen pairs.
    unsigned int nconv = eigen_system.get_n_converged();
@@ -313,7 +315,7 @@ int main (int argc, char** argv){
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
           else
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
-          ExodusII_IO (mesh).write_equation_systems ( eigenvector_output_name.str(), equation_systems);
+          ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
           //eigenvector_output_name<< i <<"_err.e";
           //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
        }

@@ -14,6 +14,7 @@
 #include "libmesh/numeric_vector.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/condensed_eigen_system.h"
+#include "libmesh/linear_implicit_system.h"
 #include "libmesh/fe_interface.h" // for dirichlet boundary conditions
 #include "libmesh/error_vector.h" // for dirichlet boundary conditions
 #include "libmesh/elem.h"
@@ -143,7 +144,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    const unsigned int dim = mesh.mesh_dimension();
       
    // Get a reference to our system.
-   CondensedEigenSystem & eigen_system = es.get_system<CondensedEigenSystem> (system_name);
+   EigenSystem & eigen_system = es.get_system<EigenSystem> (system_name);
 
    //const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & potfile = es.parameters.get<std::string>("potential");
@@ -158,8 +159,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
-   //RBFInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
-   NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   RBFInterpolation<3> potential(mesh.comm(), 13, power, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -185,6 +186,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    // A  Gauss quadrature rule for numerical integration.
    // Use the default quadrature order.
    QGauss qrule (dim, fe_type.default_quadrature_order());
+   //QGauss qrule (dim, SIXTH);
    //QGauss qrule (dim, TWENTIETH);
       
    // Tell the finite element object to use our quadrature rule.
@@ -209,13 +211,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    // The element mass matrix and Hamiltonian
    DenseMatrix<Number> Se;
    DenseMatrix<Number> H;
-   
-   // besides the photoelectron, I have also the electrostatic potential (esp) 
-   // and the Dyson orbital as variables on this function. 
-   // Their values are known in advance but I think it is easiest to have them 
-   //   in the same equation system
-   //NumericVector<Number> & ESP=eigen_system.add_vector("esp", true);
-   //NumericVector<Number> & DO=eigen_system.add_vector("DO", true);
 
    // This vector will hold the degree of freedom indices for
    // the element.  These define where in the global system
@@ -278,8 +273,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       // (phi, dphi) for the current element.
       cfe->reinit (elem);
    
-      // Zero the element matrices and rhs before
-      // summing them.  We use the resize member here because
+      // Zero the element matrices before summing them.  
+      // We use the resize member here because
       // the number of degrees of freedom might have changed from
       // the last element.  Note that this will be the case if the
       // element type is different (i.e. the last element was a
@@ -299,17 +294,17 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
          out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
          out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
          //out<<1/(q_point[qp].norm())<<std::endl;
-         if (cap){
-            Real mindist=0;
-            for(unsigned int site=0; site<mol_geom.size(); site++){
-               if ((q_point[qp]-mol_geom[site]).norm()<mindist)
-                  mindist=(q_point[qp]-mol_geom[site]).norm();
-               if ((q_point[qp]-mol_geom[site]).norm()<radius)
-                  break;
-               if (site==mol_geom.size()-1)
-                  potval[qp]+=(0,gamma*mindist*mindist);
-            }
-         }
+        // if (cap){
+        //    Real mindist=0;
+        //    for(unsigned int site=0; site<mol_geom.size(); site++){
+        //       if ((q_point[qp]-mol_geom[site]).norm()<mindist)
+        //          mindist=(q_point[qp]-mol_geom[site]).norm();
+        //       if ((q_point[qp]-mol_geom[site]).norm()<radius)
+        //          break;
+        //       if (site==mol_geom.size()-1)
+        //          potval[qp]+=(0,gamma*mindist*mindist);
+        //    }
+        // }
 
          // Now, get number of shape functions that are nonzero at this point::
          unsigned int n_sf = cfe->n_shape_functions();
@@ -350,7 +345,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    return;
 }
 
-void assemble_ESP(EquationSystems & es, const std::string & system_name){
+void assemble_ESP1(EquationSystems & es, const std::string & system_name){
    // Get a constant reference to the mesh object.
    const MeshBase& mesh = es.get_mesh();
    // The dimension that we are running.
@@ -367,8 +362,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
-   //RBFInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
-   NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   RBFInterpolation<3> potential(mesh.comm(), 13, power, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -389,6 +384,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    // A  Gauss quadrature rule for numerical integration.
    // Use the default quadrature order.
    QGauss qrule (dim, fe_type.default_quadrature_order());
+   //QGauss qrule (dim, SIXTH);
       
    // Tell the finite element object to use our quadrature rule.
    fe->attach_quadrature_rule (&qrule);
@@ -452,6 +448,23 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
          // Now, get number of shape functions:
+         out<<"quadrature2 ";
+         out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
+         out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
+         out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
+         out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
+         //out<<1/(q_point[qp].norm())<<std::endl;
+        // if (cap){
+        //    Real mindist=0;
+        //    for(unsigned int site=0; site<mol_geom.size(); site++){
+        //       if ((q_point[qp]-mol_geom[site]).norm()<mindist)
+        //          mindist=(q_point[qp]-mol_geom[site]).norm();
+        //       if ((q_point[qp]-mol_geom[site]).norm()<radius)
+        //          break;
+        //       if (site==mol_geom.size()-1)
+        //          potval[qp]+=(0,gamma*mindist*mindist);
+        //    }
+        // }
          unsigned int n_sf = cfe->n_shape_functions();
          for (unsigned int i=0; i<n_sf; i++){
             eigen_system.solution->set(dof_indices[i], potval[qp]);
@@ -462,6 +475,163 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    } // end of element loop
    eigen_system.solution->close();
          
+   /**
+   * All done!
+   */
+   return;
+}
+
+void assemble_ESP(EquationSystems & es, const std::string & system_name){
+   // Get a constant reference to the mesh object.
+   const MeshBase& mesh = es.get_mesh();
+   // The dimension that we are running.
+   const unsigned int dim = mesh.mesh_dimension();
+      
+   // Get a reference to our system.
+   LinearImplicitSystem & eigen_system = es.get_system<LinearImplicitSystem> (system_name);
+
+   Real power=es.parameters.get<Real>("power");
+   const std::string & potfile = es.parameters.get<std::string>("potential");
+   std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
+   
+   struct ESP esp;
+   Read(esp, potfile);
+
+   //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
+   RBFInterpolation<3> potential(mesh.comm(), 13, power, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   const std::vector<std::string> esp_data(1);
+   potential.set_field_variables(esp_data);
+   potential.add_field_data(esp_data, esp.node, esp.potential);
+
+   potential.prepare_for_use();
+      
+   // Get a constant reference to the Finite Element type
+   // for the first (and only) variable in the system.
+   FEType fe_type = eigen_system.get_dof_map().variable_type(0);
+      
+   // Build a Finite Element object of the specified type.  Since the
+   // \p FEBase::build() member dynamically creates memory we will
+   // store the object as an \p UniquePtr<FEBase>.  This can be thought
+   // of as a pointer that will clean up after itself.
+   UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));  // here, try AutoPtr instead...
+   UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(dim, fe_type));
+   
+   // A  Gauss quadrature rule for numerical integration.
+   // Use the default quadrature order.
+   QGauss qrule (dim, fe_type.default_quadrature_order());
+   //QGauss qrule (dim, SIXTH);
+   //QGauss qrule (dim, TWENTIETH);
+      
+   // Tell the finite element object to use our quadrature rule.
+   fe->attach_quadrature_rule (&qrule);
+   inf_fe->attach_quadrature_rule (&qrule);
+      
+   // A reference to the \p DofMap object for this system.  The \p DofMap
+   // object handles the index translation from node and element numbers
+   // to degree of freedom numbers.
+   const DofMap& dof_map = eigen_system.get_dof_map();
+      
+   // The element mass matrix and Hamiltonian
+   DenseMatrix<Number> M;
+   DenseVector<Number> f;
+   // This vector will hold the degree of freedom indices for
+   // the element.  These define where in the global system
+   // the element degrees of freedom get mapped.
+   std::vector<dof_id_type> dof_indices;
+      
+   // Now we will loop over all the elements in the mesh that
+   // live on the local processor. We will compute the element
+   // matrix and right-hand-side contribution.  In case users
+   // later modify this program to include refinement, we will
+   // be safe and will only consider the active elements;
+   // hence we use a variant of the \p active_elem_iterator.
+   MeshBase::const_element_iterator       el  = mesh.active_local_elements_begin();
+   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+      
+   std::vector<Number> pot(1);
+      
+   for ( ; el != end_el; ++el){
+      // Store a pointer to the element we are currently
+      // working on.  This allows for nicer syntax later.
+      const Elem* elem = *el;
+
+      // Get the degree of freedom indices for the
+      // current element.  These define where in the global
+      // matrix and right-hand-side this element will
+      // contribute to.
+      dof_map.dof_indices (elem, dof_indices);
+
+      // unifyging finite and infinite elements
+      FEBase * cfe = libmesh_nullptr;
+
+      if (elem->infinite()){
+         cfe = inf_fe.get();
+      }
+      else{
+        cfe = fe.get();
+      }
+     
+      // The element Jacobian * quadrature weight at each integration point.
+      const std::vector<Real>& JxW = cfe->get_JxW();
+
+      // The element shape functions evaluated at the quadrature points.
+      const std::vector<std::vector<Real> >& phi = cfe->get_phi();
+      const std::vector<Point>& q_point = cfe->get_xyz();
+      std::vector<Number>& potval=pot;  //initialisation just for dummy reasons
+      // get extra data needed for infinite elements
+      const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
+   
+      // Compute the element-specific data for the current
+      // element.  This involves computing the location of the
+      // quadrature points (q_point) and the shape functions
+      // (phi, dphi) for the current element.
+      cfe->reinit (elem);
+      M.resize (dof_indices.size(), dof_indices.size());
+      f.resize (dof_indices.size());
+      potential.interpolate_field_data(esp_data, q_point, potval);
+
+      // Now loop over the quadrature points.  This handles
+      // the numeric integration.
+      //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
+      unsigned int max_qp = cfe->n_quadrature_points();
+      for (unsigned int qp=0; qp<max_qp; qp++){
+         out<<"quadrature2 ";
+         out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
+         out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
+         out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
+         out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
+         //out<<1/(q_point[qp].norm())<<std::endl;
+        // if (cap){
+        //    Real mindist=0;
+        //    for(unsigned int site=0; site<mol_geom.size(); site++){
+        //       if ((q_point[qp]-mol_geom[site]).norm()<mindist)
+        //          mindist=(q_point[qp]-mol_geom[site]).norm();
+        //       if ((q_point[qp]-mol_geom[site]).norm()<radius)
+        //          break;
+        //       if (site==mol_geom.size()-1)
+        //          potval[qp]+=(0,gamma*mindist*mindist);
+        //    }
+        // }
+         
+         // Now, get number of shape functions:
+         unsigned int n_sf = cfe->n_shape_functions();
+         for (unsigned int i=0; i<n_sf; i++){
+            f(i)+=JxW[qp]*weight[qp]*phi[i][qp]*potval[qp];
+            for (unsigned int j=0; j<n_sf; j++){
+               M(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
+            }
+         }
+      }
+      dof_map.heterogenously_constrain_element_matrix_and_vector (M, f, dof_indices);
+
+      eigen_system.matrix->add_matrix (M, dof_indices);
+      eigen_system.rhs->add_vector (f, dof_indices);
+
+   } // end of element loop
+         
+   eigen_system.rhs->close();
+   eigen_system.rhs->print();
    /**
    * All done!
    */
