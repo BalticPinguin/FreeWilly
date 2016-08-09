@@ -273,6 +273,9 @@ int main (int argc, char** argv){
       // maximum number of refinements:
       mesh_refinement.max_h_level()=7;
       unsigned int r_max=7;
+      ESP.solve();
+      // set the ESP as initial guess for solution vector.
+      * eigen_system.solution = * ESP.solution; 
       for(unsigned int r=0; r<=r_max; r++){
          eigen_system.solve();
          if (r<r_max){
@@ -297,8 +300,6 @@ int main (int argc, char** argv){
       eigen_system.solve();
       ESP.solve();
    }
-   out<<"solution"<<std::endl;
-   ESP.solution->print();
 
    // Get the number of converged eigen pairs.
    unsigned int nconv = eigen_system.get_n_converged();

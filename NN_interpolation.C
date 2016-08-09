@@ -97,7 +97,8 @@ void NeNeInterpolation<KDDim>::interpolate_field_data (const std::vector<std::st
   {
     std::vector<Number>::iterator out_it = tgt_vals.begin();
 
-    const size_t num_results = (size_t) _src_pts.size();
+    //const size_t num_results = (size_t) _src_pts.size();
+    const size_t num_results = (size_t) 2;
 
     std::vector<size_t> ret_index(num_results);
     std::vector<Real>   ret_dist_sqr(num_results);
@@ -110,7 +111,9 @@ void NeNeInterpolation<KDDim>::interpolate_field_data (const std::vector<std::st
 
         _kd_tree->knnSearch(&query_pt[0], num_results, &ret_index[0], &ret_dist_sqr[0]);
 
-        this->interpolate (tgt, ret_index, ret_dist_sqr, out_it);
+        //this->interpolate (tgt, ret_index, ret_dist_sqr, out_it);
+        * out_it =_src_vals[ret_index[0]];
+         ++out_it;
       }
   }
 #else
@@ -121,29 +124,17 @@ void NeNeInterpolation<KDDim>::interpolate_field_data (const std::vector<std::st
 #endif
 }
 
+// keep it for consistency, actually not needed since there is no real interpolation.
 template <unsigned int KDDim>
 void NeNeInterpolation<KDDim>::interpolate (const Point               &  /*pt*/ ,
-                                                       const std::vector<size_t> & src_indices,
-                                                       const std::vector<Real>   & src_dist_sqr,
-                                                       std::vector<Number>::iterator & out_it) const
+                                                       const std::vector<size_t> &/* src_indices*/,
+                                                       const std::vector<Real>   & /*src_dist_sqr*/,
+                                                       std::vector<Number>::iterator & /*out_it*/) const
 {
   // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
   libmesh_assert_equal_to (this->n_field_variables(),1);
   // Compute the interpolation weights & interpolated value
-  const unsigned int n_fv = 1;
-  _vals.resize(n_fv); /**/ std::fill (_vals.begin(), _vals.end(), Number(0.));
   
-  unsigned int min=0;
-  for (unsigned int i=1; i<src_dist_sqr.size(); i++){
-     if (src_dist_sqr[i]<src_dist_sqr[min])
-        min=i;
-  }
-
-  for (unsigned int v=0; v<n_fv; v++, ++out_it)
-    {
-    _vals[v] = _src_vals[src_indices[min]];
-    *out_it = _vals[v];
-  }
 }
 
 // ------------------------------------------------------------

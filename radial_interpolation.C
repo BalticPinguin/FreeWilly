@@ -159,18 +159,12 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    Real* xd= new Real[n_src*KDDim];
    Real* fd= new Real[n_src*KDDim];
    // convert (input) vector to pointer-notation for rbf-functions:
-   //out<<"scr-points:  \n";
    for (unsigned int i=0; i<n_src; i++){
-      //out<<_src_pts[src_indices[i]]<<"  ";
       for (unsigned int j=0; j<KDDim; j++){
           xd[j+KDDim*i]=_src_pts[src_indices[i]](j)-pt(j);
-          //out<<xd[j+KDDim*i]<<" ";
       }
       fd[i]=_src_vals[src_indices[i]].real();
-      //out<<"  ";
-      //out<<fd[i]<<std::endl;
    }
-   //out<<"done.";
    
    int closest=-1;
    double minnorm=1e42; // larger than distance to all atoms
@@ -184,11 +178,6 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    Real r0=_power;
    Real inner_range=1.2; // about half of the typical binding length...
    Real outer_range=4.;  // 'far away' from any nucleus.
-   out<<"  "<<pt<<std::endl; 
-   for (unsigned int i=0; i<n_src; i++){
-       out<<fd[i]<<"  "<<_src_pts[src_indices[i]]-pt<<std::endl;
-   }
-   out<<std::endl;
          
    Real *w;
    /*
@@ -208,20 +197,16 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
             fd[i]+=(Real)_geom[closest].id()/r;
          else
             fd[i]+=(Real)_geom[closest].id()*1e+7;
-         //out<<"distance: "<< (_src_pts[src_indices[i]]-_geom[closest]).norm()<<std::endl;
       }
       //r0*=0.3;
    
       w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
       fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
-      out<<fi[0]<<"  ";
       Real r=(pt-_geom[closest]).norm();
       if (r>1e-7)
          fi[0]-=(Real)_geom[closest].id()/r;
       else
          fi[0]-=(Real)_geom[closest].id()*1e+7;
-      //out<<"dist:     "<< (pt-_geom[closest]).norm()<<std::endl;
-      out<<fi[0]<<std::endl;
    }
    else if (minnorm > outer_range){
       //r0=0.7;

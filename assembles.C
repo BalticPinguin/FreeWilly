@@ -149,18 +149,17 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    //const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & potfile = es.parameters.get<std::string>("potential");
    bool cap=es.parameters.get<bool >("cap");
-   Real radius=es.parameters.get<Real>("radius");
+   Real radius=es.parameters.get<Real>("radius")*0.9;
    Real gamma =es.parameters.get<Real>("gamma");
    Real power=es.parameters.get<Real>("power");
-   out<<"Power: "<<power<<std::endl;
    std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
 
    struct ESP esp;
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
-   RBFInterpolation<3> potential(mesh.comm(), 13, power, mol_geom);
-   //NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   //RBFInterpolation<3> potential(mesh.comm(), 9, power, mol_geom);
+   NeNeInterpolation<3> potential(mesh.comm(), 1, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -294,17 +293,16 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
          out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
          out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
          //out<<1/(q_point[qp].norm())<<std::endl;
-        // if (cap){
-        //    Real mindist=0;
-        //    for(unsigned int site=0; site<mol_geom.size(); site++){
-        //       if ((q_point[qp]-mol_geom[site]).norm()<mindist)
-        //          mindist=(q_point[qp]-mol_geom[site]).norm();
-        //       if ((q_point[qp]-mol_geom[site]).norm()<radius)
-        //          break;
-        //       if (site==mol_geom.size()-1)
-        //          potval[qp]+=(0,gamma*mindist*mindist);
-        //    }
-        // }
+         pot[0]=potval[qp];
+         if (cap){
+            Real mindist=6000;
+            for(unsigned int site=0; site<mol_geom.size(); site++){
+               if ((q_point[qp]-mol_geom[site]).norm()<mindist)
+                  mindist=(q_point[qp]-mol_geom[site]).norm();
+            }
+            if (mindist>=radius)
+               pot[0]=potval[qp]+Number(0,gamma*mindist*mindist);
+         }
 
          // Now, get number of shape functions that are nonzero at this point::
          unsigned int n_sf = cfe->n_shape_functions();
@@ -316,7 +314,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
                      weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
                      ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-phi[j][qp]*dphi[i][qp]));
-               H(i,j) += JxW[qp]*(co0_5*temp + (potval[qp]- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
+               H(i,j) += JxW[qp]*(co0_5*temp + (pot[0]- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
             }
          }
       }
@@ -357,13 +355,16 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    Real power=es.parameters.get<Real>("power");
    const std::string & potfile = es.parameters.get<std::string>("potential");
    std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
+   bool cap=es.parameters.get<bool >("cap");
+   Real radius=es.parameters.get<Real>("radius")*0.9;
+   Real gamma =es.parameters.get<Real>("gamma");
    
    struct ESP esp;
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
-   RBFInterpolation<3> potential(mesh.comm(), 13, power, mol_geom);
-   //NeNeInterpolation<3> potential(mesh.comm(), 12, power, mol_geom);
+   //RBFInterpolation<3> potential(mesh.comm(), 9, power, mol_geom);
+   NeNeInterpolation<3> potential(mesh.comm(), 1, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -460,28 +461,22 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
-         out<<"quadrature2 ";
-         out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
-         out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
-         out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
-         out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
          //out<<1/(q_point[qp].norm())<<std::endl;
-        // if (cap){
-        //    Real mindist=0;
-        //    for(unsigned int site=0; site<mol_geom.size(); site++){
-        //       if ((q_point[qp]-mol_geom[site]).norm()<mindist)
-        //          mindist=(q_point[qp]-mol_geom[site]).norm();
-        //       if ((q_point[qp]-mol_geom[site]).norm()<radius)
-        //          break;
-        //       if (site==mol_geom.size()-1)
-        //          potval[qp]+=(0,gamma*mindist*mindist);
-        //    }
-        // }
+         pot[0]=potval[qp];
+         if (cap){
+            Real mindist=6000;
+            for(unsigned int site=0; site<mol_geom.size(); site++){
+               if ((q_point[qp]-mol_geom[site]).norm()<mindist)
+                  mindist=(q_point[qp]-mol_geom[site]).norm();
+            }
+            if (mindist>=radius)
+               pot[0]=potval[qp]+Number(0,gamma*mindist*mindist);
+         }
          
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();
          for (unsigned int i=0; i<n_sf; i++){
-            f(i)+=JxW[qp]*weight[qp]*phi[i][qp]*potval[qp];
+            f(i)+=JxW[qp]*weight[qp]*phi[i][qp]*pot[0];
             for (unsigned int j=0; j<n_sf; j++){
                M(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
             }
@@ -494,8 +489,6 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
 
    } // end of element loop
          
-   eigen_system.rhs->close();
-   eigen_system.rhs->print();
    /**
    * All done!
    */
