@@ -243,7 +243,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real> ("radius") = r;
    Real power=cl("power",12.);
    equation_systems.parameters.set<Real> ("power") = power;
-   Real gamma=cl("gamma",0.);
+   Real gamma=cl("gamma",0.0);
    equation_systems.parameters.set<Real> ("gamma") = gamma;
    equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = geometry;
    equation_systems.parameters.set<bool> ("cap") = cap;
@@ -262,6 +262,10 @@ int main (int argc, char** argv){
    }
 
    // Solve the system "Eigensystem".
+   
+   ESP.solve();
+   // set the ESP as initial guess for solution vector.
+   * eigen_system.solution = * ESP.solution; 
 
    //now, do refinement loop, if refinement is allowd:
    if (refinement){

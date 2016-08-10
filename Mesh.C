@@ -31,7 +31,8 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, s
    // 5.) Set parameters and tetrahedralize the domain
    
    // 0 means "use TetGen default value"
-   Real quality_constraint = 42*10; // practically no constraint
+   //Real quality_constraint = 42*10; // practically no constraint
+   Real quality_constraint = 2;
    
    // The volume constraint determines the max-allowed tetrahedral
    // volume in the Mesh.  TetGen will split cells which are larger than
@@ -131,8 +132,8 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
       if (scale == 0.)
          continue;
       // create a unit sphere of respective type with slowly incr. number of points
-      //pts_circle=(int)(r_max*sqrt(scale)*10.+1)*points_on_sphere;
-      pts_circle=points_on_sphere;
+      pts_circle=(int)(r_max*scale*0.3+1)*points_on_sphere;
+      //pts_circle=points_on_sphere;
       if (creator=="fibonacci")
          point=fibonacci(pts_circle);
       else if (creator=="archimedes")
