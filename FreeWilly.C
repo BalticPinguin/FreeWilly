@@ -34,7 +34,9 @@ using namespace libMesh;
 
 // Function prototype.  This is the function that will assemble
 // the eigen system. Here, we will simply assemble a mass matrix.
-std::vector<Node> getGeometry(GetPot cl);
+std::vector<Node> old_getGeometry(GetPot cl);
+double normalise(EquationSystems& equation_systems);
+std::vector<libMesh::Node> getGeometry(std::string filename);
 
 //prototypes of functions in assemble.C (that are called from out of it)
 void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::set<unsigned int>&);
@@ -95,7 +97,8 @@ int main (int argc, char** argv){
    Mesh mesh(init.comm(), dim);
 
    Real E = cl("Energy", 0.0);
-   std::string mesh_geom = cl("mesh_geom", "sphere");
+   std::string molec_file=cl("mol_file", "invalid_file"); // this file contains all informations on the molecule
+   std::string angular_creator=cl("angular", "invalid"); 
    Real r=cl("radius", 20.);
    int NrBall=cl("points", 50);
    Real VolConst= cl("maxVol", 1./(32.*sqrt(E*E*E)) );
@@ -103,22 +106,15 @@ int main (int argc, char** argv){
    int N=cl("circles", 5);
    int maxiter=cl("maxiter", 700);
    bool cap = cl("cap", false);
-   std::vector<Node> geometry=getGeometry(cl);
+   std::vector<Node> geometry=getGeometry(molec_file);
    // Use the internal mesh generator to create a uniform
    // 2D grid on a square.
    // be aware: it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
-   if (mesh_geom=="sphere"){
-      MeshTools::Generation::build_sphere(mesh, 7., 3, HEX8, 2, true);
-      out<<"sphere"<<std::endl;}
-   else if (mesh_geom=="box"){
-      MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
-      out<<"box"<<std::endl;}
-   else{
-      // the function below creates a mesh using the molecular structure.
-      tetrahedralise_sphere(mesh, geometry, mesh_geom, r, NrBall, VolConst, L, N);
-      assert(pot_file!="none");
-   }
+   assert(pot_file!="none");
+   
+   // the function below creates a mesh using the molecular structure.
+   tetrahedralise_sphere(mesh, geometry, angular_creator, r, NrBall, VolConst, L, N);
    // Print information about the mesh to the screen.
    mesh.print_info();
    
@@ -176,7 +172,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<bool >("cap")=cap;
 
    equation_systems.parameters.set<std::string>("potential")=pot_file;
-   equation_systems.parameters.set<std::string>("DO_file")=cl("DO_file", "invalid_file");
+   equation_systems.parameters.set<std::string>("DO_file")=molec_file;
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
@@ -333,12 +329,14 @@ int main (int argc, char** argv){
        }
    #endif // #ifdef LIBMESH_HAVE_EXODUS_API
 
+   intensity=normalise(equation_systems);
+
    // All done.
    return 0;
 }
 #endif // LIBMESH_HAVE_SLEPC
       
-std::vector<Node> getGeometry(GetPot cl){
+std::vector<Node> old_getGeometry(GetPot cl){
    // extract the given geometry:
    std::string x=cl("x", ".");
    std::string y=cl("y", ".");
@@ -411,4 +409,21 @@ std::vector<Node> getGeometry(GetPot cl){
       geometry.push_back(tmpnd);
    }
    return geometry;
+}
+   
+double normalise(EquationSystems& equation_systems){
+   CondensedEigenSystem& eigen_system=equation_systems.get_system<CondensedEigenSystem> ("EigenSE");
+   LinearImplicitSystem & DO = equation_systems.get_system<LinearImplicitSystem> ("DO");
+   //normalise eigen_system:
+   SystemNorm phi_norm();
+   SystemNorm overlap();
+   eigen_system.calculate_norm(eigen_system.solution, phi_norm); // chose solution nr. 1 here!
+   //compute <DO| mu |phi>
+   calculate_overlap(eigen_system.solution, DO.solution, overlap);
+   
+   return overlap/norm;
+}
+   
+calculate_overlap(const NumericVector<Number>& eigen_system.solution, const NumericVector<Number>& DO.solution, const SystemNorm& overlap){
+   ...???---
 }

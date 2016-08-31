@@ -11,6 +11,8 @@
 */
 
 #include <stdio.h>
+#include <math.h> // need only exp() from it.
+#include <vector>
 
 extern void pass_arrays(char *file, int *length, int *atom, int *basis, double *env);
 extern void pass_parameters(char *file, int *length, int *natom, int *nbas, int *nbasf, int *env_bas_dim, int *ptr_env_start);
@@ -21,7 +23,8 @@ extern void global_par_deallocate();
 extern void pass_dyor(char *file, int *length, double* dyor); 
 // skip the character arrays for the moment. due to principle incompatibility with c.
 
-double DOval(double x, double y, double z, double* DyOr,double *env,int* basis,int* atom);
+double DOval(double x, double y, double z, double* DyOr,double *env,int* basis,int* atom, int nbas);
+double solHar(double x,double y,double z, unsigned int l, int m);
 void printDO(double* DyOr, int nbasf);
 
 int main( int argc, char **argv)
@@ -59,7 +62,6 @@ int main( int argc, char **argv)
    {
       n++;
    }
-   
    
    // call the fortran routine pass_parameters() from the parse_inp module to get the parameters
    int natom, nbas, nbasf, env_bas_dim, ptr_env_start;
@@ -107,67 +109,49 @@ int main( int argc, char **argv)
    
    // read the coefficients of the Dyson Orbital:
    pass_dyor(argv[1], &n, DyOr); 
-   printDO(DyOr, nbasf);
+   //printDO(DyOr, nbasf);
    int oldatom=7;
    int expoff=ptr_env_start+3*natom;
    int k=0, l;
    double c_j;
 
-   printf("atom   n    l    m    c_j    DO\n");
-   for( int b=0; b<nbas;b++){ // loop over bases
-      l=basis[b*basis_slots+1];
-      for(int m=-l; m<=l; m++){
-         for(int n=0; n<basis[b*basis_slots+3]; n++){  // quantum number=n+l
-            c_j=0;
-            for(int i=0; i<basis[b*basis_slots+2]; i++){
-               c_j+=env[basis[b*basis_slots+6]+n*basis[b*basis_slots+2]+i];
-            }
-            printf("%d     %d      %d     %d",atom[basis[b*basis_slots]*atom_slots], n+1+l,l,m);
-            printf("   %f   %f \n",c_j, DyOr[k]);
-            k++;
+   std::vector<double> do_j;
+   std::
+
+   MakeVectors();
+
+   //setup a test-grid to evaluate the function values at
+   for(unsigned int i=0; i<1; i++){
+      for(unsigned int j=0; j<1; j++){
+         for(unsigned int k=0; k<1; k++){
+            x=-5.+i/10.;
+            y=-5.+j/10.;
+            z=-5.+k/10.;
+            // evaluate data at grid and printh the values.
+            //printf("%f   %f   %f   %g\n",x,y,z,DOval(x, y, z, DyOr, env, basis, atom, nbas));
+            DOval(x, y, z, DyOr, env, basis, atom, nbas);
          }
       }
    }
-//   for( int a=0; a<nbas;a++){ // loop over bases:
-//      if (basis[a*basis_slots] != oldatom){
-//         printf("consider atom %d: \n", atom[basis[a*basis_slots]*atom_slots]);
-//         //printf("consider new atom \n");
-//         oldatom=basis[a*basis_slots];
-//      }
-//      for(int i=0; i< basis[a*basis_slots+2]; i++){
-//         printf("%f \n",env[basis[a*basis_slots+5]+i]);
-//      }
-//   }
-   
-   //setup a test-grid to evaluate the function values at
- //  for(unsigned int i=0; i<100; i++){
- //     for(unsigned int j=0; j<100; j++){
- //        for(unsigned int k=0; k<100; k++){
- //           x=-5.+i/10.;
- //           y=-5.+j/10.;
- //           z=-5.+k/10.;
- //           // evaluate data at grid and printh the values.
- //           printf("%f   %f   %f   %f\n",x,y,z,DOval(x,y,z, DyOr, env, basis, atom));
- //        }
- //     }
- //  }
    
    return 0;
 }
 
-double DOval(double x, double y, double z, double* DyOr,double *env,int* basis,int* atom, int nbasf){
+double DOval(double x, double y, double z, double* DyOr,double *env,int* basis,int* atom, int nbas){
    double do_val=0;
-   double radial, coeff;
-   int k=0, b,j,n;
+   double radial, coeff, ylm;
+   int k=0, b,j,n, l,m;
+   const int basis_slots = 8;
    for(b=0; b<nbas;b++){                      // loop over bases
       l=basis[b*basis_slots+1];                    // each basis has fixed ang. momentum
-      for(m=-l; m<l; m++){                         // loop over m
+      for(m=-l; m<=l; m++){                         // loop over m
          radial=0;
-         ylm=solHar(x,y,z, l, m)
+         ylm=solHar(x,y,z, l, m);
          for(j=0; j<basis[b*basis_slots+2]; j++ ){ // loop over primitives
             coeff=0;
             for(n=0; n<basis[b*basis_slots+3]; n++){  // quantum number=n+l
-               coeff+=DyOr[k]*env[basis[b*basis_slots+6]+n*basis[b*basis_slots+2]+i];
+               coeff+=DyOr[k]*env[basis[b*basis_slots+6]+n*basis[b*basis_slots+2]+n];
+               printf(" %d   %d   %d   %g   %e \n",n+l, l, m, DyOr[k], env[basis[b*basis_slots+6]+n*basis[b*basis_slots+2]+n]);
                k++;
             }
             coeff;
@@ -176,6 +160,7 @@ double DOval(double x, double y, double z, double* DyOr,double *env,int* basis,i
          do_val+=radial*ylm;
       }
    }
+   printf("\n\n");
    return do_val;
 }
    //  b=0  index of atom
@@ -186,28 +171,6 @@ double DOval(double x, double y, double z, double* DyOr,double *env,int* basis,i
    //  b=5  *env: start alpha
    //  b=6  *env: start contractions
    //  b=7  not used ?
-
-//double DOval(double x, double y, double z, double* DyOr,double *env,int* basis,int* atom, int nbasf){
-//   //--> evaluate DO at x,y,z:
-//   double do_xyz=0
-//   double coeff, radial, angular;
-//   unsigned int i,j,k;
-//   const expOff=natom*3+21
-//   for( j=0; j<...; j++){ // loop over primitive basis functions
-//      radial=exp(-env[expOff+j]*(x*x+y*y+z*z));
-//      coeff=0;
-//      for( i=0; i<...; i++){ // loop over orbitals
-//         angular=0;
-//         for( m=-env[ ...]; m< env[ ...] ; m++){ 
-//            // sum up contractions of this basis function
-//            angular+=DyOr[i ...] *SolHar(x,y,z, ..., ....);
-//         }
-//         coeff+=env[ ...]*angular;
-//      }
-//      do_xyz+=coeff*radial;
-//   }
-//   return do_xyz;
-//}
 
 void printDO(double* DyOr, int nbasf){
    for(unsigned int i=0; i<nbasf; i++){

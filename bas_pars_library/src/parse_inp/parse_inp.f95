@@ -275,7 +275,7 @@ subroutine get_par_arrays(filehandle,filename)
   call fclose(filename, filehandle)
 end subroutine get_par_arrays
 ! 
-subroutine get_do_array(filehandle,filename, dyorb)
+subroutine get_do_array(filehandle,filename, dyorb, energy, normDO)
    use, intrinsic :: iso_c_binding
    use :: constants, only : lk, ll, dp
    !  use :: global_data, only: ATOM, BASIS, ENV, ATOM_SLOTS, BASIS_SLOTS, NATOM, NBAS,PTR_ENV_START, ENV_BASIS_DIM
@@ -293,8 +293,8 @@ subroutine get_do_array(filehandle,filename, dyorb)
    integer ::  count
    ! status of the read statement
    integer :: stat
-   real(kind=dp) :: energy ! TODO
-   real(kind=dp) :: norm
+   real(c_double), intent(out) :: energy 
+   real(c_double), intent(out) :: normDO
    ! keys for searching through the input file (begin, end and normal)
    character(len=lk) :: bkey
    character(len=lk) :: ekey
@@ -361,7 +361,7 @@ subroutine get_do_array(filehandle,filename, dyorb)
             ! don't read data from that line, just skip it.
             read(stream,*,IOSTAT=stat)
          elseif (normfound .ne. 0) then !the norm of DO is found 
-            read(stream,*,IOSTAT=stat) dump1, dump2, norm
+            read(stream,*,IOSTAT=stat) dump1, dump2, normDO
          else  ! this line contains the dyson orbital:
             read(stream,*,IOSTAT=stat) dump1, dump2, dyUP(count), dyDO(count)
             if(stat .ne. 0)then
@@ -474,7 +474,7 @@ subroutine pass_arrays(infile, length, atm, bas, envi) bind(C)
 end subroutine pass_arrays
 
 ! function that takes an inputfile name and returns the array DYOR (HUBERT)
-subroutine pass_dyor(infile, length, dyor) bind(C)
+subroutine pass_dyor(infile, length, dyor, energy, normDO) bind(C)
    use, intrinsic :: iso_c_binding
    ! later: check which of them are used  (HUBERT)
    !use::global_data, only: ATOM, BASIS, ENV, ATOM_SLOTS, BASIS_SLOTS, NATOM, NBAS, PTR_ENV_START, ENV_BASIS_DIM
@@ -487,6 +487,8 @@ subroutine pass_dyor(infile, length, dyor) bind(C)
    integer :: i
    ! input file name coming from c
    character(c_char), intent(in), dimension(1:length) :: infile
+   real(c_double), intent(out) :: energy 
+   real(c_double), intent(out) :: normDO
    ! length of the c_char array infile:
    integer(c_int), intent(in) :: length
    ! input file name used in the fortran routines
@@ -500,7 +502,7 @@ subroutine pass_dyor(infile, length, dyor) bind(C)
    !    write(*,'(a)')filename(i:i)
    enddo 
    ! get the dyson orbital array:
-   call get_do_array(20,filename, dyor)
+   call get_do_array(20,filename, dyor, energy, normDO)
 end subroutine pass_dyor
 
 

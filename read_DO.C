@@ -13,7 +13,11 @@
 #include <iostream>
 #include <stdio.h>
 #include <math.h> // need only exp() from it.
+#include <string.h>
 #include <vector>
+
+#include "libmesh/node.h"
+#include "libmesh/point.h"
 #ifdef __cplusplus
 extern "C"{
 #endif 
@@ -34,7 +38,8 @@ extern void pass_dyor(const char*, int*, double*, double*, double*);
 
 void makeDO_j(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, int nbas,int* basis,double* env, double* DyOr);
 double solHar(double x,double y,double z, unsigned int l, unsigned int m);
-double evalDO(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, double x, double y,double z);
+double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
+//double evalDO(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, double x, double y,double z);
 
 void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double energy, double normDO){
    //define the constants for accessing the atom, basis and env arrays:
@@ -53,6 +58,10 @@ void getDyson(const char *filename, int namelength, std::vector<std::vector<doub
    //const int kappa_of = 4; // not used by my code
    //const int ptr_exp = 5;
    //const int ptr_coeff = 6;
+   int* basis;
+   int* atom;
+   double* env;
+   double* DyOr;
    
    // get the filename from command line:
    // check the number of command line arguments:
@@ -66,7 +75,7 @@ void getDyson(const char *filename, int namelength, std::vector<std::vector<doub
    
    //fprintf(stdout,"natom = %d nbas =  %d, nbasf = %d, env_bas_dim = %d, ptr_env_start = %d\n", natom, nbas,nbasf, env_bas_dim, ptr_env_start);
    // allocate the environmental arrays:
-   int basis[nbas*basis_slots];
+   basis=new int[nbas*basis_slots];
    // basis= (a*8 +b) 
    //  a:   specifies the # of current basis
    //  b=0  index of atom
@@ -77,7 +86,7 @@ void getDyson(const char *filename, int namelength, std::vector<std::vector<doub
    //  b=5  *env: start alpha
    //  b=6  *env: start contractions
    //  b=7  not used ?
-   int atom[natom*atom_slots];
+   atom= new int[natom*atom_slots];
    // atom= (a*6+b)
    // a: number of atoms
    // b=0  charge
@@ -86,7 +95,7 @@ void getDyson(const char *filename, int namelength, std::vector<std::vector<doub
    // b=3  *zeto (not used)
    // b=4  ?? unused
    // b=5  ?? unused
-   double env[ptr_env_start+3*natom+env_bas_dim];
+   env=new double[ptr_env_start+3*natom+env_bas_dim];
    // #Block          length      content
    // 1                20           ???
    // 2                3*Natom      geometry env[atom*3+coord]
@@ -94,7 +103,7 @@ void getDyson(const char *filename, int namelength, std::vector<std::vector<doub
    //      a)      #primitives  alpha_j
    //      b)      #contraced   contr.-coefficients 
    // 4
-   double DyOr[nbasf];
+   DyOr=new double[nbasf];
    
    // call the fortran routine pass_arrays() from the parse_inp module to get the arrays
    pass_arrays(filename, &(n), atom, basis, env);
@@ -106,18 +115,29 @@ void getDyson(const char *filename, int namelength, std::vector<std::vector<doub
    //int expoff=ptr_env_start+3*natom;
    
    makeDO_j(do_j, l, alpha, nbas, basis, env, DyOr);
+   delete[] basis;
+   delete[] atom;
+   delete[] env;
+   delete[] DyOr;
 }
 
-double evalDO(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, double x, double y,double z){
+double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt){
    // evaluates the value of dyson orbital at x,y,z. I would consider 
    // this as quite efficient way.
    double angular, do_xyz=0;
+   unsigned int i=0;
+   double diff_x, diff_y, diff_z;
    for(unsigned int k=0; k<do_j.size(); k++){
       angular=0;
+      diff_x=pt(0)-geometry[i](0);
+      diff_y=pt(1)-geometry[i](1);
+      diff_z=pt(2)-geometry[i](2);
       for(unsigned int m=0; m<2*l[k]+1; m++){
-         angular+=solHar(x,y,z,l[k],m)*do_j[k][m]; 
+         angular+=solHar(diff_x,diff_y,diff_z,l[k],m)*do_j[k][m]; 
       }
-      do_xyz+=exp(-alpha[k]*(x*x+y*y+z*z))*angular;
+      do_xyz+=exp(-alpha[k]*(diff_x*diff_x+diff_y*diff_y+diff_z*diff_z))*angular;
+      if (k>0)
+         if (l[k]>l[k-1]) i++;  // than next atom is considered.
    }
    return do_xyz;
 }
@@ -279,4 +299,37 @@ double solHar(double x,double y,double z, unsigned int l, unsigned int m){
    }
    // never will be reached.
    return -300e30;
+}
+   
+std::vector<libMesh::Node> getGeometry(std::string fname){
+   const int atom_slots = 6;
+   const int basis_slots = 8;
+   const char* filename=fname.c_str();
+   int n=strlen(filename);
+   
+   // call the fortran routine pass_parameters() from the parse_inp module to get the parameters
+   int natom, nbas, nbasf, env_bas_dim, ptr_env_start;
+   pass_parameters(filename, &(n), &(natom), &(nbas), &(nbasf), &(env_bas_dim), &(ptr_env_start));
+   int* atom;
+   int* basis;
+   double* env;
+   atom= new int [natom*atom_slots];
+   basis= new int[nbas*basis_slots];
+   env=new double[ptr_env_start+3*natom+env_bas_dim];
+   
+   // call the fortran routine pass_arrays() from the parse_inp module to get the arrays
+   pass_arrays(filename, &(n), atom, basis, env);
+   
+   // write charge, geometry to vector:
+   std::vector<libMesh::Node> geometry;
+   for(int i=0; i<natom; i++){
+      libMesh::Node tmpnd(env[atom[i*6+1]], env[atom[i*6+1]+1], env[atom[i*6+1]+2], atom[i*6]);
+      geometry.push_back(tmpnd);
+   }
+   
+   delete[] atom;
+   delete[] basis;
+   delete[] env;
+
+   return geometry;
 }

@@ -36,8 +36,9 @@
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
 
-void getDyson( const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double energy, double normDO);
-double evalDO(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, double x, double y,double z);
+void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double energy, double normDO);
+double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
+std::vector<libMesh::Node> getGeometry(std::string fname);
 
 struct ESP{
    // these vectors store the points and potential (at the points) as given.
@@ -507,6 +508,7 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    std::vector<std::vector<double> > do_j;
    std::vector<unsigned int> l;
    std::vector<double> alpha;
+   std::vector<Node> geometry= getGeometry(es.parameters.get<std::string>("DO_file"));
    double energy, normDO;
    const char* filename=es.parameters.get<std::string>("DO_file").c_str();
    int namelength=strlen(filename);
@@ -604,7 +606,7 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
          // get the value of DO at q_point[qp]
-         do_val=evalDO( do_j, l, alpha, q_point[qp](0), q_point[qp](1),q_point[qp](2));
+         do_val=evalDO(do_j, l, alpha, geometry, q_point[qp]);
          
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();
