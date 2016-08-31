@@ -1,5 +1,5 @@
 GFORTRAN module version '10' created from src/parse_inp/basis_utils.f95
-MD5:22917a20bf7f101f639125430a3f03d6 -- If you edit this, you'll get what you deserve.
+MD5:b09454b47a3b56178fe20b1885dad853 -- If you edit this, you'll get what you deserve.
 
 (() () () () () () () () () () () () () () () () () () () () () () ()
 () () () ())
@@ -255,19 +255,25 @@ UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 IS_C_INTEROP IS_ISO_C) (CHARACTER 1 0 1
 1 CHARACTER ((CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1'))) 0 0 () (
 CONSTANT (CHARACTER 1 0 1 1 UNKNOWN (())) 0 1 '\U0000000b') () 0 () () ()
 2 41)
-92 'distinct_atoms' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
-MODULE-PROC DECL UNKNOWN 0 0 FUNCTION) (INTEGER 4 0 0 0 INTEGER ()) 93 0
-(94 95) () 96 () () () 0 0)
-97 'get_basis' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT MODULE-PROC
-DECL UNKNOWN 0 0 SUBROUTINE) (UNKNOWN 0 0 0 0 UNKNOWN ()) 98 0 (99 100)
-() 0 () () () 0 0)
-101 'get_basis_parameters' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
+92 'cintgto_norm' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
+MODULE-PROC DECL UNKNOWN 0 0 FUNCTION) (REAL 8 0 0 0 REAL ()) 93 0 (94
+95) () 92 () () () 0 0)
+96 'distinct_atoms' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
+MODULE-PROC DECL UNKNOWN 0 0 FUNCTION) (INTEGER 4 0 0 0 INTEGER ()) 97 0
+(98 99) () 100 () () () 0 0)
+101 'factorial' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
+MODULE-PROC DECL UNKNOWN 0 0 FUNCTION IMPLICIT_PURE) (INTEGER 4 0 0 0
+INTEGER ()) 102 0 (103) () 101 () () () 0 0)
+104 'get_basis' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
 MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE) (UNKNOWN 0 0 0 0 UNKNOWN ())
-102 0 (103 104 105) () 0 () () () 0 0)
-106 'norm_contr_coeff' 'basis_utils' 'norm_contr_coeff' 1 ((PROCEDURE
+105 0 (106 107) () 0 () () () 0 0)
+108 'get_basis_parameters' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
+MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE) (UNKNOWN 0 0 0 0 UNKNOWN ())
+109 0 (110 111 112) () 0 () () () 0 0)
+113 'norm_contr_coeff' 'basis_utils' 'norm_contr_coeff' 1 ((PROCEDURE
 UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE IS_BIND_C
 IS_C_INTEROP) (UNKNOWN 0 0 1 0 UNKNOWN ()) 0 0 () () 0 () () () 0 0)
-107 'order_basis' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
+114 'order_basis' 'basis_utils' '' 1 ((PROCEDURE UNKNOWN-INTENT
 MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE) (UNKNOWN 0 0 0 0 UNKNOWN ()) 0
 0 () () 0 () () () 0 0)
 9 'angmom' '' '' 8 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DUMMY)
@@ -318,61 +324,67 @@ UNKNOWN UNKNOWN 0 0 DUMMY PROC_POINTER) (VOID 0 0 0 0 VOID ()) 0 0 () ()
 UNKNOWN 0 0 DIMENSION DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () (2 0
 EXPLICIT (CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1') (CONSTANT (
 INTEGER 4 0 1 0 INTEGER ()) 0 '6') (CONSTANT (INTEGER 4 0 0 0 INTEGER ())
-0 '1') (VARIABLE (INTEGER 4 0 1 0 INTEGER ()) 0 108 ())) 0 () () () 0 0)
+0 '1') (VARIABLE (INTEGER 4 0 1 0 INTEGER ()) 0 115 ())) 0 () () () 0 0)
 78 'basis' '' '' 76 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
 UNKNOWN 0 0 DIMENSION DUMMY) (INTEGER 4 0 1 0 INTEGER ()) 0 0 () (2 0
 EXPLICIT (CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1') (CONSTANT (
 INTEGER 4 0 1 0 INTEGER ()) 0 '8') (CONSTANT (INTEGER 4 0 0 0 INTEGER ())
-0 '1') (VARIABLE (INTEGER 4 0 1 0 INTEGER ()) 0 109 ())) 0 () () () 0 0)
+0 '1') (VARIABLE (INTEGER 4 0 1 0 INTEGER ()) 0 116 ())) 0 () () () 0 0)
 79 'env' '' '' 76 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
 0 0 DIMENSION DUMMY) (REAL 8 0 1 0 REAL ()) 0 0 () (1 0 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1') (OP (INTEGER 4 0 1 0
 INTEGER ()) 0 PLUS (OP (INTEGER 4 0 1 0 INTEGER ()) 0 PLUS (CONSTANT (
 INTEGER 4 0 1 0 INTEGER ()) 0 '20') (OP (INTEGER 4 0 0 0 INTEGER ()) 0
 TIMES (CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '3') (VARIABLE (INTEGER 4
-0 1 0 INTEGER ()) 0 108 ()))) (VARIABLE (INTEGER 4 0 1 0 INTEGER ()) 0
-110 ()))) 0 () () () 0 0)
+0 1 0 INTEGER ()) 0 115 ()))) (VARIABLE (INTEGER 4 0 1 0 INTEGER ()) 0
+117 ()))) 0 () () () 0 0)
 90 'x' '' '' 89 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DUMMY) (
 UNKNOWN 0 0 0 0 UNKNOWN ()) 0 0 () () 0 () () () 0 0)
-94 'charges' '' '' 93 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+94 'n' '' '' 93 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DUMMY) (
+INTEGER 4 0 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+95 'a' '' '' 93 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DUMMY) (
+REAL 8 0 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
+98 'charges' '' '' 97 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
 DIMENSION DUMMY) (INTEGER 4 0 0 0 INTEGER ()) 0 0 () (1 0 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1') (VARIABLE (INTEGER 4 0 1 0
-INTEGER ()) 0 111 ())) 0 () () () 0 0)
-95 'chargesoccur' '' '' 93 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0
+INTEGER ()) 0 118 ())) 0 () () () 0 0)
+99 'chargesoccur' '' '' 97 ((VARIABLE OUT UNKNOWN-PROC UNKNOWN UNKNOWN 0
 0 DIMENSION DUMMY) (INTEGER 4 0 0 0 INTEGER ()) 0 0 () (1 0 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1') (FUNCTION (INTEGER 4 0 0 0
-INTEGER ()) 0 112 (('' (VARIABLE (INTEGER 4 0 0 0 INTEGER ()) 1 94 ((
+INTEGER ()) 0 119 (('' (VARIABLE (INTEGER 4 0 0 0 INTEGER ()) 1 98 ((
 ARRAY (SECTION 1 () () () 2))))) ('' ()) ('' ())) '_gfortran_maxval_i4'
 0 'maxval')) 0 () () () 0 0)
-96 'natomkind' '' '' 93 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+100 'natomkind' '' '' 97 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
 UNKNOWN 0 0 RESULT) (INTEGER 4 0 0 0 INTEGER ()) 0 0 () () 0 () () () 0
 0)
-99 'filehandle' '' '' 98 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
-DUMMY) (INTEGER 4 0 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
-100 'filename' '' '' 98 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
-DUMMY) (CHARACTER 1 0 0 0 CHARACTER (())) 0 0 () () 0 () () () 0 0)
-103 'filehandle' '' '' 102 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0
+103 'n' '' '' 102 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DUMMY)
+(INTEGER 4 0 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+106 'filehandle' '' '' 105 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0
 0 DUMMY) (INTEGER 4 0 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
-104 'filename' '' '' 102 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+107 'filename' '' '' 105 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
 DUMMY) (CHARACTER 1 0 0 0 CHARACTER (())) 0 0 () () 0 () () () 0 0)
-105 'chargesoccur' '' '' 102 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN
+110 'filehandle' '' '' 109 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0
+0 DUMMY) (INTEGER 4 0 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+111 'filename' '' '' 109 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (CHARACTER 1 0 0 0 CHARACTER (())) 0 0 () () 0 () () () 0 0)
+112 'chargesoccur' '' '' 109 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN
 0 0 DIMENSION DUMMY) (INTEGER 4 0 0 0 INTEGER ()) 0 0 () (1 0
 ASSUMED_SIZE (CONSTANT (INTEGER 4 0 0 0 INTEGER ()) 0 '1') ()) 0 () () ()
 0 0)
-108 'natom' 'global_data' 'natom' 76 ((VARIABLE UNKNOWN-INTENT
+115 'natom' 'global_data' 'natom' 76 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 IS_BIND_C) (INTEGER 4 0 1 0
 INTEGER ()) 0 0 () () 0 () () () 0 0)
-109 'nbas' 'global_data' 'nbas' 76 ((VARIABLE UNKNOWN-INTENT
+116 'nbas' 'global_data' 'nbas' 76 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 IS_BIND_C) (INTEGER 4 0 1 0
 INTEGER ()) 0 0 () () 0 () () () 0 0)
-110 'env_basis_dim' 'global_data' '' 76 ((VARIABLE UNKNOWN-INTENT
+117 'env_basis_dim' 'global_data' '' 76 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (INTEGER 4 0 1 0 INTEGER ()) 0 0
 () () 0 () () () 0 0)
-111 'natom' 'global_data' 'natom' 93 ((VARIABLE UNKNOWN-INTENT
+118 'natom' 'global_data' 'natom' 97 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 IS_BIND_C) (INTEGER 4 0 1 0
 INTEGER ()) 0 0 () () 0 () () () 0 0)
-112 'maxval' '(intrinsic)' '' 93 ((PROCEDURE UNKNOWN-INTENT UNKNOWN-PROC
-UNKNOWN UNKNOWN 0 0 FUNCTION) (UNKNOWN 0 0 0 0 UNKNOWN ()) 0 0 () () 112
+119 'maxval' '(intrinsic)' '' 97 ((PROCEDURE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN 0 0 FUNCTION) (UNKNOWN 0 0 0 0 UNKNOWN ()) 0 0 () () 119
 () () () 0 0)
 )
 
@@ -393,5 +405,6 @@ UNKNOWN UNKNOWN 0 0 FUNCTION) (UNKNOWN 0 0 0 0 UNKNOWN ()) 0 0 () () 112
 'c_norm_contr_coeff' 0 75 'c_null_char' 0 80 'c_null_funptr' 0 81
 'c_null_ptr' 0 82 'c_ptr' 0 83 'c_ptrdiff_t' 0 84 'c_short' 0 85
 'c_signed_char' 0 86 'c_size_t' 0 87 'c_sizeof' 0 88 'c_vertical_tab' 0
-91 'distinct_atoms' 0 92 'get_basis' 0 97 'get_basis_parameters' 0 101
-'norm_contr_coeff' 0 106 'order_basis' 0 107)
+91 'cintgto_norm' 0 92 'distinct_atoms' 0 96 'factorial' 0 101 'get_basis'
+0 104 'get_basis_parameters' 0 108 'norm_contr_coeff' 0 113 'order_basis'
+0 114)

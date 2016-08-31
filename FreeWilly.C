@@ -40,6 +40,7 @@ std::vector<Node> getGeometry(GetPot cl);
 void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::set<unsigned int>&);
 void assemble_InfSE(libMesh::EquationSystems & es, const std::string & system_name);
 void assemble_ESP(EquationSystems & es, const std::string & system_name);
+void assemble_DO(EquationSystems & es, const std::string & system_name);
 
 //This in the tetrahedralisation of a sphere
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
@@ -169,19 +170,20 @@ int main (int argc, char** argv){
    // use a reference to the system we create.
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
    LinearImplicitSystem & ESP = equation_systems.add_system<LinearImplicitSystem> ("ESP");
-   //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
+   LinearImplicitSystem & DO = equation_systems.add_system<LinearImplicitSystem> ("DO");
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
    equation_systems.parameters.set<bool >("cap")=cap;
 
    equation_systems.parameters.set<std::string>("potential")=pot_file;
+   equation_systems.parameters.set<std::string>("DO_file")=cl("DO_file", "invalid_file");
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
    //eigen_system.add_variable("phi", fe_type);
    eigen_system.add_variable("phi", fe_type);
    ESP.add_variable("esp", fe_type);
-   //DO.add_variable("do", fe_type);
+   DO.add_variable("do", fe_type);
  
    // Give the system a pointer to the matrix assembly
    // function defined below.
@@ -193,7 +195,7 @@ int main (int argc, char** argv){
      //eigen_system.attach_assemble_function (assemble_EigenSE);
    }
    ESP.attach_assemble_function (assemble_ESP);
-   //DO.attach_assemble_function (assemble_DO);
+   DO.attach_assemble_function (assemble_DO);
    eigen_system.set_eigenproblem_type(GHEP);
    //eigen_system.set_eigenproblem_type(GNHEP);
    
@@ -264,6 +266,7 @@ int main (int argc, char** argv){
    // Solve the system "Eigensystem".
    
    ESP.solve();
+   DO.solve();
    // set the ESP as initial guess for solution vector.
    * eigen_system.solution = * ESP.solution; 
 
@@ -278,6 +281,7 @@ int main (int argc, char** argv){
       mesh_refinement.max_h_level()=7;
       unsigned int r_max=7;
       ESP.solve();
+      DO.solve();
       // set the ESP as initial guess for solution vector.
       * eigen_system.solution = * ESP.solution; 
       for(unsigned int r=0; r<=r_max; r++){
@@ -298,11 +302,14 @@ int main (int argc, char** argv){
       // reinitialise and estimate the esp-system
       ESP.reinit();
       ESP.solve();
+      DO.reinit();
+      DO.solve();
    }
    else{
       // else: simply solve the system
       eigen_system.solve();
       ESP.solve();
+      DO.solve();
    }
 
    // Get the number of converged eigen pairs.

@@ -1,6 +1,5 @@
 * present file =  dummy.inp, but without comments *
 
-
 BEGIN BASIS
 
 BEGIN H 1 ano-rcc "(8s,4p)" -> "[2s,1p]"
@@ -26,10 +25,3 @@ BEGIN GEOMETRY
     1        0.000000000      0.000000000      0.000000000  Angstrom
 *    1        0.000000000      0.000000000      0.740000000  Angstrom
 END GEOMETRY
-
-
-
-
-
-
- 

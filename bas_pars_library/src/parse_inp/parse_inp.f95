@@ -275,6 +275,130 @@ subroutine get_par_arrays(filehandle,filename)
   call fclose(filename, filehandle)
 end subroutine get_par_arrays
 ! 
+subroutine get_do_array(filehandle,filename, dyorb)
+   use, intrinsic :: iso_c_binding
+   use :: constants, only : lk, ll, dp
+   !  use :: global_data, only: ATOM, BASIS, ENV, ATOM_SLOTS, BASIS_SLOTS, NATOM, NBAS,PTR_ENV_START, ENV_BASIS_DIM
+   use :: global_data, only: NBASF
+   use :: parse_utils, only : early_term, get_state_list
+   use :: basis_utils, only : get_basis, order_basis
+   use :: utils, only : lc2uc, readnocomment, reached_EOF, read_error, set_cursor, fopen, fclose
+   IMPLICIT NONE
+   ! specify variables of the subroutine
+   ! filehandle
+   integer, intent(in) :: filehandle
+   ! key is found in stream at position (beginning key, end key, normal key)
+   integer :: efound, enerfound, atomfound, normfound
+   ! misc incrementable variables
+   integer ::  count
+   ! status of the read statement
+   integer :: stat
+   real(kind=dp) :: energy ! TODO
+   real(kind=dp) :: norm
+   ! keys for searching through the input file (begin, end and normal)
+   character(len=lk) :: bkey
+   character(len=lk) :: ekey
+   character(len=lk) :: key
+   character(len=lk) :: enerkey
+   character(len=lk) :: atomkey
+   character(len=lk) :: normkey
+   ! stream for reading in whole lines
+   character(len=ll) :: stream
+   ! name of the inputfile
+   character(len=*) :: filename
+   character(len=ll) :: dump1, dump2, dump3, dump4, dump5
+   ! up-spin and down-spin dyson orbitals
+   real(c_double), intent(out), dimension(0:NBASF-1) :: dyorb
+   real(kind=dp), dimension(:), allocatable :: dyDO
+   real(kind=dp), dimension(:), allocatable :: dyUP
+   
+   ! inititalize the found variable to 0
+   efound = 0
+   enerfound=0
+   atomfound=0
+   normfound=0
+   
+   ! initialise up-spin and down-spin orbitals:
+   !  integer(c_int), intent(out), dimension(1:BASIS_SLOTS, 1:NBAS) :: dyor
+   allocate(dyUP(0 :NBASF-1))
+   allocate(dyDO(0 :NBASF-1))
+
+! open the input file
+!  open(filehandle,FILE=filename,STATUS='old',IOSTAT=ios,ERR=999)
+   call fopen(filename, filehandle,'old')
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! 1.) read dyson orbitals of the molecule  WORKS: no!         !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+   write(bkey,'(a)')'BEGIN DO'
+   write(ekey,'(a)')'END DO'
+   write(enerkey,'(a)')'ISTATE->FSTATE:'
+   write(atomkey,'(a)')'ATOM '
+   write(normkey,'(a)')'SUMNORM'
+   ! set cursor to the geometry block
+   call set_cursor(filehandle,filename,bkey,'mandatory',stat)
+   ! intialize the atom count to 0
+   count = 0
+      
+   do
+      stream = readnocomment(filehandle,stat)
+      if(stat .lt. 0)then
+         call reached_EOF(filename, 'DO BLOCK')
+      elseif(stat .gt. 0)then
+         call read_error(filename,bkey,stream,stat)
+      endif
+      efound = index(lc2uc(stream),trim(ekey))
+      enerfound = index(lc2uc(stream),trim(enerkey))
+      atomfound = index(lc2uc(stream),trim(atomkey))
+      normfound = index(lc2uc(stream),trim(normkey))
+      ! make sure that the line is not the END DO statement and that it is not commented=empty:
+      if((efound .eq. 0) .and. (len(trim(stream)) .gt. 0))then
+         ! read geometry and charges into the ENV and ATOM array, respectively.
+         if(enerfound .ne. 0) then ! energy is found
+            ! read the energy
+            read(stream,*,IOSTAT=stat)dump1,dump2,dump3,dump4,dump5,energy
+         elseif (atomfound .ne. 0) then !the atom statement is found --> ignore it.
+            ! don't read data from that line, just skip it.
+            read(stream,*,IOSTAT=stat)
+         elseif (normfound .ne. 0) then !the norm of DO is found 
+            read(stream,*,IOSTAT=stat) dump1, dump2, norm
+         else  ! this line contains the dyson orbital:
+            read(stream,*,IOSTAT=stat) dump1, dump2, dyUP(count), dyDO(count)
+            if(stat .ne. 0)then
+               call read_error("'streamed line from input file'",key,stream,stat)
+            endif
+            count=count+1
+            !if( dump1 .not. what I expect) then
+            !  call read_error("'Fuck you!'",key, stream, stat)
+            !endif
+            !if( dump2 .not. what I expect) then
+            !  call read_error("'Fuck you!'",key, stream, stat)
+            !endif
+          endif !enerfound .ne. 0
+      !if not all atoms were found, but the end block statement is there: premature termination
+      elseif((efound .gt. 0) .and. (count .lt. NBASF))then
+         efound = 0
+         call early_term(bkey,"'dyson orbitals'")
+      !if all atoms were found and the end block statement is there: exit the loop
+      elseif((efound .gt. 0) .and. (count .eq. NBASF))then
+         efound = 0
+         exit
+      !if too many atoms were found and the end block is there: abort
+      elseif((efound .gt. 0) .and. (count .gt. NBASF))then
+         efound = 0
+         call early_term(bkey,"'dyson orbitals'")
+      endif
+   enddo
+   do count =0, NBASF-1, 1
+      dyorb(count)=dyUP(count)+dyDO(count)
+   enddo
+   !
+   ! end the subroutine:
+   call fclose(filename, filehandle)
+   deallocate(dyUP)
+   deallocate(dyDO)
+end subroutine get_do_array
+! 
 !
 ! subroutine that takes an inputfile name and returns the dimesnions of the ATOM, basis and env array:
 subroutine pass_parameters (infile, length, natm, nbs, nbsf, env_bs_dim, ptr_env_st) bind (c)
@@ -295,7 +419,7 @@ subroutine pass_parameters (infile, length, natm, nbs, nbsf, env_bs_dim, ptr_env
 !  write(*,'(a,i2)')'length = ', length
   do i = 1, length, 1
     filename(i:i) = infile(i)
-!    write(*,'(a)')filename(i:i)
+!    write(*,'(a)')filename(i:i) enddo
   enddo
  
 ! open the passed file and get the environmental parameters:
@@ -349,6 +473,35 @@ subroutine pass_arrays(infile, length, atm, bas, envi) bind(C)
   call global_par_deallocate()
 end subroutine pass_arrays
 
+! function that takes an inputfile name and returns the array DYOR (HUBERT)
+subroutine pass_dyor(infile, length, dyor) bind(C)
+   use, intrinsic :: iso_c_binding
+   ! later: check which of them are used  (HUBERT)
+   !use::global_data, only: ATOM, BASIS, ENV, ATOM_SLOTS, BASIS_SLOTS, NATOM, NBAS, PTR_ENV_START, ENV_BASIS_DIM
+   use :: global_data, only:  NBASF
+   use :: global_utils, only : global_par_allocate, global_par_deallocate
+   IMPLICIT NONE
+   ! status variable
+   integer(c_int) :: stat
+   ! misc incrementors:
+   integer :: i
+   ! input file name coming from c
+   character(c_char), intent(in), dimension(1:length) :: infile
+   ! length of the c_char array infile:
+   integer(c_int), intent(in) :: length
+   ! input file name used in the fortran routines
+   character(len=length) :: filename
+   ! arrays that shall be passed back to the c routine:
+   real(c_double), intent(out), dimension(0:NBASF-1) :: dyor
+   stat = 0 
+   !  write(*,'(a,i2)')'length = ', length
+   do i = 1, length, 1
+    filename(i:i) = infile(i)
+   !    write(*,'(a)')filename(i:i)
+   enddo 
+   ! get the dyson orbital array:
+   call get_do_array(20,filename, dyor)
+end subroutine pass_dyor
 
 
 end module parse_inp
