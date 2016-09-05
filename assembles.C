@@ -509,7 +509,7 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    std::vector<unsigned int> l;
    std::vector<double> alpha;
    std::vector<Node> geometry= getGeometry(es.parameters.get<std::string>("DO_file"));
-   double energy, normDO;
+   double energy=0, normDO=0;
    const char* filename=es.parameters.get<std::string>("DO_file").c_str();
    int namelength=strlen(filename);
    getDyson(filename, namelength, do_j, l, alpha, energy, normDO);

@@ -6,21 +6,21 @@
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
 #include "libmesh/elem.h"
-#include "libmesh/mesh_generation.h"
+#include "libmesh/equation_systems.h"
+//#include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/eigen_system.h"
-#include "libmesh/equation_systems.h"
 #include "libmesh/fe.h"
-#include "libmesh/quadrature_gauss.h"
-#include "libmesh/dense_matrix.h"
-#include "libmesh/sparse_matrix.h"
+//#include "libmesh/quadrature_gauss.h"
+//#include "libmesh/dense_matrix.h"
+//#include "libmesh/sparse_matrix.h"
 #include "libmesh/numeric_vector.h"
-#include "libmesh/dof_map.h"
+//#include "libmesh/dof_map.h"
 #include "libmesh/condensed_eigen_system.h"
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/fe_interface.h" // for dirichlet boundary conditions
 #include "libmesh/error_vector.h" // for dirichlet boundary conditions
-#include "libmesh/explicit_system.h"
+//#include "libmesh/explicit_system.h"
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
@@ -34,7 +34,6 @@ using namespace libMesh;
 
 // Function prototype.  This is the function that will assemble
 // the eigen system. Here, we will simply assemble a mass matrix.
-std::vector<Node> old_getGeometry(GetPot cl);
 double normalise(EquationSystems& equation_systems);
 std::vector<libMesh::Node> getGeometry(std::string filename);
 
@@ -329,101 +328,9 @@ int main (int argc, char** argv){
        }
    #endif // #ifdef LIBMESH_HAVE_EXODUS_API
 
-   intensity=normalise(equation_systems);
+   double intensity=normalise(equation_systems);
 
    // All done.
    return 0;
 }
 #endif // LIBMESH_HAVE_SLEPC
-      
-std::vector<Node> old_getGeometry(GetPot cl){
-   // extract the given geometry:
-   std::string x=cl("x", ".");
-   std::string y=cl("y", ".");
-   std::string z=cl("z", ".");
-   std::string q=cl("charge", ".");
-   // get number of values. Therefore, count spaces in the string.
-   int length_x=0;
-   int length_y=0;
-   int length_z=0;
-   int length_q=0;
-   int strlength=x.length();
-   for(int i=0; i<strlength; i++){
-      if (x[i] == ',')
-            length_x++; 
-      if (y[i] == ',')
-            length_y++; 
-      if (z[i] == ',')
-            length_z++; 
-      if (q[i] == ',')
-            length_q++; 
-   }
-   assert (length_x== length_y);
-   assert (length_x== length_z);
-   assert (length_x== length_q);
-   length_x++;
-   //put them into a vector:
-   std::string x_i, y_i, z_i, q_i;
-   unsigned int x_j=0, y_j=0, z_j=0, q_j=0;
-   std::vector<Real> x_v(length_x), y_v(length_x), z_v(length_x);
-   std::vector<dof_id_type> q_v(length_x); // this rapes the type node but ...
-   for(int i=0; i<strlength; i++){
-      if (x[i] == ','){
-         x_v[x_j]=atof(x_i.c_str());
-         x_i="";
-         x_j++; }
-      else
-         x_i.append(& x[i]);
-      if (y[i] == ','){
-         y_v[y_j]=atof(y_i.c_str());
-         y_i="";
-         y_j++;}
-      else
-         y_i.append(& y[i]);
-      if (z[i] == ','){
-         z_v[z_j]=atof(z_i.c_str());
-         z_i="";
-         z_j++;}
-      else
-         z_i.append(& z[i]);
-      if (q[i] == ','){
-         q_v[q_j]=atoi(q_i.c_str());
-         q_i="";
-         q_j++;}
-      else
-         q_i.append(& q[i]);
-   }
-   x_v[x_j]=atof(x_i.c_str());
-   y_v[y_j]=atof(y_i.c_str());
-   z_v[z_j]=atof(z_i.c_str());
-   q_v[z_j]=atoi(q_i.c_str());
-   
-   //std::vector<Node> geometry(length_x);
-   std::vector<Node> geometry;
-   for(int i=0; i<length_x; i++){
-      //geometry[i]= Point(x_v[i], y_v[i], z_v[i]);
-      //geometry[i]._id=q_v[i];
-      //geometry.push_back(x_v[i], y_v[i], z_v[i], q_v[i]);
-      Node tmpnd(x_v[i], y_v[i], z_v[i], q_v[i]);
-      //geometry[i]=tmpnd;
-      geometry.push_back(tmpnd);
-   }
-   return geometry;
-}
-   
-double normalise(EquationSystems& equation_systems){
-   CondensedEigenSystem& eigen_system=equation_systems.get_system<CondensedEigenSystem> ("EigenSE");
-   LinearImplicitSystem & DO = equation_systems.get_system<LinearImplicitSystem> ("DO");
-   //normalise eigen_system:
-   SystemNorm phi_norm();
-   SystemNorm overlap();
-   eigen_system.calculate_norm(eigen_system.solution, phi_norm); // chose solution nr. 1 here!
-   //compute <DO| mu |phi>
-   calculate_overlap(eigen_system.solution, DO.solution, overlap);
-   
-   return overlap/norm;
-}
-   
-calculate_overlap(const NumericVector<Number>& eigen_system.solution, const NumericVector<Number>& DO.solution, const SystemNorm& overlap){
-   ...???---
-}

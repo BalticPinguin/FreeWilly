@@ -142,7 +142,7 @@ double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<u
    return do_xyz;
 }
 
-void makeDO_j(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, int nbas,int* basis,double* env, double* DyOr){
+void makeDO_j(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, int nbas, int* basis,double* env, double* DyOr){
    /////////////////////////////////////////////////////////////////
    /* This function fills the 2-D vector do_j with values          *
     *  DO(m,k(j))=sum_n do(n,m,l(j))* c(n,j)                       *
@@ -159,14 +159,14 @@ void makeDO_j(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>
    l.clear();
    alpha.clear();
    NumBas=0;
-   for(unsigned int b=0; b<nbas; b++){
+   for(unsigned int b=0; b<(unsigned)nbas; b++){
       NumBas+=basis[b*basis_slots+2];
    }
    do_j.resize(NumBas);
    l.resize(NumBas);
    alpha.resize(NumBas);
-   for(unsigned int b=0; b<nbas; b++){
-      for(unsigned int j=0; j<basis[b*basis_slots+2]; j++){
+   for(unsigned int b=0; b<(unsigned)nbas; b++){
+      for(unsigned int j=0; j<(unsigned)basis[b*basis_slots+2]; j++){
          // count k separately since j goes over different many steps.
          l[k]=basis[b*basis_slots+1];
          alpha[k]=env[basis[b*basis_slots+5]+j]; // bring alpha to continuous array.
