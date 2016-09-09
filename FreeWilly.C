@@ -111,7 +111,7 @@ int main (int argc, char** argv){
    // be aware: it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
    assert(pot_file!="none");
-   
+
    // the function below creates a mesh using the molecular structure.
    tetrahedralise_sphere(mesh, geometry, angular_creator, r, NrBall, VolConst, L, N);
    // Print information about the mesh to the screen.

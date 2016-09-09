@@ -331,13 +331,17 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       // that are there to ensure non-singular matrices for linear
       // solves but which would generate positive non-physical
       // eigenvalues for eigensolves.
+      /* the copy is needed since dof_indices is changed
+       * in constrain_element_matrix().
+       */
+      std::vector<dof_id_type> dof_indices2=dof_indices;
       dof_map.constrain_element_matrix(Se, dof_indices, false);
-      dof_map.constrain_element_matrix(H, dof_indices, false);
+      dof_map.constrain_element_matrix(H, dof_indices2, false);
 
       // Finally, simply add the element contribution to the
       // overall matrix.
       matrix_A.add_matrix (H, dof_indices);
-      matrix_B.add_matrix (Se, dof_indices);
+      matrix_B.add_matrix (Se, dof_indices2);
 
    } // end of element loop
          
