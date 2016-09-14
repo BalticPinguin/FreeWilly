@@ -482,7 +482,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
             }
          }
       }
-      dof_map.heterogenously_constrain_element_matrix_and_vector (M, f, dof_indices);
+      //dof_map.heterogenously_constrain_element_matrix_and_vector (M, f, dof_indices);
+      dof_map.constrain_element_matrix_and_vector (M, f, dof_indices);
 
       eigen_system.matrix->add_matrix (M, dof_indices);
       eigen_system.rhs->add_vector (f, dof_indices);

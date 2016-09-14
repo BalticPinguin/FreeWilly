@@ -185,15 +185,10 @@ int main (int argc, char** argv){
  
    // Give the system a pointer to the matrix assembly
    // function defined below.
-   if(infel){
-     eigen_system.attach_assemble_function (assemble_InfSE);
-   }
-   else {
-     eigen_system.attach_assemble_function (assemble_InfSE);
-     //eigen_system.attach_assemble_function (assemble_EigenSE);
-   }
+   eigen_system.attach_assemble_function (assemble_InfSE);
    ESP.attach_assemble_function (assemble_ESP);
    //DO.attach_assemble_function (assemble_DO);
+
    eigen_system.set_eigenproblem_type(GHEP);
    //eigen_system.set_eigenproblem_type(GNHEP);
    
@@ -210,8 +205,8 @@ int main (int argc, char** argv){
    bool refinement=cl("refine", false);
    
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
-   //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI); // this is default
-   //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS); // this is default
+   //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
+   //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
 
    const std::string spect = cl("spect","sm");
    if (spect=="sm"){
@@ -292,7 +287,11 @@ int main (int argc, char** argv){
                <<"\n maximum norm = "
                <<error.maximum()
                <<std::endl;
-            equation_systems.reinit();
+            // do the actual work:
+            mesh_refinement.refine_and_coarsen_elements();
+
+            //equation_systems.reinit();
+            eigen_system.reinit();
          }
       }
       // reinitialise and estimate the esp-system
