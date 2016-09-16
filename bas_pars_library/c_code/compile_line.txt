@@ -1,0 +1,3 @@
+gcc get_basis.c ../build/libbas_pars.a -I../build -lgfortran -lm -std=c99 -Wall -Wextra -fPIC -fmax-errors=1 -g -o get_basis.exe
+
+gcc read_DO.c ../build/libbas_pars.a -I../build -lgfortran -lm -std=c99 -Wall -Wextra -fPIC -fmax-errors=1 -g -o R_DO

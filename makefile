@@ -17,8 +17,8 @@ target	   := ./FrWll-$(METHOD)
 # defined
 
 #srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.cpp
-srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C r8lib.C rbf_interp_nd.C
-#srcfiles	:= test.C radial_interpolation.C r8lib.C rbf_interp_nd.C
+srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C r8lib.C rbf_interp_nd.C read_DO.C bas_pars_library/build/libbas_pars.a normalisation.C
+#   read_DO.C bas_pars_library/build/libbas_pars.a
 #srcfiles	:= test.C radial_interpolation.C r8lib.C rbf_interp_nd.C
 
 objects		:= $(patsubst %.C, %.$(obj-suffix), $(srcfiles))
@@ -83,6 +83,6 @@ complete: $(wildcard *.in)
 # Dependencies
 #
 .depend: $(srcfiles) $(LIBMESH_DIR)/include/libmesh/*.h
-	@$(perl) $(LIBMESH_DIR)/contrib/bin/make_dependencies.pl -I. $(foreach i, $(LIBMESH_DIR)/include $(wildcard $(LIBMESH_DIR)/include/*), -I$(i)) "-S\$$(obj-suffix)" $(srcfiles) > .depend
+	@$(perl) $(LIBMESH_DIR)/contrib/bin/make_dependencies.pl -I. $(foreach i, $(LIBMESH_DIR)/include $(wildcard $(LIBMESH_DIR)/include/*), -I$(i)) "-S\$$(obj-suffix)" $(srcfiles) -I bas_pars_library/build -lgfortran > .depend
 
 ###############################################################################

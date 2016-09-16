@@ -6,21 +6,21 @@
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
 #include "libmesh/elem.h"
-#include "libmesh/mesh_generation.h"
+//#include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/eigen_system.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/fe.h"
-#include "libmesh/quadrature_gauss.h"
-#include "libmesh/dense_matrix.h"
-#include "libmesh/sparse_matrix.h"
+//#include "libmesh/quadrature_gauss.h"
+//#include "libmesh/dense_matrix.h"
+//#include "libmesh/sparse_matrix.h"
 #include "libmesh/numeric_vector.h"
-#include "libmesh/dof_map.h"
+//#include "libmesh/dof_map.h"
 #include "libmesh/condensed_eigen_system.h"
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/fe_interface.h" // for dirichlet boundary conditions
 #include "libmesh/error_vector.h" // for dirichlet boundary conditions
-#include "libmesh/explicit_system.h"
+//#include "libmesh/explicit_system.h"
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
@@ -34,12 +34,14 @@ using namespace libMesh;
 
 // Function prototype.  This is the function that will assemble
 // the eigen system. Here, we will simply assemble a mass matrix.
-std::vector<Node> getGeometry(GetPot cl);
+double normalise(EquationSystems& equation_systems);
+std::vector<libMesh::Node> getGeometry(std::string filename);
 
 //prototypes of functions in assemble.C (that are called from out of it)
 void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::set<unsigned int>&);
 void assemble_InfSE(libMesh::EquationSystems & es, const std::string & system_name);
 void assemble_ESP(EquationSystems & es, const std::string & system_name);
+void assemble_DO(EquationSystems & es, const std::string & system_name);
 
 //This in the tetrahedralisation of a sphere
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
@@ -94,7 +96,8 @@ int main (int argc, char** argv){
    Mesh mesh(init.comm(), dim);
 
    Real E = cl("Energy", 0.0);
-   std::string mesh_geom = cl("mesh_geom", "sphere");
+   std::string molec_file=cl("mol_file", "invalid_file"); // this file contains all informations on the molecule
+   std::string angular_creator=cl("angular", "invalid"); 
    Real r=cl("radius", 20.);
    int NrBall=cl("points", 50);
    Real VolConst= cl("maxVol", 1./(32.*sqrt(E*E*E)) );
@@ -102,22 +105,15 @@ int main (int argc, char** argv){
    int N=cl("circles", 5);
    int maxiter=cl("maxiter", 700);
    bool cap = cl("cap", false);
-   std::vector<Node> geometry=getGeometry(cl);
+   std::vector<Node> geometry=getGeometry(molec_file);
    // Use the internal mesh generator to create a uniform
    // 2D grid on a square.
    // be aware: it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
-   if (mesh_geom=="sphere"){
-      MeshTools::Generation::build_sphere(mesh, 7., 3, HEX8, 2, true);
-      out<<"sphere"<<std::endl;}
-   else if (mesh_geom=="box"){
-      MeshTools::Generation::build_cube (mesh, 3, 3, 3, -2., 2., -2., 2., -2., 2., PRISM6);
-      out<<"box"<<std::endl;}
-   else{
-      // the function below creates a mesh using the molecular structure.
-      tetrahedralise_sphere(mesh, geometry, mesh_geom, r, NrBall, VolConst, L, N);
-      assert(pot_file!="none");
-   }
+   assert(pot_file!="none");
+
+   // the function below creates a mesh using the molecular structure.
+   tetrahedralise_sphere(mesh, geometry, angular_creator, r, NrBall, VolConst, L, N);
    // Print information about the mesh to the screen.
    mesh.print_info();
    
@@ -169,25 +165,26 @@ int main (int argc, char** argv){
    // use a reference to the system we create.
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
    LinearImplicitSystem & ESP = equation_systems.add_system<LinearImplicitSystem> ("ESP");
-   //EigenSystem & DO = equation_systems.add_system<EigenSystem> ("DO");
+   LinearImplicitSystem & DO = equation_systems.add_system<LinearImplicitSystem> ("DO");
 
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
    equation_systems.parameters.set<bool >("cap")=cap;
 
    equation_systems.parameters.set<std::string>("potential")=pot_file;
+   equation_systems.parameters.set<std::string>("DO_file")=molec_file;
    // Declare the system variables.
    // Adds the variable "p" to "Eigensystem".   "p"
    // will be approximated using second-order approximation.
    //eigen_system.add_variable("phi", fe_type);
    eigen_system.add_variable("phi", fe_type);
    ESP.add_variable("esp", fe_type);
-   //DO.add_variable("do", fe_type);
+   DO.add_variable("do", fe_type);
  
    // Give the system a pointer to the matrix assembly
    // function defined below.
    eigen_system.attach_assemble_function (assemble_InfSE);
    ESP.attach_assemble_function (assemble_ESP);
-   //DO.attach_assemble_function (assemble_DO);
+   DO.attach_assemble_function (assemble_DO);
 
    eigen_system.set_eigenproblem_type(GHEP);
    //eigen_system.set_eigenproblem_type(GNHEP);
@@ -242,12 +239,14 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real> ("gamma") = gamma;
    equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = geometry;
    equation_systems.parameters.set<bool> ("cap") = cap;
-   
-   // Initialize the data structures for the equation system.
-   equation_systems.init();
 
    // Prints information about the system to the screen.
    //equation_systems.print_info();
+         
+   // Initialize the data structures for the equation system.
+   eigen_system.init();
+   ESP.init();
+   DO.init();
 
     // add boundary conditions if not infinite elements used. In the latter case ...
    if (not infel){
@@ -259,6 +258,7 @@ int main (int argc, char** argv){
    // Solve the system "Eigensystem".
    
    ESP.solve();
+   DO.solve();
    // set the ESP as initial guess for solution vector.
    * eigen_system.solution = * ESP.solution; 
 
@@ -269,39 +269,40 @@ int main (int argc, char** argv){
       // in general: more coarsening than refinement!
       mesh_refinement.refine_fraction()=0.75;
       mesh_refinement.coarsen_fraction()=0.3;
-      // maximum number of refinements:
+      // maximum number of refinements for single element/:
       mesh_refinement.max_h_level()=7;
       unsigned int r_max=7;
-      ESP.solve();
-      // set the ESP as initial guess for solution vector.
-      * eigen_system.solution = * ESP.solution; 
       for(unsigned int r=0; r<=r_max; r++){
          eigen_system.solve();
          if (r<r_max){
             ErrorVector error;
             KellyErrorEstimator error_estimator;
             error_estimator.estimate_error(eigen_system, error);
-            mesh_refinement.flag_elements_by_error_fraction(error);
             out<<"error estimate \n l2 norm="
                <<error.l2_norm()
                <<"\n maximum norm = "
                <<error.maximum()
                <<std::endl;
+
+            mesh_refinement.flag_elements_by_error_fraction(error);
             // do the actual work:
             mesh_refinement.refine_and_coarsen_elements();
 
-            //equation_systems.reinit();
-            eigen_system.reinit();
+            equation_systems.reinit();
          }
       }
       // reinitialise and estimate the esp-system
-      ESP.reinit();
+      //ESP.reinit();
       ESP.solve();
+      //DO.reinit();
+      DO.solve();
    }
    else{
+   
       // else: simply solve the system
       eigen_system.solve();
       ESP.solve();
+      DO.solve();
    }
 
    // Get the number of converged eigen pairs.
@@ -325,82 +326,9 @@ int main (int argc, char** argv){
        }
    #endif // #ifdef LIBMESH_HAVE_EXODUS_API
 
+   double intensity=normalise(equation_systems);
+
    // All done.
    return 0;
 }
 #endif // LIBMESH_HAVE_SLEPC
-      
-std::vector<Node> getGeometry(GetPot cl){
-   // extract the given geometry:
-   std::string x=cl("x", ".");
-   std::string y=cl("y", ".");
-   std::string z=cl("z", ".");
-   std::string q=cl("charge", ".");
-   // get number of values. Therefore, count spaces in the string.
-   int length_x=0;
-   int length_y=0;
-   int length_z=0;
-   int length_q=0;
-   int strlength=x.length();
-   for(int i=0; i<strlength; i++){
-      if (x[i] == ',')
-            length_x++; 
-      if (y[i] == ',')
-            length_y++; 
-      if (z[i] == ',')
-            length_z++; 
-      if (q[i] == ',')
-            length_q++; 
-   }
-   assert (length_x== length_y);
-   assert (length_x== length_z);
-   assert (length_x== length_q);
-   length_x++;
-   //put them into a vector:
-   std::string x_i, y_i, z_i, q_i;
-   unsigned int x_j=0, y_j=0, z_j=0, q_j=0;
-   std::vector<Real> x_v(length_x), y_v(length_x), z_v(length_x);
-   std::vector<dof_id_type> q_v(length_x); // this rapes the type node but ...
-   for(int i=0; i<strlength; i++){
-      if (x[i] == ','){
-         x_v[x_j]=atof(x_i.c_str());
-         x_i="";
-         x_j++; }
-      else
-         x_i.append(& x[i]);
-      if (y[i] == ','){
-         y_v[y_j]=atof(y_i.c_str());
-         y_i="";
-         y_j++;}
-      else
-         y_i.append(& y[i]);
-      if (z[i] == ','){
-         z_v[z_j]=atof(z_i.c_str());
-         z_i="";
-         z_j++;}
-      else
-         z_i.append(& z[i]);
-      if (q[i] == ','){
-         q_v[q_j]=atoi(q_i.c_str());
-         q_i="";
-         q_j++;}
-      else
-         q_i.append(& q[i]);
-   }
-   x_v[x_j]=atof(x_i.c_str());
-   y_v[y_j]=atof(y_i.c_str());
-   z_v[z_j]=atof(z_i.c_str());
-   q_v[z_j]=atoi(q_i.c_str());
-   
-   //std::vector<Node> geometry(length_x);
-   std::vector<Node> geometry;
-   for(int i=0; i<length_x; i++){
-      //geometry[i]= Point(x_v[i], y_v[i], z_v[i]);
-      //geometry[i]._id=q_v[i];
-      //geometry.push_back(x_v[i], y_v[i], z_v[i], q_v[i]);
-      Node tmpnd(x_v[i], y_v[i], z_v[i], q_v[i]);
-      //geometry[i]=tmpnd;
-      geometry.push_back(tmpnd);
-   }
-   return geometry;
-}

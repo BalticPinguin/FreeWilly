@@ -1,0 +1,55 @@
+/*
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Bas_pars v.0.1 - fork of the AUGER program                          !
+!                                                                     !
+! code example that shows how to get the ATOM, BASIS and ENV arrays   !
+!      using the Bas_pars library.                                    !
+!                                                                     !
+! Author:  Gilbert Grell, University of Rostock                       !
+! Date:    09.08.2016                                                 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*/
+
+#include <stdio.h>
+
+int main( int argc, char **argv)
+{
+// get the filename from command line:
+// check the number of command line arguments:
+
+  if(argc != 2) //(the first argument is the invocation of the program itself)
+  {
+    fprintf(stdout, "please give the name of the inputfile as the only commandline argument!\n");
+    fprintf(stdout, "Program aborts now!\n");
+    return 0;
+  }
+
+// cast the command line argument into a 1D char array:
+// count the number of characters:
+  int n = 0;
+  for(int i = 0; argv[1][i] != '\0'; i++)
+  {
+    n++;
+  }
+  char filename[n];
+  for(int i = 0; i < n; i++)
+  {
+    filename[i] = argv[1][i];
+  }
+  for(int i = 0; i<n; i++)
+  {
+    fprintf(stdout, "filename[%d] = %c\n",i, filename[i]);
+  }
+
+/*  fprintf(stdout, "length of the argument array: argc = %d\n",argc );
+  for( int i = 0; i < argc; i++)
+  {
+    fprintf(stdout,"Argument[%d] = %s\n", i, argv[i]);
+  }
+*/
+
+// call the fortran routine pass_basis(filename) from the parse_inp module
+  pass_basis(filename);
+
+  return 0;
+}
