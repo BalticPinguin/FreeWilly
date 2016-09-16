@@ -6,10 +6,10 @@
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
 #include "libmesh/elem.h"
-#include "libmesh/equation_systems.h"
 //#include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/eigen_system.h"
+#include "libmesh/equation_systems.h"
 #include "libmesh/fe.h"
 //#include "libmesh/quadrature_gauss.h"
 //#include "libmesh/dense_matrix.h"
@@ -182,15 +182,10 @@ int main (int argc, char** argv){
  
    // Give the system a pointer to the matrix assembly
    // function defined below.
-   if(infel){
-     eigen_system.attach_assemble_function (assemble_InfSE);
-   }
-   else {
-     eigen_system.attach_assemble_function (assemble_InfSE);
-     //eigen_system.attach_assemble_function (assemble_EigenSE);
-   }
+   eigen_system.attach_assemble_function (assemble_InfSE);
    ESP.attach_assemble_function (assemble_ESP);
    DO.attach_assemble_function (assemble_DO);
+
    eigen_system.set_eigenproblem_type(GHEP);
    //eigen_system.set_eigenproblem_type(GNHEP);
    
@@ -207,8 +202,8 @@ int main (int argc, char** argv){
    bool refinement=cl("refine", false);
    
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
-   //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI); // this is default
-   //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS); // this is default
+   //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
+   //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
 
    const std::string spect = cl("spect","sm");
    if (spect=="sm"){
@@ -244,12 +239,14 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real> ("gamma") = gamma;
    equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = geometry;
    equation_systems.parameters.set<bool> ("cap") = cap;
-   
-   // Initialize the data structures for the equation system.
-   equation_systems.init();
 
    // Prints information about the system to the screen.
    //equation_systems.print_info();
+         
+   // Initialize the data structures for the equation system.
+   eigen_system.init();
+   ESP.init();
+   DO.init();
 
     // add boundary conditions if not infinite elements used. In the latter case ...
    if (not infel){
@@ -272,35 +269,37 @@ int main (int argc, char** argv){
       // in general: more coarsening than refinement!
       mesh_refinement.refine_fraction()=0.75;
       mesh_refinement.coarsen_fraction()=0.3;
-      // maximum number of refinements:
+      // maximum number of refinements for single element/:
       mesh_refinement.max_h_level()=7;
       unsigned int r_max=7;
-      ESP.solve();
-      DO.solve();
-      // set the ESP as initial guess for solution vector.
-      * eigen_system.solution = * ESP.solution; 
       for(unsigned int r=0; r<=r_max; r++){
          eigen_system.solve();
          if (r<r_max){
             ErrorVector error;
             KellyErrorEstimator error_estimator;
             error_estimator.estimate_error(eigen_system, error);
-            mesh_refinement.flag_elements_by_error_fraction(error);
             out<<"error estimate \n l2 norm="
                <<error.l2_norm()
                <<"\n maximum norm = "
                <<error.maximum()
                <<std::endl;
+
+            mesh_refinement.flag_elements_by_error_fraction(error);
+            // do the actual work:
+            mesh_refinement.refine_and_coarsen_elements();
+
             equation_systems.reinit();
+            //eigen_system.reinit();
          }
       }
       // reinitialise and estimate the esp-system
-      ESP.reinit();
+      //ESP.reinit();
       ESP.solve();
-      DO.reinit();
+      //DO.reinit();
       DO.solve();
    }
    else{
+   
       // else: simply solve the system
       eigen_system.solve();
       ESP.solve();
