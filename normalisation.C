@@ -33,7 +33,7 @@ enum IntegralType: int{
    OVERLAP
 };
 
-Number calculate_overlap2(System& es1, const NumericVector<Number>& vect1, int var1, System& es2, const NumericVector<Number>& vect2, int var2, IntegralType int_type ){
+Number calculate_overlap2(System& es1, const NumericVector<Number>& vect1, int var1, System& es2, const NumericVector<Number>& vect2, int /*var2*/, IntegralType int_type ){
    //run at all processors at once:
    //parallel_object_only(); --> can not be used here.
 

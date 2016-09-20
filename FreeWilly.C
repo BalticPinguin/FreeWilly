@@ -196,8 +196,8 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
 
-   // set energy-offset
-   equation_systems.parameters.set<Number>("offset")=E;
+   // set energy-offset -> set in DO-assemble function
+   //equation_systems.parameters.set<Number>("offset")=E;
 
    bool refinement=cl("refine", false);
    
@@ -258,7 +258,7 @@ int main (int argc, char** argv){
    // Solve the system "Eigensystem".
    
    ESP.solve();
-   DO.solve();
+   DO.solve(); // by this: set energy-offset and dyson norm
    // set the ESP as initial guess for solution vector.
    * eigen_system.solution = * ESP.solution; 
 
@@ -298,7 +298,6 @@ int main (int argc, char** argv){
       DO.solve();
    }
    else{
-   
       // else: simply solve the system
       eigen_system.solve();
       ESP.solve();
@@ -326,7 +325,10 @@ int main (int argc, char** argv){
        }
    #endif // #ifdef LIBMESH_HAVE_EXODUS_API
 
-   double intensity=normalise(equation_systems);
+   Real intensity=normalise(equation_systems);
+   Number normDO=equation_systems.parameters.get<Number>("DOnorm");
+   out<<intensity<<"  ";
+   out<<normDO<<std::endl;
 
    // All done.
    return 0;

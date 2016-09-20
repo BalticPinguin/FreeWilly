@@ -518,6 +518,9 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    const char* filename=es.parameters.get<std::string>("DO_file").c_str();
    int namelength=strlen(filename);
    getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
+   
+   es.parameters.set<Number>("offset")=energy;
+   es.parameters.set<Number>("DOnorm")=normDO;
 
    // Get a reference to our system.
    LinearImplicitSystem & eigen_system = es.get_system<LinearImplicitSystem> (system_name);
