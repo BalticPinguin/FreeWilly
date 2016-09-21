@@ -162,15 +162,15 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
-   //RBFInterpolation<3> potential(mesh.comm(), 9, power, mol_geom);
-   NeNeInterpolation<3> potential(mesh.comm(), 1, power, mol_geom);
+   RBFInterpolation<3> potential(mesh.comm(), 9, power, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 1, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
 
    potential.prepare_for_use();
       
-   Number E = es.parameters.get<Number>("offset");
+   Real E = es.parameters.get<Real>("offset");
    // Get a constant reference to the Finite Element type
    // for the first (and only) variable in the system.
    FEType fe_type = eigen_system.get_dof_map().variable_type(0);
@@ -201,7 +201,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    //libMesh::Number k=omega; //divided by c which is 0 in atomic units.
    // -->ik = -i*k => for neg. energy: exp(-i*sqrt(2E)*mu(x))= exp(-sqrt(2|E|)*mu(x)) ==> expon. decay in function.
    libMesh::Number ik=sqrt(co2*E)*(std::complex<double>)_Complex_I; // -->try this for now...
-   if (real(E)<0){ // E<0:
+   if (E<0){ // E<0:
      ik=sqrt(-co2*E); // this gives exponential decay .
    }
    libMesh::Number temp; // -->try this for now...
@@ -371,8 +371,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, power);
-   //RBFInterpolation<3> potential(mesh.comm(), 9, power, mol_geom);
-   NeNeInterpolation<3> potential(mesh.comm(), 1, power, mol_geom);
+   RBFInterpolation<3> potential(mesh.comm(), 9, power, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 1, power, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -514,13 +514,14 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    std::vector<unsigned int> l;
    std::vector<double> alpha;
    std::vector<Node> geometry= getGeometry(es.parameters.get<std::string>("DO_file"));
-   double energy=0, normDO=0;
+   Real energy=0, normDO=0;
    const char* filename=es.parameters.get<std::string>("DO_file").c_str();
    int namelength=strlen(filename);
    getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
    
-   es.parameters.set<Number>("offset")=energy;
-   es.parameters.set<Number>("DOnorm")=normDO;
+   Real photonEnergy=es.parameters.get<Real>("offset");
+   es.parameters.set<Real>("offset")=photonEnergy-energy;
+   es.parameters.set<Real>("DOnorm")=normDO;
 
    // Get a reference to our system.
    LinearImplicitSystem & eigen_system = es.get_system<LinearImplicitSystem> (system_name);

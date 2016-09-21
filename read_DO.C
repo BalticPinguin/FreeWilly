@@ -136,8 +136,7 @@ double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<u
          angular+=solHar(diff_x,diff_y,diff_z,l[k],m)*do_j[k][m]; 
       }
       do_xyz+=exp(-alpha[k]*(diff_x*diff_x+diff_y*diff_y+diff_z*diff_z))*angular;
-      if (k>0)
-         if (l[k]>l[k-1]) i++;  // than next atom is considered.
+      if (k>0 && l[k]<l[k-1]) i++;  // than next atom is considered.
    }
    return do_xyz;
 }

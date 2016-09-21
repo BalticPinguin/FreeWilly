@@ -42,6 +42,7 @@ void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::se
 void assemble_InfSE(libMesh::EquationSystems & es, const std::string & system_name);
 void assemble_ESP(EquationSystems & es, const std::string & system_name);
 void assemble_DO(EquationSystems & es, const std::string & system_name);
+void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, std::string SysName);
 
 //This in the tetrahedralisation of a sphere
 //void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
@@ -197,7 +198,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
 
    // set energy-offset -> set in DO-assemble function
-   //equation_systems.parameters.set<Number>("offset")=E;
+   equation_systems.parameters.set<Real>("offset")=E;
 
    bool refinement=cl("refine", false);
    
@@ -308,13 +309,18 @@ int main (int argc, char** argv){
    unsigned int nconv = eigen_system.get_n_converged();
 
    std::cout << "Number of converged eigenpairs: " << nconv << "\n" << std::endl;
+   
+   std::ostringstream eigenvector_output_name;
+   eigenvector_output_name<< "esp.cube";
+   cube_io(equation_systems, geometry, eigenvector_output_name.str(), "ESP");
+   eigenvector_output_name<< "do.cube";
+   cube_io(equation_systems, geometry, eigenvector_output_name.str(), "DO");
 
    #ifdef LIBMESH_HAVE_EXODUS_API
        // Write the eigen vector to file.
        for(unsigned int i=0; i<nconv; i++){
           std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
           std::cout<<"energy of state "<<i<<" = "<<eigpair.first+equation_systems.parameters.set<Number>("offset")<<std::endl;
-          std::ostringstream eigenvector_output_name;
           if (infel)
              eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
           else
@@ -322,6 +328,8 @@ int main (int argc, char** argv){
           ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
           //eigenvector_output_name<< i <<"_err.e";
           //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
+          eigenvector_output_name<< "phi-"<<i <<".cube" ;
+          cube_io(equation_systems, geometry, eigenvector_output_name.str(), "EigenSE");
        }
    #endif // #ifdef LIBMESH_HAVE_EXODUS_API
 

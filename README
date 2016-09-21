@@ -47,13 +47,6 @@ All quantities specified are in atomic units here.
 *****************************  Functions to use in the future  ***********************************
 ==================================================================================================
 
-To get the solution in infinite region: use FEInterface::compute_data()
-
-
-If you use libMesh-release versions 0.9.5 and older, apply the patches:
-  1): for spherical mesh: src/mesh/mesh_generation.C
-      mesh_gen.patch
-  --------------
-  2): for infinite elements: src/mesh/inf_elem_builder.C, src/fe/fe.C 
-      infinite.patch
-      infinite2.patch
+Please use at least libMesh-version > 1.0. If no newer version is available, use the current development
+tree at https://github.com/libMesh/libmesh . 
+Older versions will fail to run this program.
