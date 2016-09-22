@@ -45,9 +45,12 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    inf_fe->attach_quadrature_rule (&qrule);
 
    // set output to filename
-   std::ostringstream re_out<<"re_"<<output;
-   std::ostringstream im_out<<"re_"<<output;
-   std::ostringstream abs_out<<"re_"<<output;
+   std::ostringstream re_output;
+   re_output<<"re_"<<output;
+   std::ostringstream im_output;
+   im_output<<"re_"<<output;
+   std::ostringstream abs_output;
+   abs_output<<"re_"<<output;
    std::ofstream im_out(re_output.str());
    std::ofstream re_out(im_output.str());
    std::ofstream abs_out(abs_output.str());
@@ -191,7 +194,7 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
 
 // write the solutions values at quadrature points
 void  solution_write(EquationSystems& equation_systems, std::string filename, std::string SysName){
-   System & system = es.get_system<System> (SysName); 
+   System & system = equation_systems.get_system<System> (SysName); 
    const MeshBase & mesh = equation_systems.get_mesh();
    const DofMap & dof_map = system.get_dof_map();
 
