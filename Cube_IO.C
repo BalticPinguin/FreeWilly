@@ -48,9 +48,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    std::ostringstream re_output;
    re_output<<"re_"<<output;
    std::ostringstream im_output;
-   im_output<<"re_"<<output;
+   im_output<<"im_"<<output;
    std::ostringstream abs_output;
-   abs_output<<"re_"<<output;
+   abs_output<<"abs_"<<output;
    std::ofstream im_out(re_output.str());
    std::ofstream re_out(im_output.str());
    std::ofstream abs_out(abs_output.str());
@@ -95,7 +95,7 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
 
    Point start(mol_center(0)-dx*nx/2,
                mol_center(1)-dy*ny/2,
-               mol_center(3)-dz*nz/2);
+               mol_center(2)-dz*nz/2);
 
    re_out<<std::setw(12)<<std::setprecision(6)<<"   "<<start(0);
    re_out<<std::setw(12)<<std::setprecision(6)<<"   "<<start(1);
@@ -108,12 +108,24 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    abs_out<<std::setw(12)<<std::setprecision(6)<<"   "<<start(2)<<std::endl;
    // print # points per axis and step in Cartesian Coordinates:
 
-   out<<std::setw(5)<<nx;
-   out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t 0.00000 \t 0.00000"<<std::endl;
-   out<<std::setw(5)<<ny;
-   out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t "<<dy<<" \t 0.00000"<<std::endl;
-   out<<std::setw(5)<<nz;
-   out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
+   re_out<<std::setw(5)<<nx;
+   re_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t 0.00000 \t 0.00000"<<std::endl;
+   re_out<<std::setw(5)<<ny;
+   re_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t "<<dy<<" \t 0.00000"<<std::endl;
+   re_out<<std::setw(5)<<nz;
+   re_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
+   im_out<<std::setw(5)<<nx;
+   im_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t 0.00000 \t 0.00000"<<std::endl;
+   im_out<<std::setw(5)<<ny;
+   im_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t "<<dy<<" \t 0.00000"<<std::endl;
+   im_out<<std::setw(5)<<nz;
+   im_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
+   abs_out<<std::setw(5)<<nx;
+   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t 0.00000 \t 0.00000"<<std::endl;
+   abs_out<<std::setw(5)<<ny;
+   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t "<<dy<<" \t 0.00000"<<std::endl;
+   abs_out<<std::setw(5)<<nz;
+   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
 
    for(unsigned int i=0; i<geom.size(); i++){
       re_out<<" "<<std::setw(5)<<geom[i].id()<<"\t";
@@ -137,11 +149,12 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    unsigned int ix, iy, iz;
    PointLocatorTree pt_lctr(mesh);
    //pt_lctr.enable_out_of_mesh_mode();
-   //pt_lctr.init(); 
+   unsigned int num_line=0;
    for (ix=0;ix<nx;ix++) {
       for (iy=0;iy<ny;iy++) {
          for (iz=0;iz<nz;iz++) {
 
+            num_line++;
             Point q_point(start(0)+(Real)ix*dx,
                           start(1)+(Real)iy*dy,
                           start(2)+(Real)iz*dz);
@@ -180,14 +193,18 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                abs_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::abs(soln);
             }
 
-            if (iz % 6 == 5)
+            if (num_line == 6){
                re_out<<std::endl;
                im_out<<std::endl;
                abs_out<<std::endl;
+               num_line=0;
+            }
          }
-         re_out<<std::endl;
-         im_out<<std::endl;
-         abs_out<<std::endl;
+         if (num_line>0){
+            re_out<<std::endl;
+            im_out<<std::endl;
+            abs_out<<std::endl;
+         }
       }
    }
 }

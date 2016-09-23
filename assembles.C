@@ -204,6 +204,12 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    if (E<0){ // E<0:
      ik=sqrt(-co2*E); // this gives exponential decay .
    }
+
+   // set parameters for infinite elements:
+   es.parameters.set<Real>("speed")=1.;
+   // --> it would be better if 'current frequency' could be <Number>, not <Real>.
+   es.parameters.set<Real>("current frequency")=sqrt(co2*abs(E));
+
    libMesh::Number temp; // -->try this for now...
       
    // A reference to the \p DofMap object for this system.  The \p DofMap

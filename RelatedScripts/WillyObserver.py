@@ -44,7 +44,7 @@ for i in range(num_atoms):
    atom_i = mlab.points3d(atoms_x[i], atoms_y[i], atoms_z[i],
                   scale_factor=2,
                   resolution=20,
-                  color=(1./float(stri[0]), float(stri[0])/92, 1.-1./float(stri[0])), ## make color dependent on atom-type.
+                  color=(1./float(data[0]), float(data[0])/92, 1.-1./float(data[0])), ## make color dependent on atom-type.
                   scale_mode='none')
 
 # The bounds between the atoms, we use the scalar information to give
@@ -52,12 +52,14 @@ for i in range(num_atoms):
 mlab.plot3d(atoms_x, atoms_y, atoms_z, atoms_z,
             tube_radius=0.4, colormap='Reds')
 
-
 stri = ''.join(file(sys.argv[1]).readlines()[6+num_atoms:])
 data = np.fromstring(stri, sep=' ')
 data.shape = (NX, NY, NZ)
-
-source = mlab.pipeline.scalar_field(data)
+x,y,z=np.mgrid[start_point[0]:start_point[0]+dx[0]*NX+dy[0]*NY+dz[0]*NZ:NX*1j,
+               start_point[1]:start_point[1]+dx[1]*NX+dy[1]*NY+dz[1]*NZ:NY*1j,
+               start_point[2]:start_point[2]+dx[2]*NX+dy[2]*NY+dz[2]*NZ:NZ*1j]
+#source = mlab.pipeline.scalar_field(data)
+source = mlab.pipeline.scalar_field(x,y,z, data)
 min = data.min()
 max = data.max()
 vol = mlab.pipeline.volume(source, vmin=min + 0.65 * (max - min),
