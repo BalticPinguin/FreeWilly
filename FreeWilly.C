@@ -95,7 +95,7 @@ int main (int argc, char** argv){
    // Create a mesh, with dimension to be overridden later, on the
    // default MPI communicator.
    Mesh mesh(init.comm(), dim);
-
+   
    Real E = cl("Energy", 0.0);
    std::string molec_file=cl("mol_file", "invalid_file"); // this file contains all informations on the molecule
    std::string angular_creator=cl("angular", "invalid"); 
@@ -115,10 +115,9 @@ int main (int argc, char** argv){
 
    // the function below creates a mesh using the molecular structure.
    tetrahedralise_sphere(mesh, geometry, angular_creator, r, NrBall, VolConst, L, N);
-   // Print information about the mesh to the screen.
-   mesh.print_info();
    
    int order=cl("order", 1);
+   out<<"order: "<<order<<std::endl;
    FEType fe_type(FIRST);
    if (order==2){
       //convert element to second-order mesh.
@@ -152,12 +151,11 @@ int main (int argc, char** argv){
          }
       }
 
-      // print info on new mesh
-      mesh.print_info();
-
       // find the neighbours; for correct linking the two areas
       mesh.find_neighbors();
    }
+   // Print information about the mesh to the screen.
+   mesh.print_info();
 
    // Create an equation systems object.
    EquationSystems equation_systems (mesh);
@@ -197,8 +195,8 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
 
-   // set energy-offset -> set in DO-assemble function
-   equation_systems.parameters.set<Real>("offset")=E;
+   // set photon energy -> set in DO-assemble function
+   equation_systems.parameters.set<Real>("energy")=E;
 
    bool refinement=cl("refine", false);
    
@@ -313,30 +311,33 @@ int main (int argc, char** argv){
    std::ostringstream eigenvector_output_name;
    eigenvector_output_name<< "esp.cube";
    cube_io(equation_systems, geometry, eigenvector_output_name.str(), "ESP");
+   eigenvector_output_name.str(std::string());
    eigenvector_output_name<< "do.cube";
    cube_io(equation_systems, geometry, eigenvector_output_name.str(), "DO");
 
-   #ifdef LIBMESH_HAVE_EXODUS_API
-       // Write the eigen vector to file.
-       for(unsigned int i=0; i<nconv; i++){
-          std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
-          std::cout<<"energy of state "<<i<<" = "<<eigpair.first+equation_systems.parameters.set<Number>("offset")<<std::endl;
-          if (infel)
-             eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
-          else
-             eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
-          ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
-          //eigenvector_output_name<< i <<"_err.e";
-          //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
-          eigenvector_output_name<< "phi-"<<i <<".cube" ;
-          cube_io(equation_systems, geometry, eigenvector_output_name.str(), "EigenSE");
-       }
-   #endif // #ifdef LIBMESH_HAVE_EXODUS_API
+   // Write the eigen vector to file.
+   for(unsigned int i=0; i<nconv; i++){
+      std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
+      std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first+equation_systems.parameters.get<Real>("energy")<<std::endl;
+      #ifdef LIBMESH_HAVE_EXODUS_API
+         eigenvector_output_name.str(std::string());
+         if (infel)
+            eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
+         else
+            eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
+         ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
+      #endif // #ifdef LIBMESH_HAVE_EXODUS_API
+      //eigenvector_output_name<< i <<"_err.e";
+      //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
+      eigenvector_output_name.str(std::string());
+      eigenvector_output_name<< "phi-"<<i <<".cube" ;
+      cube_io(equation_systems, geometry, eigenvector_output_name.str(), "EigenSE");
+   }
 
    Real intensity=normalise(equation_systems);
-   Number normDO=equation_systems.parameters.get<Number>("DOnorm");
-   out<<intensity<<"  ";
-   out<<normDO<<std::endl;
+   Number normDO=equation_systems.parameters.get<Real>("DOnorm");
+   out<<"intensity:  "<<intensity<<std::endl;
+   out<<"Norm DO:    "<<normDO<<std::endl;
 
    // All done.
    return 0;

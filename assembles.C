@@ -170,7 +170,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    potential.prepare_for_use();
       
-   Real E = es.parameters.get<Real>("offset");
+   Real E = es.parameters.get<Real>("energy"); // at this point it is already E_kin
    // Get a constant reference to the Finite Element type
    // for the first (and only) variable in the system.
    FEType fe_type = eigen_system.get_dof_map().variable_type(0);
@@ -198,17 +198,14 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       
    libMesh::Number co0_5= 0.5;
    libMesh::Number co2= 2.;
-   //libMesh::Number k=omega; //divided by c which is 0 in atomic units.
+   //libMesh::Number k=omega; //divided by c which is 1 in atomic units.
    // -->ik = -i*k => for neg. energy: exp(-i*sqrt(2E)*mu(x))= exp(-sqrt(2|E|)*mu(x)) ==> expon. decay in function.
-   libMesh::Number ik=sqrt(co2*E)*(std::complex<double>)_Complex_I; // -->try this for now...
-   if (E<0){ // E<0:
-     ik=sqrt(-co2*E); // this gives exponential decay .
-   }
+   libMesh::Number ik=sqrt(-co2*E); 
 
    // set parameters for infinite elements:
    es.parameters.set<Real>("speed")=1.;
    // --> it would be better if 'current frequency' could be <Number>, not <Real>.
-   es.parameters.set<Real>("current frequency")=sqrt(co2*abs(E));
+   es.parameters.set<Real>("current frequency")=sqrt(2.*std::abs(E));
 
    libMesh::Number temp; // -->try this for now...
       
@@ -525,8 +522,8 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    int namelength=strlen(filename);
    getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
    
-   Real photonEnergy=es.parameters.get<Real>("offset");
-   es.parameters.set<Real>("offset")=photonEnergy-energy;
+   Real photonEnergy=es.parameters.get<Real>("energy"); 
+   es.parameters.set<Real>("energy")=photonEnergy-energy;  //"energy" now is E_kin
    es.parameters.set<Real>("DOnorm")=normDO;
 
    // Get a reference to our system.

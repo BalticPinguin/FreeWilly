@@ -35,10 +35,10 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    (*system.solution).localize(* solution_vect);
    
    const FEType & fe_type = dof_map.variable_type(0);
-   UniquePtr<FEBase> fe (FEBase::build(3, fe_type));
-   UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(3, fe_type));
+   UniquePtr<FEBase> fe    (FEBase::build(3, fe_type));
+   UniquePtr<FEBase> inf_fe(FEBase::build_InfFE(3, fe_type));
    FEBase * cfe = libmesh_nullptr;
-   QGauss qrule (3, SECOND);
+   QGauss qrule (3, fe_type.default_quadrature_order());
    std::vector<dof_id_type> dof_indices;
    // Tell the finite element object to use our quadrature rule.
    fe->attach_quadrature_rule (&qrule);
@@ -51,8 +51,8 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    im_output<<"im_"<<output;
    std::ostringstream abs_output;
    abs_output<<"abs_"<<output;
-   std::ofstream im_out(re_output.str());
-   std::ofstream re_out(im_output.str());
+   std::ofstream re_out(re_output.str());
+   std::ofstream im_out(im_output.str());
    std::ofstream abs_out(abs_output.str());
    re_out<<SysName<<std::endl<<std::endl; // print first two lines: comments
    im_out<<SysName<<std::endl<<std::endl; 
@@ -109,23 +109,23 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    // print # points per axis and step in Cartesian Coordinates:
 
    re_out<<std::setw(5)<<nx;
-   re_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t 0.00000 \t 0.00000"<<std::endl;
+   re_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t\t 0.00000 \t 0.00000"<<std::endl;
    re_out<<std::setw(5)<<ny;
-   re_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t "<<dy<<" \t 0.00000"<<std::endl;
+   re_out<<std::setw(12)<<std::setprecision(5)<<" \t\t 0.00000 \t "<<dy<<" \t\t 0.00000"<<std::endl;
    re_out<<std::setw(5)<<nz;
-   re_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
+   re_out<<std::setw(12)<<std::setprecision(5)<<" \t\t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
    im_out<<std::setw(5)<<nx;
-   im_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t 0.00000 \t 0.00000"<<std::endl;
+   im_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t\t 0.00000 \t 0.00000"<<std::endl;
    im_out<<std::setw(5)<<ny;
-   im_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t "<<dy<<" \t 0.00000"<<std::endl;
+   im_out<<std::setw(12)<<std::setprecision(5)<<" \t\t 0.00000 \t "<<dy<<" \t\t 0.00000"<<std::endl;
    im_out<<std::setw(5)<<nz;
-   im_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
+   im_out<<std::setw(12)<<std::setprecision(5)<<" \t\t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
    abs_out<<std::setw(5)<<nx;
-   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t 0.00000 \t 0.00000"<<std::endl;
+   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t "<<dx<<" \t\t 0.00000 \t 0.00000"<<std::endl;
    abs_out<<std::setw(5)<<ny;
-   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t "<<dy<<" \t 0.00000"<<std::endl;
+   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t\t 0.00000 \t "<<dy<<" \t\t 0.00000"<<std::endl;
    abs_out<<std::setw(5)<<nz;
-   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
+   abs_out<<std::setw(12)<<std::setprecision(5)<<" \t\t 0.00000 \t 0.00000 \t "<<dz<<std::endl;
 
    for(unsigned int i=0; i<geom.size(); i++){
       re_out<<" "<<std::setw(5)<<geom[i].id()<<"\t";
@@ -166,15 +166,10 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
             }
             else{
-
                dof_map.dof_indices (elem, dof_indices);
    
                Point map_point=FEInterface::inverse_map(3, fe_type, elem, q_point, TOLERANCE, true); 
                FEComputeData data(es, map_point); 
-            //   if (elem->infinite()){
-            //      out<<"point: "<<q_point<<"   ";
-            //      out<<map_point(2)<<std::endl;
-            //   }
                FEInterface::compute_data(3, fe_type, elem, data);
             
                //compute solution value at that point.
