@@ -27,7 +27,7 @@ Installing petsc:
    from the PETSc installation. Therefore, the variables $SLEPC_DIR, $PETSC_DIR and $PETSC_ARCH need to be set.
    Moreover, it can be compiled with further libraries as well as described on the respective home page.
 
-Having these libraries (and facultatively some others) one can install libmesh finally. With the above 
+Having these libraries (and optionally some others) one can install libmesh finally. With the above 
 configurations, this should be possible using the './install.sh' script.
 
 To compile the application (FreeWilly) in debug-mode, type 'export METHOD=dbg' before 'make'. 

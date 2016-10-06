@@ -108,7 +108,8 @@ int main( int argc, char **argv)
    //c_norm_contr_coeff(atom, basis, env); TODO
    
    // read the coefficients of the Dyson Orbital:
-   pass_dyor(argv[1], &n, DyOr); 
+   //pass_dyor(argv[1], &n, DyOr); 
+   pass_dyor(argv[1], &n, DyOr, energy, normDO);
    //printDO(DyOr, nbasf);
    int oldatom=7;
    int expoff=ptr_env_start+3*natom;

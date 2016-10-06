@@ -36,7 +36,7 @@
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
 
-void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double energy, double normDO);
+void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double&  energy, double& normDO);
 double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
 std::vector<libMesh::Node> getGeometry(std::string fname);
 
@@ -294,11 +294,11 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
-         out<<"quadrature: ";
-         out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
-         out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
-         out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
-         out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
+      //   out<<"quadrature: ";
+      //   out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
+      //   out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
+      //   out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
+      //   out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
          //out<<1/(q_point[qp].norm())<<std::endl;
          pot[0]=potval[qp];
          if (cap){
@@ -521,10 +521,9 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    const char* filename=es.parameters.get<std::string>("DO_file").c_str();
    int namelength=strlen(filename);
    getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
-   
-   Real photonEnergy=es.parameters.get<Real>("energy"); 
-   es.parameters.set<Real>("energy")=photonEnergy-energy;  //"energy" now is E_kin
+
    es.parameters.set<Real>("DOnorm")=normDO;
+   es.parameters.set<Real>("E_do")=energy;
 
    // Get a reference to our system.
    LinearImplicitSystem & eigen_system = es.get_system<LinearImplicitSystem> (system_name);

@@ -19,8 +19,8 @@
 #include <iomanip>
 
 // include functions for rbf-interpolation
-# include "rbf_interp_nd.hpp"
-# include "r8lib.hpp"
+# include "fsu_soft/rbf_interp_nd.hpp"
+# include "fsu_soft/r8lib.hpp"
 
 // Local includes
 #include "radial_interpolation.h"

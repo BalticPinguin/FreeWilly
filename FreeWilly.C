@@ -77,11 +77,23 @@ int main (int argc, char** argv){
       libmesh_error_msg("\nUsage: " << argv[0] << " <input-filename>");
    // Tell the user what we are doing.
    else {
-      std::cout << "Running " << argv[0];
-
+      out<<"WELCOME TO FREE WILLY."<<std::endl;
+      out << "Running " << argv[0];
       for (int i=1; i<argc; i++)
-          std::cout << " " << argv[i];
-      std::cout << std::endl << std::endl;
+          out << " " << argv[i];
+      out << std::endl << std::endl;
+      out<<"Input file: "<<std::endl;
+      out<<"--------------------------------------------------------------..."<<std::endl;
+      std::string getcontent;
+      std::ifstream openfile (argv[1]);
+      if(openfile.is_open()){
+        while(getline(openfile, getcontent)){
+            out<<"| ";
+            out << getcontent << std::endl;
+        }
+      }
+      out<<"--------------------------------------------------------------..."<<std::endl;
+      out<<"End of input file "<<std::endl<<std::endl;
    }
 
    // Get the number of eigen values to be computed from argv[2]
@@ -137,8 +149,25 @@ int main (int argc, char** argv){
    // that finds the center of finite elemnts and so on.
    //ExodusII_IO (mesh).write("Molec_Mesh2.e");
    if (infel){
+      // determine geometric center of molecule:
+      InfElemBuilder::InfElemOriginValue com_x;
+      InfElemBuilder::InfElemOriginValue com_y;
+      InfElemBuilder::InfElemOriginValue com_z;
+      com_x.first=true;
+      com_y.first=true;
+      com_z.first=true;
+      for (unsigned int atom=0;atom<geometry.size(); atom++){
+         com_x.second+=geometry[atom](0);
+         com_y.second+=geometry[atom](1);
+         com_z.second+=geometry[atom](2);
+      }
+      com_x.second/=geometry.size();
+      com_y.second/=geometry.size();
+      com_z.second/=geometry.size();
       InfElemBuilder builder(mesh);
-      builder.build_inf_elem(true);
+      builder.build_inf_elem(com_x, com_y, com_z, 
+                             false,  false,  false,
+                             true, libmesh_nullptr);
    
       // Reassign subdomain_id() of all infinite elements.
       // Otherwise, the exodus-api will fail on the mesh.
@@ -194,9 +223,6 @@ int main (int argc, char** argv){
    // ncv >= nev must hold and ncv >= 2*nev is recommended.
    equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
-
-   // set photon energy -> set in DO-assemble function
-   equation_systems.parameters.set<Real>("energy")=E;
 
    bool refinement=cl("refine", false);
    
@@ -258,6 +284,11 @@ int main (int argc, char** argv){
    
    ESP.solve();
    DO.solve(); // by this: set energy-offset and dyson norm
+   // set the photone energy:
+   equation_systems.parameters.set<Real>("energy")=E-equation_systems.parameters.get<Real>("E_do");
+   out<<"E_ph: "<<E<<"  ";
+   out<<"E_do: "<<equation_systems.parameters.get<Real>("E_do")<<std::endl;
+   out<<"E_kin:"<<equation_systems.parameters.get<Real>("energy")<<std::endl;
    // set the ESP as initial guess for solution vector.
    * eigen_system.solution = * ESP.solution; 
 

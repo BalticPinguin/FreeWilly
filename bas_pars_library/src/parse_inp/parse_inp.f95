@@ -306,7 +306,7 @@ subroutine get_do_array(filehandle,filename, dyorb, energy, normDO)
    character(len=ll) :: stream
    ! name of the inputfile
    character(len=*) :: filename
-   character(len=ll) :: dump1, dump2, dump3, dump4, dump5
+   character(len=ll) :: dump1, dump2
    ! up-spin and down-spin dyson orbitals
    real(c_double), intent(out), dimension(0:NBASF-1) :: dyorb
    real(kind=dp), dimension(:), allocatable :: dyDO
@@ -356,7 +356,7 @@ subroutine get_do_array(filehandle,filename, dyorb, energy, normDO)
          ! read geometry and charges into the ENV and ATOM array, respectively.
          if(enerfound .ne. 0) then ! energy is found
             ! read the energy
-            read(stream,*,IOSTAT=stat)dump1,dump2,dump3,dump4,dump5,energy
+            read(stream,*,IOSTAT=stat)dump1,dump1,dump1,dump1,dump1,dump1,energy
          elseif (atomfound .ne. 0) then !the atom statement is found --> ignore it.
             ! don't read data from that line, just skip it.
             read(stream,*,IOSTAT=stat)

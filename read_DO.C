@@ -16,6 +16,8 @@
 #include <string.h>
 #include <vector>
 
+#include "fsu_soft/legendre_polynomial.hpp"
+
 #include "libmesh/node.h"
 #include "libmesh/point.h"
 #ifdef __cplusplus
@@ -41,7 +43,7 @@ double solHar(double x,double y,double z, unsigned int l, unsigned int m);
 double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
 //double evalDO(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, double x, double y,double z);
 
-void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double energy, double normDO){
+void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double&  energy, double& normDO){
    //define the constants for accessing the atom, basis and env arrays:
    //atom array
    const int atom_slots = 6;
@@ -188,7 +190,36 @@ void makeDO_j(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>
    }
 }
 
+int factorial(unsigned int n)
+{
+   if(n!=1)
+      return n*factorial(n-1);
+   return 1;
+}
+
+double solHar2(double x,double y,double z, unsigned int l, unsigned int mpl){
+   int m=(int)(mpl-l); // m=m+l-l.     //12.5663706144=4*pi
+   double K_lm=sqrt((2*l+1)*factorial(l-abs(m))/(12.5663706144*factorial(l+abs(m))));
+   double* value;
+   double theta_val = acos(z/sqrt(x*x+y*y+z*z));
+   double* theta=&theta_val;
+   //p_polynomial_value(# evaluation_points ,l-number, vector of evaluation_points);
+   if (mpl==l){
+      value = p_polynomial_value(1, l, theta );
+      return (*value)*K_lm;
+   }
+   K_lm*=1.41421356237; //sqrt
+   if (mpl>l){
+      value= p_polynomial_value(1,l,theta );
+      return (*value)*K_lm*cos(m*atan(y/x));
+   }
+   //if mpl<l
+   value =p_polynomial_value(1,l, theta);
+   return (*value)*K_lm*sin(-m*atan(y/x));
+}
+
 double solHar(double x,double y,double z, unsigned int l, unsigned int m){
+   // this uses self-written functions; maybe more efficient, but might contain bugs.
    //////////////////////////////////////////////////////////////////////////////
    /* please find the definition of the real spherical harmonics in             *
    *  https://en.wikipedia.org/wiki/Table_of_spherical_harmonics                *
