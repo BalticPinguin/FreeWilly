@@ -2,7 +2,7 @@
 #
 # Template libMesh application Makefile
 LIBMESH_DIR ?= /home/tm162/bin/libmesh/my_libmesh
-#LIBMESH_DIR ?= /home/tm162/bin/libmesh/libmesh
+#LIBMESH_DIR ?= /home/tm162/bin/libmesh/ifem_map_test
 
 
 # include the library options determined by configure
@@ -17,7 +17,7 @@ target	   := ./FrWll-$(METHOD)
 # defined
 
 #srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.cpp
-srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C r8lib.C rbf_interp_nd.C read_DO.C bas_pars_library/build/libbas_pars.a normalisation.C Cube_IO.C
+srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C fsu_soft/r8lib.C fsu_soft/rbf_interp_nd.C read_DO.C bas_pars_library/build/libbas_pars.a normalisation.C fsu_soft/legendre_polynomial.cpp Cube_IO.C fsu_soft/sphere_lebedev_rule.cpp
 #   read_DO.C bas_pars_library/build/libbas_pars.a
 #srcfiles	:= test.C radial_interpolation.C r8lib.C rbf_interp_nd.C
 

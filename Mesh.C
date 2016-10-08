@@ -10,6 +10,9 @@
 #include "libmesh/node.h"
 #include "libmesh/serial_mesh.h"
 
+// for the lebedev-grids
+# include "fsu_soft/sphere_lebedev_rule.hpp"
+
 // Bring in everything from the libMesh namespace using namespace libMesh;
 using namespace libMesh;
 
@@ -140,6 +143,28 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          point=archimedes(pts_circle);
       else if (creator=="spiral")
          point=spiral(pts_circle);
+      else if (creator=="lebedev"){
+         //set the order:
+         int order=order_table ((int)sqrt(pts_circle));
+         out<<"order? "<<order<<std::endl;
+         double *x, *y, *z, *w;
+         x= new double[order];
+         y= new double[order];
+         z= new double[order];
+         w= new double[order];
+         ld_by_order (order, x, y, z, w);
+         delete [] w; // this is not needed at all.
+         point.resize(order);
+         for(int i=0; i<order; i++){
+            point[i]=Point(x[i],y[i],z[i]);
+         }
+         delete [] x;
+         delete [] y;
+         delete [] z;
+      }
+      else{
+         libmesh_error_msg("no valid creator specified.\n");
+      }
       // loop over atoms: each of them has a shpere around it
       for(unsigned int i=0; i<molsize; i++){
          // loop over the points on the sphere and add it respectively.
