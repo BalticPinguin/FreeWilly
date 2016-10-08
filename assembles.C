@@ -232,7 +232,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    MeshBase::const_element_iterator       el  = mesh.active_local_elements_begin();
    const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
       
-   std::vector<Number> pot(1);
+   Number pot;
       
    for ( ; el != end_el; ++el){
       // Store a pointer to the element we are currently
@@ -267,7 +267,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       const std::vector<std::vector<Real> >& phi = cfe->get_phi();
       const std::vector<std::vector<RealGradient> >& dphi = cfe->get_dphi();
       const std::vector<Point>& q_point = cfe->get_xyz();
-      std::vector<Number>& potval=pot;  //initialisation just for dummy reasons
+      std::vector<Number> potval;  //initialisation just for dummy reasons
       // get extra data needed for infinite elements
       const std::vector<RealGradient>& dphase = cfe->get_dphase();
       const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
@@ -300,7 +300,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       //   out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
       //   out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
          //out<<1/(q_point[qp].norm())<<std::endl;
-         pot[0]=potval[qp];
+         pot=potval[qp];
          if (cap){
             Real mindist=6000;
             for(unsigned int site=0; site<mol_geom.size(); site++){
@@ -308,7 +308,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                   mindist=(q_point[qp]-mol_geom[site]).norm();
             }
             if (mindist>=radius)
-               pot[0]=potval[qp]+Number(0,gamma*mindist*mindist);
+               pot=potval[qp]+Number(0,gamma*mindist*mindist);
          }
 
          // Now, get number of shape functions that are nonzero at this point::
@@ -321,7 +321,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
                      weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
                      ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-phi[j][qp]*dphi[i][qp]));
-               H(i,j) += JxW[qp]*(co0_5*temp + (pot[0]- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
+               H(i,j) += JxW[qp]*(co0_5*temp + (pot- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
             }
          }
       }
@@ -425,7 +425,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    MeshBase::const_element_iterator       el  = mesh.active_local_elements_begin();
    const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
       
-   std::vector<Number> pot(1);
+   Number pot=0;
       
    for ( ; el != end_el; ++el){
       // Store a pointer to the element we are currently
@@ -454,7 +454,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
       // The element shape functions evaluated at the quadrature points.
       const std::vector<std::vector<Real> >& phi = cfe->get_phi();
       const std::vector<Point>& q_point = cfe->get_xyz();
-      std::vector<Number>& potval=pot;  //initialisation just for dummy reasons
+      std::vector<Number> potval;
       // get extra data needed for infinite elements
       const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
    
@@ -473,7 +473,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
          //out<<1/(q_point[qp].norm())<<std::endl;
-         pot[0]=potval[qp];
+         pot=potval[qp];
          if (cap){
             Real mindist=6000;
             for(unsigned int site=0; site<mol_geom.size(); site++){
@@ -481,13 +481,13 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
                   mindist=(q_point[qp]-mol_geom[site]).norm();
             }
             if (mindist>=radius)
-               pot[0]=potval[qp]+Number(0,gamma*mindist*mindist);
+               pot=potval[qp]+Number(0,gamma*mindist*mindist);
          }
          
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();
          for (unsigned int i=0; i<n_sf; i++){
-            f(i)+=JxW[qp]*weight[qp]*phi[i][qp]*pot[0];
+            f(i)+=JxW[qp]*weight[qp]*phi[i][qp]*pot;
             for (unsigned int j=0; j<n_sf; j++){
                M(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
             }
@@ -621,6 +621,8 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
          
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();
+         //out<<"init: "<<q_point[qp];
+         //out<<"  "<<do_val<<std::endl;
          for (unsigned int i=0; i<n_sf; i++){
             f(i)+=JxW[qp]*weight[qp]*phi[i][qp]*do_val;
             for (unsigned int j=0; j<n_sf; j++){
@@ -628,7 +630,7 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
             }
          }
       }
-      dof_map.heterogenously_constrain_element_matrix_and_vector (M, f, dof_indices);
+      dof_map.constrain_element_matrix_and_vector (M, f, dof_indices);
 
       eigen_system.matrix->add_matrix (M, dof_indices);
       eigen_system.rhs->add_vector (f, dof_indices);

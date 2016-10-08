@@ -37,9 +37,9 @@ dz = [data[1], data[2], data[3]]
 for i in range(num_atoms):
    stri = ''.join(file(sys.argv[1]).readlines()[6+i])
    data = np.fromstring(stri, sep=' ')
-   atoms_x.append( data[1] ) #line 7+i, 2. row
-   atoms_y.append( data[2] ) #line 7+i, 3. row
-   atoms_z.append( data[3] ) #line 7+i, 4. row
+   atoms_x.append( data[2] ) #line 7+i, 2. row
+   atoms_y.append( data[3] ) #line 7+i, 3. row
+   atoms_z.append( data[4] ) #line 7+i, 4. row
    # Display the orbital ##################################
    atom_i = mlab.points3d(atoms_x[i], atoms_y[i], atoms_z[i],
                   scale_factor=2,

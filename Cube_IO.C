@@ -63,8 +63,8 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    abs_out<<std::setw(5)<<"  "<<geom.size();
    // where do I start?
    Point mol_center;
-   Point min(0,0,0);
-   Point max(0,0,0);
+   Point min=geom[0];
+   Point max=geom[0];
    for(unsigned int i=0; i<geom.size(); i++){
       mol_center(0)+=geom[i](0);
       mol_center(1)+=geom[i](1);
@@ -86,12 +86,12 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    mol_center(1)=mol_center(1)/geom.size();
    mol_center(2)=mol_center(2)/geom.size();
 
-   Real dx=0.1;
-   Real dy=0.1;
-   Real dz=0.1;
-   unsigned int nx=20+(max(0)-min(0))*10;
-   unsigned int ny=20+(max(1)-min(1))*10;
-   unsigned int nz=20+(max(2)-min(2))*10;
+   Real dx=0.2;
+   Real dy=0.2;
+   Real dz=0.2;
+   unsigned int nx=30+(max(0)-min(0))*10;
+   unsigned int ny=30+(max(1)-min(1))*10;
+   unsigned int nz=30+(max(2)-min(2))*10;
 
    Point start(mol_center(0)-dx*nx/2,
                mol_center(1)-dy*ny/2,
@@ -195,11 +195,12 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                num_line=0;
             }
          }
-         if (num_line>0){
-            re_out<<std::endl;
-            im_out<<std::endl;
-            abs_out<<std::endl;
-         }
+        // if (num_line>0){
+        //    re_out<<std::endl;
+        //    im_out<<std::endl;
+        //    abs_out<<std::endl;
+        //    num_line=0;
+        // }
       }
    }
 }
