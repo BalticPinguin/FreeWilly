@@ -40,6 +40,7 @@ extern void pass_dyor(const char*, int*, double*, double*, double*);
 
 void makeDO_j(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, int nbas,int* basis,double* env, double* DyOr);
 double solHar(double x,double y,double z, unsigned int l, unsigned int m);
+double solHar2(double x,double y,double z, unsigned int l, unsigned int m);
 double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
 //double evalDO(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, double x, double y,double z);
 
@@ -192,7 +193,7 @@ void makeDO_j(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>
 
 int factorial(unsigned int n)
 {
-   if(n!=1)
+   if(n>1)
       return n*factorial(n-1);
    return 1;
 }

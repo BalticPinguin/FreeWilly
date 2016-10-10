@@ -1,6 +1,6 @@
 #include <math.h> // needed for sqrt function
 #include <iostream> 
-#include <complex.h> 
+#include <complex.h> // the infinite element version requires complex numbers explicitly.
 // libMesh include files.
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
@@ -21,7 +21,6 @@
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
-#include <complex.h> // the infinite element version requires complex numbers explicitly.
 // for the ESP system
 #include "libmesh/explicit_system.h"
 

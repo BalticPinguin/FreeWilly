@@ -34,7 +34,7 @@ using namespace libMesh;
 
 // Function prototype.  This is the function that will assemble
 // the eigen system. Here, we will simply assemble a mass matrix.
-double normalise(EquationSystems& equation_systems);
+double normalise(EquationSystems& equation_systems, bool infel);
 std::vector<libMesh::Node> getGeometry(std::string filename);
 
 //prototypes of functions in assemble.C (that are called from out of it)
@@ -129,7 +129,6 @@ int main (int argc, char** argv){
    tetrahedralise_sphere(mesh, geometry, angular_creator, r, NrBall, VolConst, L, N);
    
    int order=cl("order", 1);
-   out<<"order: "<<order<<std::endl;
    FEType fe_type(FIRST);
    if (order==2){
       //convert element to second-order mesh.
@@ -201,9 +200,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<std::string>("potential")=pot_file;
    equation_systems.parameters.set<std::string>("DO_file")=molec_file;
    // Declare the system variables.
-   // Adds the variable "p" to "Eigensystem".   "p"
-   // will be approximated using second-order approximation.
-   //eigen_system.add_variable("phi", fe_type);
+   // Adds the variables to the different equation systems.
    eigen_system.add_variable("phi", fe_type);
    ESP.add_variable("esp", fe_type);
    DO.add_variable("do", fe_type);
@@ -282,8 +279,9 @@ int main (int argc, char** argv){
 
    // Solve the system "Eigensystem".
    
+   // In Do.solve(): set energy-offset and dyson norm
+   DO.solve(); 
    ESP.solve();
-   DO.solve(); // by this: set energy-offset and dyson norm
    // set the photone energy:
    equation_systems.parameters.set<Real>("energy")=E-equation_systems.parameters.get<Real>("E_do");
    out<<"E_ph: "<<E<<"  ";
@@ -364,10 +362,29 @@ int main (int argc, char** argv){
       eigenvector_output_name<< "phi-"<<i <<".cube" ;
       cube_io(equation_systems, geometry, eigenvector_output_name.str(), "EigenSE");
    }
-
-   Real intensity=normalise(equation_systems);
+   if (nconv==0){
+      // that one can look at the mesh and some properties...
+      #ifdef LIBMESH_HAVE_EXODUS_API
+         eigenvector_output_name.str(std::string());
+         if (infel)
+            eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
+         else
+            eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<".e" ;
+         ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
+      #endif // #ifdef LIBMESH_HAVE_EXODUS_API
+   }
+   if(nconv>0){
+      eigen_system.get_eigenpair(0);
+      Real intensity=normalise(equation_systems, infel);
+    //  out<<"intensity:  "<<intensity<<std::endl;
+    //  for(unsigned int i=1; i<nconv; i++){
+    //     out<<" for the solution nr "<<i<<":"<<std::endl;
+    //     eigen_system.get_eigenpair(i);
+    //     intensity=normalise(equation_systems, infel);
+    //     out<<"intensity:  "<<intensity<<std::endl;
+    //  }
+   }
    Number normDO=equation_systems.parameters.get<Real>("DOnorm");
-   out<<"intensity:  "<<intensity<<std::endl;
    out<<"Norm DO:    "<<normDO<<std::endl;
 
    // All done.

@@ -1,4 +1,6 @@
 #include <vector>
+#include <math.h> // needed for sqrt function
+#include <cstring> // for strlen.
 #include "libmesh/libmesh.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/condensed_eigen_system.h"
@@ -25,6 +27,10 @@
 #include "libmesh/tensor_value.h"
 #include "libmesh/vector_value.h"
 #include "libmesh/tensor_tools.h"
+
+void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double&  energy, double& normDO);
+double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
+std::vector<libMesh::Node> getGeometry(std::string fname);
 
 using namespace libMesh;
 
@@ -57,7 +63,7 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
    local_v2->init((*es2.solution).size(), true, SERIAL);
    (*es2.solution).localize (*local_v2, es2.get_dof_map().get_send_list());
 
-   const FEType & fe_type = es2.get_dof_map().variable_type(var1);
+   const FEType & fe_type = es2.get_dof_map().variable_type(var2);
    // Allow space for dims 0-3, even if we don't use them all
    std::vector<FEBase *> fe_ptrs(4,libmesh_nullptr);
    std::vector<QBase *> q_rules(4,libmesh_nullptr);
@@ -79,15 +85,14 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
    FEBase * cfe = libmesh_nullptr;
 
    // Begin the loop over the elements
-   MeshBase::const_element_iterator       el     =
-         es1.get_mesh().active_local_elements_begin();
-   const MeshBase::const_element_iterator end_el =
-         es1.get_mesh().active_local_elements_end();
+   MeshBase::const_element_iterator       el     = es1.get_mesh().active_local_elements_begin();
+   const MeshBase::const_element_iterator end_el = es1.get_mesh().active_local_elements_end();
    for ( ; el != end_el; ++el){
        const Elem * elem = *el;
        const unsigned int dim = elem->dim();
 
-      QGauss qrule (dim, FIFTH);
+      //QGauss qrule (dim, FIFTH);
+      QGauss qrule (dim, fe_type.default_quadrature_order());
       UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
       UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(dim, fe_type));
       fe->attach_quadrature_rule (&qrule);
@@ -124,6 +129,9 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
             v_h += fe_data.shape[i] * (*local_v2)(dof_indices[i]);
             
          }
+         //out<<"later: "<<q_point[qp];
+         //out<<"  "<<u_h<<std::endl;
+
          //norm += JxW[qp] * TensorTools::norm_sq(u_h);
          if(int_type==MU)
             overlap += JxW[qp] * std::conj(u_h) * q_point[qp].norm() * v_h;
@@ -151,18 +159,124 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
    return overlap;
 }
 
-Real normalise(EquationSystems& equation_systems){
+Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, IntegralType int_type){
+   //run at all processors at once:
+   //parallel_object_only(); --> can not be used here.
+
+   Number overlap=0;
+   
+   // this should be checked somehow as well:
+   //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
+   //libmesh_assert_not_equal_to(es1.get_dof_map().variable_type(var1),
+   //                            es2.get_dof_map().variable_type(var2));
+   //CondensedEigenSystem& es1=equation_systems.get_system<CondensedEigenSystem> (sys1);
+   //LinearImplicitSystem & es2 = equation_systems.get_system<LinearImplicitSystem> (sys2);
+   System & es1 = eq_sys.get_system<System> (sys1);
+
+   // Localize the potentially parallel vectors
+   UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
+   local_v1->init((*es1.solution).size(), true, SERIAL);
+   (*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
+
+   // get the dyson orbital:
+   std::vector<std::vector<double> > do_j;
+   std::vector<unsigned int> l;
+   std::vector<double> alpha;
+   std::vector<Node> geometry= getGeometry(eq_sys.parameters.get<std::string>("DO_file"));
+   Real energy=0, normDO=0;
+   const char* filename=eq_sys.parameters.get<std::string>("DO_file").c_str();
+   int namelength=strlen(filename);
+   getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
+
+   const FEType & fe_type = es1.get_dof_map().variable_type(var1);
+   std::vector<dof_id_type> dof_indices;
+   FEBase * cfe = libmesh_nullptr;
+
+   // set correct k-vector
+   eq_sys.parameters.set<Real>("current frequency")=sqrt(2.*
+                     std::abs(eq_sys.parameters.get<Real>("energy")));
+
+   // Begin the loop over the elements
+   MeshBase::const_element_iterator       el     = es1.get_mesh().active_local_elements_begin();
+   const MeshBase::const_element_iterator end_el = es1.get_mesh().active_local_elements_end();
+   for(; el != end_el; ++el){
+       const Elem * elem = *el;
+       const unsigned int dim = elem->dim();
+
+      //QGauss qrule (dim, FIFTH);
+      QGauss qrule (dim, fe_type.default_quadrature_order());
+      UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
+      UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(dim, fe_type));
+      fe->attach_quadrature_rule (&qrule);
+      inf_fe->attach_quadrature_rule (&qrule);
+      
+      if (elem->infinite())
+         cfe = inf_fe.get();
+      else
+         cfe = fe.get();
+      const std::vector<Real> &  JxW     = cfe->get_JxW();
+      const std::vector<Point> & q_point = cfe->get_xyz();
+
+      cfe->reinit(elem);
+
+      es1.get_dof_map().dof_indices (elem, dof_indices, var1);
+
+      //const unsigned int n_qp = qrule.n_points(); --> fails for infinite elements.
+      unsigned int n_qp = cfe->n_quadrature_points();
+      const unsigned int n_sf = cast_int<unsigned int>(dof_indices.size());
+
+      // Begin the loop over the Quadrature points.
+      for (unsigned int qp=0; qp<n_qp; qp++){
+         Number u_h = 0.;
+         Number do_val=evalDO(do_j, l, alpha, geometry, q_point[qp]);
+               
+         Point mapped_qp = FEInterface::inverse_map(dim, fe_type, elem, q_point[qp], TOLERANCE, true); 
+         FEComputeData fe_data(eq_sys, mapped_qp);
+         FEInterface::compute_data(dim, fe_type, elem, fe_data);
+
+         for (unsigned int i=0; i != n_sf; ++i){
+            //Use FEComputeData because with infinite elements the value at q_point[i][qp]
+            // is not just phi[i][qp].
+            u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
+            
+         }
+         //norm += JxW[qp] * TensorTools::norm_sq(u_h);
+         if(int_type==MU)
+            overlap += JxW[qp] * std::conj(u_h) * q_point[qp].norm() * do_val;
+         else //if(int_type==OVERLAP)
+            overlap += JxW[qp] * std::conj(u_h) * do_val;
+      }
+   }
+
+   es1.comm().sum(overlap);
+   //overlap = std::sqrt(overlap);
+
+   return overlap;
+}
+
+Real normalise(EquationSystems& equation_systems, bool infel){
    CondensedEigenSystem& eigen_system=equation_systems.get_system<CondensedEigenSystem> ("EigenSE");
    LinearImplicitSystem & DO = equation_systems.get_system<LinearImplicitSystem> ("DO");
    //normalise eigen_system:
-   Number norm_phi=eigen_system.calculate_norm( *eigen_system.solution, 0, L2);
+   Real norm_phi=0;
+   if (!infel)
+      norm_phi=eigen_system.calculate_norm( *eigen_system.solution, 0, L2);
    out<<"norm of phi: "<<norm_phi<<"   ";
    out<< calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP) <<std::endl;
-   out<<"norm of DO:   "<< DO.calculate_norm(*DO.solution, 0, L2)<<"  ";
-   out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP)) <<std::endl;
 
+   Real normDO = 0;
+   if (!infel) 
+      normDO= DO.calculate_norm(*DO.solution, 0, L2);
+   out<<"norm of DO:   "<< normDO <<"  ";
+   out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
+   out<< sqrt(overlap_DO(equation_systems, "DO", 0, OVERLAP))<<std::endl;
+
+   Number overlap=0;
    //compute <DO| mu |phi>
-   Number overlap=calculate_overlap(equation_systems, "DO", 0, "EigenSE", 0, MU);
+   overlap=calculate_overlap(equation_systems, "DO", 0, "EigenSE", 0, MU);
+   out <<"solution overlap"<< overlap<<std::endl;
+   overlap = overlap_DO(equation_systems, "EigenSE", 0, MU);
+   out <<"direct overlap"<< overlap<<std::endl;
    
    return abs(overlap)*abs(overlap)/(abs(norm_phi)*abs(norm_phi));
 }

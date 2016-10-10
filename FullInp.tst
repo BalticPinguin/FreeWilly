@@ -9,7 +9,7 @@ infinite =true  # whether infinite elements should be allowed
 cap=false # switches complex absorbing boundaries on and off.
 gamma=2   # parameter to scale the cap.
 
-angular=fibonacci  # sphere, box, own, fibonacci, spiral, archimedes
+angular=fibonacci  # fibonacci, spiral, archimedes, lebedev, design, womb1, womb2, womb3
 order = 1
 radius= 20.
 points= 30
