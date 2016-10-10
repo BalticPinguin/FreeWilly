@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "fsu_soft/legendre_polynomial.hpp"
+#include "fsu_soft/sphere_lebedev_rule.hpp" // compute theta,phi from x,y,z.
 
 #include "libmesh/node.h"
 #include "libmesh/point.h"
@@ -136,7 +137,7 @@ double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<u
       diff_y=pt(1)-geometry[i](1);
       diff_z=pt(2)-geometry[i](2);
       for(unsigned int m=0; m<2*l[k]+1; m++){
-         angular+=solHar(diff_x,diff_y,diff_z,l[k],m)*do_j[k][m]; 
+         angular+=solHar2(diff_x,diff_y,diff_z,l[k],m)*do_j[k][m]; 
       }
       do_xyz+=exp(-alpha[k]*(diff_x*diff_x+diff_y*diff_y+diff_z*diff_z))*angular;
       if (k>0 && l[k]<l[k-1]) i++;  // than next atom is considered.
@@ -202,21 +203,41 @@ double solHar2(double x,double y,double z, unsigned int l, unsigned int mpl){
    int m=(int)(mpl-l); // m=m+l-l.     //12.5663706144=4*pi
    double K_lm=sqrt((2*l+1)*factorial(l-abs(m))/(12.5663706144*factorial(l+abs(m))));
    double* value;
-   double theta_val = acos(z/sqrt(x*x+y*y+z*z));
-   double* theta=&theta_val;
+   double r=sqrt(x*x+y*y+z*z),
+            thetaval=0,
+            phival=0;
+   double* theta=&thetaval;
+
+   if( r<1e-12){
+      thetaval=0;
+      phival=0;
+   }
+   else{
+      thetaval=acos ( z/r ); //0-> pi
+      phival=atan2(y,x); //-pi -> pi
+   }
+   // I am not interested in spherical Harmonics but solid Harmonics:
+   //  correct by factor r^l.
+   if (l!=0){
+      K_lm=K_lm*pow(r,l);
+   }
+   thetaval=cos(thetaval); // make cos(theta) out of it.
+   //std::cout<<"theta and phi: "<<*theta<<"  "<<phival;
+   //std::cout<<"  "<<x<<"  "<<y<<"  "<<z<<std::endl;
+   //std::cout<<"        K:     "<<K_lm<<std::endl;
    //p_polynomial_value(# evaluation_points ,l-number, vector of evaluation_points);
-   if (mpl==l){
+   if (mpl==l){ // m=0
       value = p_polynomial_value(1, l, theta );
       return (*value)*K_lm;
    }
-   K_lm*=1.41421356237; //sqrt
+   K_lm*=1.41421356237; //*sqrt(2)
    if (mpl>l){
-      value= p_polynomial_value(1,l,theta );
-      return (*value)*K_lm*cos(m*atan(y/x));
+      value= p_polynomial_value(1, l, theta);
+      return (*value)*K_lm*cos(m*phival);
    }
    //if mpl<l
    value =p_polynomial_value(1,l, theta);
-   return (*value)*K_lm*sin(-m*atan(y/x));
+   return (*value)*K_lm*sin(-m*phival);
 }
 
 double solHar(double x,double y,double z, unsigned int l, unsigned int m){

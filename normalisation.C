@@ -193,7 +193,7 @@ Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Int
    FEBase * cfe = libmesh_nullptr;
 
    // set correct k-vector
-   eq_sys.parameters.set<Real>("current frequency")=sqrt(2.*
+   eq_sys.parameters.set<Number>("current frequency")=sqrt(2.*
                      std::abs(eq_sys.parameters.get<Real>("energy")));
 
    // Begin the loop over the elements
@@ -249,7 +249,6 @@ Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Int
    }
 
    es1.comm().sum(overlap);
-   //overlap = std::sqrt(overlap);
 
    return overlap;
 }

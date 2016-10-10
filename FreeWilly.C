@@ -50,6 +50,15 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
 //void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator);
 void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, unsigned int N);
 
+enum IntegralType: int{
+   MU=0,
+   OVERLAP
+};
+
+Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, IntegralType int_type);
+Real normalise(EquationSystems& equation_systems, bool infel);
+Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int var1, const std::string sys2, int var2 , IntegralType int_type);
+
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
    LibMeshInit init (argc, argv);
@@ -372,17 +381,23 @@ int main (int argc, char** argv){
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<".e" ;
          ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
       #endif // #ifdef LIBMESH_HAVE_EXODUS_API
+      Real normDO = 0;
+      if (!infel) 
+         normDO= DO.calculate_norm(*DO.solution, 0, L2);
+      out<<"norm of DO:   "<< normDO <<"  ";
+      out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
+      out<< sqrt(overlap_DO(equation_systems, "DO", 0, OVERLAP))<<std::endl;
    }
    if(nconv>0){
       eigen_system.get_eigenpair(0);
       Real intensity=normalise(equation_systems, infel);
-    //  out<<"intensity:  "<<intensity<<std::endl;
-    //  for(unsigned int i=1; i<nconv; i++){
-    //     out<<" for the solution nr "<<i<<":"<<std::endl;
-    //     eigen_system.get_eigenpair(i);
-    //     intensity=normalise(equation_systems, infel);
-    //     out<<"intensity:  "<<intensity<<std::endl;
-    //  }
+      out<<"intensity:  "<<intensity<<std::endl;
+      for(unsigned int i=1; i<nconv; i++){
+         out<<" for the solution nr "<<i<<":"<<std::endl;
+         eigen_system.get_eigenpair(i);
+         intensity=normalise(equation_systems, infel);
+         out<<"intensity:  "<<intensity<<std::endl;
+      }
    }
    Number normDO=equation_systems.parameters.get<Real>("DOnorm");
    out<<"Norm DO:    "<<normDO<<std::endl;
