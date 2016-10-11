@@ -12,7 +12,7 @@
 
 // for the lebedev-grids
 # include "fsu_soft/sphere_lebedev_rule.hpp"
-//# include "fsu_soft/sphere_design_rule.hpp"
+# include "fsu_soft/sphere_design_rule.hpp"
 # include "grids/Wom.h"
 
 // Bring in everything from the libMesh namespace using namespace libMesh;
@@ -145,23 +145,40 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          point=archimedes(pts_circle);
       else if (creator=="spiral")
          point=spiral(pts_circle);
+      else if (creator=="Sdesign"){
+         int rule, num_pts;
+         rule = (int)sqrt(pts_circle/2)/3;
+         design_size(rule, &num_pts);
+         double** x;
+         x= new double*[3];
+         x[0]=new double[num_pts];
+         x[1]=new double[num_pts];
+         x[2]=new double[num_pts];
+         design_points(rule, num_pts, x);
+         point.resize(num_pts);
+         for(int i=0; i<num_pts; i++){
+            point[i]=Point(x[0][i],x[1][i],x[2][i]);
+         }
+         delete[] x;
+      }
       else{
          //set the order:
-         int rule;
+         int rule, num_pts;
          if (creator=="lebedev"){
             rule = (int)sqrt(pts_circle/2);
             while (available_table(rule)==0)
                // if it is 1, I can work with it
                // if -1, it has become too large.
                rule++;
+            num_pts=order_table (rule);
          }
          else{ // some Womersley
             rule = (int)sqrt(pts_circle/2)/6;
             if(unavailable(rule))
                rule=max_avail();
+            num_pts=Wom_precision_table(rule);
          }
          // not all orders are implemented.
-         int num_pts=order_table (rule);
          out<<"order? "<<num_pts<<"  ";
          out<<pts_circle<<std::endl;
          double *x, *y, *z, *w;
@@ -171,13 +188,13 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          w= new double[num_pts];
          if (creator=="lebedev")
             ld_by_order (num_pts, x, y, z, w);
-          else if (creator=="womEV")
+         else if (creator=="womEV")
             Wom_points (1, num_pts, x, y, z, w);
-          else if (creator=="womMD")
+         else if (creator=="womMD")
             Wom_points (2, num_pts, x, y, z, w);
-          else if (creator=="womMN")
+         else if (creator=="womMN")
             Wom_points (3, num_pts, x, y, z, w);
-          else if (creator=="fliME") 
+         else if (creator=="fliME") 
             Wom_points (4, num_pts, x, y, z, w);
          else
             libmesh_error_msg("no valid creator specified.\n");
