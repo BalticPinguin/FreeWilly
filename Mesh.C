@@ -13,6 +13,7 @@
 // for the lebedev-grids
 # include "fsu_soft/sphere_lebedev_rule.hpp"
 //# include "fsu_soft/sphere_design_rule.hpp"
+# include "grids/Wom.h"
 
 // Bring in everything from the libMesh namespace using namespace libMesh;
 using namespace libMesh;
@@ -146,23 +147,46 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          point=spiral(pts_circle);
       else{
          //set the order:
-         int order=order_table ((int)sqrt(pts_circle/2));
-         out<<"order? "<<order<<"  ";
+         int rule;
+         if (creator=="lebedev"){
+            rule = (int)sqrt(pts_circle/2);
+            while (available_table(rule)==0)
+               // if it is 1, I can work with it
+               // if -1, it has become too large.
+               rule++;
+         }
+         else{ // some Womersley
+            rule = (int)sqrt(pts_circle/2)/6;
+            if(unavailable(rule))
+               rule=max_avail();
+         }
+         // not all orders are implemented.
+         int num_pts=order_table (rule);
+         out<<"order? "<<num_pts<<"  ";
          out<<pts_circle<<std::endl;
          double *x, *y, *z, *w;
-         x= new double[order];
-         y= new double[order];
-         z= new double[order];
-         w= new double[order];
+         x= new double[num_pts];
+         y= new double[num_pts];
+         z= new double[num_pts];
+         w= new double[num_pts];
          if (creator=="lebedev")
-            ld_by_order (order, x, y, z, w);
-        // else if (creator=="design")
-        //    dsn_by_order (order, x, y, z);
+            ld_by_order (num_pts, x, y, z, w);
+          else if (creator=="womEV")
+            Wom_points (1, num_pts, x, y, z, w);
+          else if (creator=="womMD")
+            Wom_points (2, num_pts, x, y, z, w);
+          else if (creator=="womMN")
+            Wom_points (3, num_pts, x, y, z, w);
+          else if (creator=="fliME") 
+            Wom_points (4, num_pts, x, y, z, w);
          else
             libmesh_error_msg("no valid creator specified.\n");
-         delete [] w; // this is not needed at all.
-         point.resize(order);
-         for(int i=0; i<order; i++){
+         // this is not needed at all.
+         delete [] w; 
+
+         // now, convert the arrays to a Point-vector.
+         point.resize(num_pts);
+         for(int i=0; i<num_pts; i++){
             point[i]=Point(x[i],y[i],z[i]);
          }
          delete [] x;
