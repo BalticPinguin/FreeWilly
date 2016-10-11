@@ -24,6 +24,8 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
 
 unsigned int closest(std::vector<libMesh::Node> geom, libMesh::Point pt);
 
+unsigned int point_size(unsigned int iterations, int n);
+
 void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, unsigned int N){
    #ifdef LIBMESH_HAVE_TETGEN
    //libMesh::Real r=10.;
@@ -165,12 +167,20 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          //set the order:
          int rule, num_pts;
          if (creator=="lebedev"){
-            rule = (int)sqrt(pts_circle/2);
+            rule = (unsigned int)sqrt(pts_circle/2);
             while (available_table(rule)==0)
                // if it is 1, I can work with it
                // if -1, it has become too large.
                rule++;
             num_pts=order_table (rule);
+         }
+         else if (creator=="geodesic4"){
+            rule=(int)log(pts_circle);
+            num_pts=point_size(4, rule);
+         }
+         else if (creator=="geodesic6"){
+            rule=(int)log(pts_circle);
+            num_pts=point_size(6, rule);
          }
          else{ // some Womersley
             rule = (int)sqrt(pts_circle/2)/6;

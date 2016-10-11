@@ -17,7 +17,7 @@ target	   := ./FrWll-$(METHOD)
 # defined
 
 #srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.cpp
-srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C fsu_soft/r8lib.C fsu_soft/rbf_interp_nd.C read_DO.C bas_pars_library/build/libbas_pars.a normalisation.C fsu_soft/legendre_polynomial.cpp Cube_IO.C fsu_soft/sphere_lebedev_rule.cpp grids/Wom_gen.C grids/Wom_ev.C grids/Wom_md.C grids/Wom_me.C fsu_soft/sphere_design_rule.cpp
+srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C fsu_soft/r8lib.C fsu_soft/rbf_interp_nd.C read_DO.C bas_pars_library/build/libbas_pars.a normalisation.C fsu_soft/legendre_polynomial.cpp Cube_IO.C fsu_soft/sphere_lebedev_rule.cpp grids/Wom_gen.C grids/Wom_ev.C grids/Wom_md.C grids/Wom_me.C fsu_soft/sphere_design_rule.cpp grids/geodesic.C
 #   read_DO.C bas_pars_library/build/libbas_pars.a
 #srcfiles	:= test.C radial_interpolation.C r8lib.C rbf_interp_nd.C
 

@@ -200,6 +200,7 @@ int factorial(unsigned int n)
 }
 
 double solHar2(double x,double y,double z, unsigned int l, unsigned int mpl){
+   //http://www.ppsloan.org/publications/StupidSH36.pdf
    int m=(int)(mpl-l); // m=m+l-l.     //12.5663706144=4*pi
    double K_lm=sqrt((2*l+1)*factorial(l-abs(m))/(12.5663706144*factorial(l+abs(m))));
    double* value;
