@@ -32,32 +32,6 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, s
    
    add_sphere_convex_hull_to_mesh(mesh, r, NrBall, geometry, creator, L, N);
    
-   // 3.) Update neighbor information so that TetGen can verify there is a convex hull.
-   mesh.find_neighbors();
-   
-   // 5.) Set parameters and tetrahedralize the domain
-   
-   // 0 means "use TetGen default value"
-   //Real quality_constraint = 42*10; // practically no constraint
-   Real quality_constraint = 2;
-   
-   // The volume constraint determines the max-allowed tetrahedral
-   // volume in the Mesh.  TetGen will split cells which are larger than
-   // this size
-   Real volume_constraint = VolConst; 
-   
-   // Construct the Delaunay tetrahedralization
-   TetGenMeshInterface t(mesh);
-   
-   t.pointset_convexhull();
-   mesh.find_neighbors();
-   t.triangulate_conformingDelaunayMesh(quality_constraint, volume_constraint);
-   
-   
-   // Find neighbors, etc in preparation for writing out the Mesh
-   mesh.prepare_for_use();
-   
-   // Finally, write out the result --> is done in main already.
    //mesh.write("sphere_3D.e");
    #else
    // Avoid compiler warnings
@@ -117,7 +91,6 @@ std::vector<Point> spiral(unsigned int points_on_sphere){
 void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigned int points_on_sphere, std::vector<Node> geometry, std::string creator, const Real L, const unsigned int N){
    #ifdef LIBMESH_HAVE_TETGEN
    std::vector<Point> point;
-   double x, scale;
    // For each point in the map, insert it into the input mesh and copy it to all nuclear sites.
    // keep track of the ID assigned.
    unsigned int molsize=geometry.size();
@@ -130,16 +103,12 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
    }
 
    //now, add further points to the mesh: The nodes are located on spheres (circle)
-   // around the molecules; each sphere has a different radius (scale) in (0,r_max].
+   out<<std::endl<<"BEGIN POINT SET"<<std::endl<<std::endl;
 
    //outermost loop: over different spheres
-   for(unsigned int circle=0; circle<N; circle++){
-      x = (double)(2.*circle)/N - 1.;
-      scale = L*(1.-x)/(1.+x+2.*L/r_max);
-      if (scale == 0.)
-         continue;
+   for(unsigned int circle=0; circle<1; circle++){
       // create a unit sphere of respective type with slowly incr. number of points
-      pts_circle=(int)(r_max*scale*0.3+1)*points_on_sphere;
+      pts_circle=(int)(r_max*0.3+1)*points_on_sphere;
       //pts_circle=points_on_sphere;
       if (creator=="fibonacci")
          point=fibonacci(pts_circle);
@@ -224,18 +193,18 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
       for(unsigned int i=0; i<molsize; i++){
          // loop over the points on the sphere and add it respectively.
          for (unsigned int it=0; it<point.size(); it++){
-            // shift and scale the coordinate as needed
-            point[it]*=scale;
             point[it]+=geometry[i];
             if (i==closest(geometry, point[it])){
                mesh.add_point( point[it] );
+               out<<point[it](0)<<"  ";
+               out<<point[it](1)<<"  ";
+               out<<point[it](2)<<std::endl;
             }
-            // shift and scale back for use in the next round.
             point[it]-= geometry[i];
-            point[it]/= scale;
          }
       }
    }
+   out<<std::endl<<"END POINT SET"<<std::endl;
    // now, the point set is in mesh and we can call triangulate_pointset().
    #else
    // Avoid compiler warnings
