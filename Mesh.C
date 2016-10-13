@@ -14,6 +14,7 @@
 # include "fsu_soft/sphere_lebedev_rule.hpp"
 # include "fsu_soft/sphere_design_rule.hpp"
 # include "grids/Wom.h"
+# include "grids/geodesic.h"
 
 // Bring in everything from the libMesh namespace using namespace libMesh;
 using namespace libMesh;
@@ -130,6 +131,9 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          for(int i=0; i<num_pts; i++){
             point[i]=Point(x[0][i],x[1][i],x[2][i]);
          }
+         delete [] x[0];
+         delete [] x[1];
+         delete [] x[2];
          delete[] x;
       }
       else{
@@ -144,23 +148,26 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
             num_pts=order_table (rule);
          }
          else if (creator=="geodesic4"){
-            rule=(int)log(pts_circle);
+            rule=(int)log(pts_circle)/2;
             num_pts=point_size(4, rule);
          }
          else if (creator=="geodesic6"){
-            rule=(int)log(pts_circle);
+            rule=(int)log(pts_circle)/2;
             num_pts=point_size(6, rule);
          }
          else{ // some Womersley
-            rule = (int)sqrt(pts_circle/2)/6;
+            rule = (int)sqrt(pts_circle/2);
             if(unavailable(rule))
                rule=max_avail();
             num_pts=Wom_precision_table(rule);
          }
          // not all orders are implemented.
-         out<<"order? "<<num_pts<<"  ";
+         out<<"order: "<<num_pts<<"  ";
          out<<pts_circle<<std::endl;
-         double *x, *y, *z, *w;
+         double *x;
+         double *y;
+         double *z;
+         double *w;
          x= new double[num_pts];
          y= new double[num_pts];
          z= new double[num_pts];
@@ -175,6 +182,10 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
             Wom_points (3, num_pts, x, y, z, w);
          else if (creator=="fliME") 
             Wom_points (4, num_pts, x, y, z, w);
+         else if (creator=="geodesic4")
+            gen_grid(x,y,z, rule,4);
+         else if (creator=="geodesic6")
+            gen_grid(x,y,z, rule,6);
          else
             libmesh_error_msg("no valid creator specified.\n");
          // this is not needed at all.
