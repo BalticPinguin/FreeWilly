@@ -2771,48 +2771,70 @@ void design_points (int order, unsigned int /*n*/, double** x )
   switch(order){
    case 0:
       design_00_001_3d ( x );
+      return;
    case 1:                     
       design_01_002_3d ( x );
+      return;
    case 2 :                    
       design_02_004_3d ( x );
+      return;
    case 3:                     
       design_03_006_3d ( x );
+      return;
    case 4:                     
       design_04_014_3d ( x );
+      return;
    case 5:                     
       design_05_012_3d ( x );
+      return;
    case 6:                     
       design_06_026_3d ( x );
+      return;
    case 7:                     
       design_07_024_3d ( x );
+      return;
    case 8:                     
       design_08_036_3d ( x );
+      return;
    case 9:                     
       design_09_048_3d ( x );
+      return;
    case 10:                    
       design_10_060_3d ( x );
+      return;
    case 11:                    
       design_11_070_3d ( x );
+      return;
    case 12:                    
       design_12_084_3d ( x );
+      return;
    case 13:                    
       design_13_094_3d ( x );
+      return;
    case 14:                    
       design_14_108_3d ( x );
+      return;
    case 15:                    
       design_15_120_3d ( x );
+      return;
    case 16:                    
       design_16_144_3d ( x );
+      return;
    case 17:                    
       design_17_156_3d ( x );
+      return;
    case 18:                    
       design_18_180_3d ( x );
+      return;
    case 19:                    
       design_19_204_3d ( x );
+      return;
    case 20:                    
       design_20_216_3d ( x );
+      return;
    case 21:                    
       design_21_240_3d ( x );
+      return;
    default:{
       printf("DESIGN_POINTS - Fatal error!\n");
       printf("  There is no information for ORDER = %d",order);
@@ -2849,51 +2871,75 @@ void design_size (int order, int* n )
    switch(order){
       case 0:
          *n = 1;
+         return;
       case 1:
          *n = 2;
+         return;
       case 2:
          *n = 4;
+         return;
       case 3:
          *n = 6;
+         return;
       case 4:
          *n = 14 ;
+         return;
       case 5:
          *n = 12;
+         return;
       case 6:
          *n = 26;
+         return;
       case 7:
          *n = 24;
+         return;
       case 8:
          *n = 36;
+         return;
       case 9:
          *n = 48;
+         return;
       case 10:
          *n = 60;
+         return;
       case 11:
          *n = 70;
+         return;
       case 12:
          *n = 84;
+         return;
       case 13:
          *n = 94;
+         return;
       case 14:
          *n = 108;
+         return;
       case 15:
          *n = 120;
+         return;
       case 16:
          *n = 144;
+         return;
       case 17:
          *n = 156;
+         return;
       case 18:
          *n = 180;
+         return;
       case 19:
          *n = 204;
+         return;
       case 20:
          *n = 216;
+         return;
       case 21:
          *n = 240;
+         return;
        default:
          *n=0;
+         return;
    }
+   // to avoid compiler warnings:
    return;
 }
 

@@ -24,32 +24,42 @@ int Wom_precision_table( unsigned int rule )
    return table[rule-1];
 }
 
-void Wom_points (int rule, unsigned int order, double* x, double* y, double* z, double* w)
+void Wom_points (int rule, unsigned int num_pts, double* x, double* y, double* z, double* w)
 {
    switch (rule)
    {
    case 1:{  // ev
-      switch (order){
-      case 1:
-         ev01_0004 (x,y,z,w);
-      case 2:
-         ev02_0009 (x,y,z,w);
-      case 3:
-         ev03_0016 (x,y,z,w);
+      switch (num_pts){
       case 4:
-         ev04_0025 (x,y,z,w);
-      case 5:
-         ev05_0036 (x,y,z,w);
-      case 6:
-         ev06_0049 (x,y,z,w);
-      case 7:
-         ev07_0064 (x,y,z,w);
-      case 8:
-         ev08_0081 (x,y,z,w);
+         ev01_0004 (x,y,z,w);
+         return;
       case 9:
+         ev02_0009 (x,y,z,w);
+         return;
+      case 16:
+         ev03_0016 (x,y,z,w);
+         return;
+      case 25:
+         ev04_0025 (x,y,z,w);
+         return;
+      case 36:
+         ev05_0036 (x,y,z,w);
+         return;
+      case 49:
+         ev06_0049 (x,y,z,w);
+         return;
+      case 64:
+         ev07_0064 (x,y,z,w);
+         return;
+      case 81:
+         ev08_0081 (x,y,z,w);
+         return;
+      case 100:
          ev09_0100 (x,y,z,w);
-      case 10:
+         return;
+      case 121:
          ev10_0121 (x,y,z,w);
+         return;
       default:{
          std::cerr << "\n";
          std::cerr << "WOB_POINTS - Fatal error!\n";
@@ -58,27 +68,37 @@ void Wom_points (int rule, unsigned int order, double* x, double* y, double* z, 
       }}
    }
    case 2:{ //md
-      switch (order){
-      case 1:
-         md01_004 (x,y,z,w);
-      case 2:
-         md02_009 (x,y,z,w);
-      case 3:
-         md03_016 (x,y,z,w);
+      switch (num_pts){
       case 4:
-         md04_025 (x,y,z,w);
-      case 5:
-         md05_036 (x,y,z,w);
-      case 6:
-         md06_049 (x,y,z,w);
-      case 7:
-         md07_064 (x,y,z,w);
-      case 8:
-         md08_081 (x,y,z,w);
+         md01_004 (x,y,z,w);
+         return;
       case 9:
+         md02_009 (x,y,z,w);
+         return;
+      case 16:
+         md03_016 (x,y,z,w);
+         return;
+      case 25:
+         md04_025 (x,y,z,w);
+         return;
+      case 36:
+         md05_036 (x,y,z,w);
+         return;
+      case 49:
+         md06_049 (x,y,z,w);
+         return;
+      case 64:
+         md07_064 (x,y,z,w);
+         return;
+      case 81:
+         md08_081 (x,y,z,w);
+         return;
+      case 100:
          md09_100 (x,y,z,w);
-      case 10:
+         return;
+      case 121:
          md10_121 (x,y,z,w);
+         return;
       default:{
          std::cerr << "\n";
          std::cerr << "WOB_POINTS - Fatal error!\n";
@@ -87,27 +107,37 @@ void Wom_points (int rule, unsigned int order, double* x, double* y, double* z, 
       }}
    }
    case 3:{ //mn
-      switch (order){
-      case 1:
-         md01_004 (x,y,z,w);
-      case 2 :
-         md02_009 (x,y,z,w);
-      case 3 :
-         md03_016 (x,y,z,w);
+      switch (num_pts){
       case 4:
+         md01_004 (x,y,z,w);
+         return;
+      case 9 :
+         md02_009 (x,y,z,w);
+         return;
+      case 16 :
+         md03_016 (x,y,z,w);
+         return;
+      case 25:
          md04_025 (x,y,z,w);
-      case 5:
+         return;
+      case 36:
          md05_036 (x,y,z,w);
-      case 6:
+         return;
+      case 49:
          md06_049 (x,y,z,w);
-      case 7:
+         return;
+      case 64:
          md07_064 (x,y,z,w);
-      case 8:
+         return;
+      case 81:
          md08_081 (x,y,z,w);
-      case 9:
+         return;
+      case 100:
          md09_100 (x,y,z,w);
-      case 10:
+         return;
+      case 121:
          md10_121 (x,y,z,w);
+         return;
       default:{
          std::cerr << "\n";
          std::cerr << "WOB_POINTS - Fatal error!\n";
@@ -116,27 +146,37 @@ void Wom_points (int rule, unsigned int order, double* x, double* y, double* z, 
       }}
    }
    case 4:{ //me
-      switch (order){
-      case 1:
-         me01_004 (x,y,z,w);
-      case 2 :
-         me02_009 (x,y,z,w);
-      case 3 :
-         me03_016 (x,y,z,w);
+      switch (num_pts){
       case 4:
+         me01_004 (x,y,z,w);
+         return;
+      case 9 :
+         me02_009 (x,y,z,w);
+         return;
+      case 16 :
+         me03_016 (x,y,z,w);
+         return;
+      case 25:
          me04_025 (x,y,z,w);
-      case 5:
+         return;
+      case 36:
          me05_036 (x,y,z,w);
-      case 6:
+         return;
+      case 49:
          me06_049 (x,y,z,w);
-      case 7:
+         return;
+      case 64:
          me07_064 (x,y,z,w);
-      case 8:
+         return;
+      case 81:
          me08_081 (x,y,z,w);
-      case 9:
+         return;
+      case 100:
          me09_100 (x,y,z,w);
-      case 10:
+         return;
+      case 121:
          me10_121 (x,y,z,w);
+         return;
       default:{
          std::cerr << "\n";
          std::cerr << "WOB_POINTS - Fatal error!\n";
