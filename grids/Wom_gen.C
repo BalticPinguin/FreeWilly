@@ -109,34 +109,34 @@ void Wom_points (int rule, unsigned int num_pts, double* x, double* y, double* z
    case 3:{ //mn
       switch (num_pts){
       case 4:
-         md01_004 (x,y,z,w);
+         mn01_004 (x,y,z,w);
          return;
       case 9 :
-         md02_009 (x,y,z,w);
+         mn02_009 (x,y,z,w);
          return;
       case 16 :
-         md03_016 (x,y,z,w);
+         mn03_016 (x,y,z,w);
          return;
       case 25:
-         md04_025 (x,y,z,w);
+         mn04_025 (x,y,z,w);
          return;
       case 36:
-         md05_036 (x,y,z,w);
+         mn05_036 (x,y,z,w);
          return;
       case 49:
-         md06_049 (x,y,z,w);
+         mn06_049 (x,y,z,w);
          return;
       case 64:
-         md07_064 (x,y,z,w);
+         mn07_064 (x,y,z,w);
          return;
       case 81:
-         md08_081 (x,y,z,w);
+         mn08_081 (x,y,z,w);
          return;
       case 100:
-         md09_100 (x,y,z,w);
+         mn09_100 (x,y,z,w);
          return;
       case 121:
-         md10_121 (x,y,z,w);
+         mn10_121 (x,y,z,w);
          return;
       default:{
          std::cerr << "\n";

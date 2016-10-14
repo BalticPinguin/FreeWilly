@@ -44,6 +44,17 @@ void md08_081 (double* x, double* y, double* z, double* w);
 void md09_100 (double* x, double* y, double* z, double* w);
 void md10_121 (double* x, double* y, double* z, double* w);
 
+void mn01_004 (double* x, double* y, double* z, double* w);
+void mn02_009 (double* x, double* y, double* z, double* w);
+void mn03_016 (double* x, double* y, double* z, double* w);
+void mn04_025 (double* x, double* y, double* z, double* w);
+void mn05_036 (double* x, double* y, double* z, double* w);
+void mn06_049 (double* x, double* y, double* z, double* w);
+void mn07_064 (double* x, double* y, double* z, double* w);
+void mn08_081 (double* x, double* y, double* z, double* w);
+void mn09_100 (double* x, double* y, double* z, double* w);
+void mn10_121 (double* x, double* y, double* z, double* w);
+
 int Wom_precision_table( unsigned int rule );
 void Wom_points (int rule, unsigned int order, double* x, double* y, double* z, double* w);
 bool unavailable(int rule);

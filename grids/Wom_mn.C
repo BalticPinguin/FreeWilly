@@ -77,7 +77,6 @@ void mn03_016 (double* x, double* y, double* z, double* w){
    return;
 }
 
-
 void mn04_025 (double* x, double* y, double* z, double* w){
     x[0 ]=  0.0000000000000000e+000; y[0 ]=  0.0000000000000000e+000;
     x[1 ]=  6.4914583491805622e-001; y[1 ]=  0.0000000000000000e+000;
@@ -445,7 +444,7 @@ void mn07_064 (double* x, double* y, double* z, double* w){
     z[61]= 8.9107104128765069e-01; w[61]=   2.3375284593847062e-01;
     z[62]=-1.4301662526520789e-01; w[62]=   2.1994130461772732e-01;
     z[63]= 9.2332586363667057e-01; w[63]=   1.9633799845273298e-01;
-    return
+    return;
 }
 
 void mn08_081 (double* x, double* y, double* z, double* w){

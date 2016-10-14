@@ -138,7 +138,10 @@ int main (int argc, char** argv){
    tetrahedralise_sphere(mesh, geometry, angular_creator, r, NrBall, VolConst, L, N);
    
    int order=cl("order", 1);
-   FEType fe_type(FIRST);
+ 
+   // define the fe_type including infinite eleemnt parameters:
+   //FEType (const int o=1, const FEFamily f=LAGRANGE, const int ro=THIRD, const FEFamily rf=JACOBI_20_00, const InfMapType im=CARTESIAN)
+   FEType fe_type(FIRST, LAGRANGE, FIFTH, JACOBI_20_00, CARTESIAN);
    if (order==2){
       //convert element to second-order mesh.
       // In case of tetrahedra: from Tet4 to Tet10
