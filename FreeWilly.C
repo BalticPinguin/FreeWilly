@@ -337,8 +337,10 @@ int main (int argc, char** argv){
    else{
       // else: simply solve the system
       eigen_system.solve();
-      ESP.solve();
-      DO.solve();
+
+      // the other two are solved already!
+      //ESP.solve();
+      //DO.solve();
    }
 
    // Get the number of converged eigen pairs.

@@ -1,10 +1,15 @@
 #include "geodesic.h"
 
 unsigned int start_4(double* x, double* y, double* z, int** neighbours){
-   x[0]= 0.0000000000000000; y[0]= 0.0000000000000000; z[0]= 1.00000000000000000;
-   x[1]= 0.0000000000000000; y[1]= 0.9428090415820634; z[1]=-0.33333333333333333;
-   x[2]= 0.4714045207910317; y[2]=-0.4714045207910317; z[2]=-0.33333333333333333;
-   x[3]=-0.4714045207910317; y[3]=-0.4714045207910317; z[3]=-0.33333333333333333;
+   //x[0]= 0.0000000000000000; y[0]= 0.0000000000000000; z[0]= 1.00000000000000000;
+   //x[1]= 0.0000000000000000; y[1]= 0.9428090415820634; z[1]=-0.33333333333333333;
+   //x[2]= 0.4714045207910317; y[2]=-0.4714045207910317; z[2]=-0.33333333333333333;
+   //x[3]=-0.4714045207910317; y[3]=-0.4714045207910317; z[3]=-0.33333333333333333;
+   x[0]= 0.577350269189626; y[0]= 0.577350269189626; z[0]= 0.577350269189626;
+   x[1]= 0.577350269189626; y[1]=-0.577350269189626; z[1]=-0.577350269189626;
+   x[2]=-0.577350269189626; y[2]= 0.577350269189626; z[2]=-0.577350269189626;
+   x[3]=-0.577350269189626; y[3]=-0.577350269189626; z[3]= 0.577350269189626;
+
    // is point i with j a nearest neighbour?
    neighbours[0][0]=1;
    neighbours[0][1]=2;
@@ -21,7 +26,7 @@ unsigned int start_4(double* x, double* y, double* z, int** neighbours){
    neighbours[3][0]=0;
    neighbours[3][1]=1;
    neighbours[3][2]=2;
-   return 4;
+   return 3;
 }
 
 unsigned int start_6(double* x, double* y, double* z, int** neighbours){
@@ -114,7 +119,7 @@ void iterate(double*x, double*y, double*z, int** neighbours, unsigned int* n, un
       }
       k++;
       for(unsigned int j=0; j<i; j++){
-         if (neighbours[i][j]>0){
+         if (neighbours[i][j]>=0){
             newx[k]=(x[i]+x[j])/2.;
             newy[k]=(y[i]+y[j])/2.;
             newz[k]=(z[i]+z[j])/2.;
@@ -142,8 +147,8 @@ void iterate(double*x, double*y, double*z, int** neighbours, unsigned int* n, un
             if(r>maxdist)
                maxdist=r;
             newneighbour[k] = new int[m];
-            for(unsigned int j=0; j<m; j++){
-               newneighbour[k][j] = -1;
+            for(unsigned int l=0; l<m; l++){
+               newneighbour[k][l] = -1;
             }
             k++;
          }
@@ -154,13 +159,13 @@ void iterate(double*x, double*y, double*z, int** neighbours, unsigned int* n, un
    for(unsigned int i=0; i<totlen; i++){
       k=0;
       std::cout<<newx[i]<<"  "<<newy[i]<<"  "<<newz[i]<<std::endl;
-      for(unsigned int j=0; j<i; j++){
+      for(unsigned int j=0; j<totlen; j++){
          if ( i==j) continue;
          r=(newx[j]-newx[i])*(newx[j]-newx[i])+
            (newy[j]-newy[i])*(newy[j]-newy[i])+
            (newz[j]-newz[i])*(newz[j]-newz[i]);
          if( r<=maxdist && r>=mindist){
-            newneighbour[j][k]=i;
+            newneighbour[i][k]=j;
             k++;
          }
          //std::cout<<i<<"  "<<j<<"  "<<r<<"  "<<newneighbour[j][k]<<std::endl;

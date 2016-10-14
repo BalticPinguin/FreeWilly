@@ -150,7 +150,7 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          point=spiral(pts_circle);
       else if (creator=="Sdesign"){
          int rule, num_pts;
-         rule = (int)sqrt(pts_circle/2)/3;
+         rule = (int)sqrt(pts_circle/2);
          design_size(rule, &num_pts);
          double** x;
          x= new double*[3];
@@ -178,14 +178,15 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
                rule++;
             num_pts=order_table (rule);
          }
-         else if (creator=="geodesic4"){
-            rule=(int)log(pts_circle)/6;
-            num_pts=point_size(4, rule);
-         }
-         else if (creator=="geodesic6"){
-            rule=(int)log(pts_circle)/6;
-            num_pts=point_size(6, rule);
-         }
+         // these functions are disabled until I get them somehow working.
+         //else if (creator=="geodesic4"){
+         //   rule=(int)log(pts_circle)/6;
+         //   num_pts=point_size(4, rule);
+         //}
+         //else if (creator=="geodesic6"){
+         //   rule=(int)log(pts_circle)/6;
+         //   num_pts=point_size(6, rule);
+         //}
          else{ // some Womersley
             rule = (int)sqrt(pts_circle/2);
             if(unavailable(rule))
