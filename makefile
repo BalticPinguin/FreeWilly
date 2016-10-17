@@ -23,8 +23,6 @@ srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolati
 objects		:= $(patsubst %.C, %.$(obj-suffix), $(srcfiles))
 ###############################################################################
 
-
-
 .PHONY: dust clean distclean
 
 ###############################################################################

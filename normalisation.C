@@ -39,7 +39,6 @@ enum IntegralType: int{
    OVERLAP
 };
 
-//Number calculate_overlap(System& es1, const NumericVector<Number>& vect1, int var1, System& es2, const NumericVector<Number>& vect2, int var2, IntegralType int_type ){
 Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int var1, const std::string sys2, int var2 , IntegralType int_type){
    //run at all processors at once:
    //parallel_object_only(); --> can not be used here.
@@ -255,8 +254,7 @@ Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Int
    return overlap;
 }
 
-Number norm_DO(EquationSystems& eq_sys)
-{
+Number norm_DO(EquationSystems& eq_sys){
    //run at all processors at once:
    //parallel_object_only(); --> can not be used here.
 

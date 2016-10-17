@@ -1,9 +1,5 @@
 /*
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Bas_pars v.0.1 - modified fork of the AUGER program                 !
-!                                                                     !
-! code example that shows how to get the ATOM, BASIS and ENV arrays   !
-!      using the Bas_pars library.                                    !
 !                                                                     !
 ! Author:  Tobias Moehle, University of Rostock                       !
 ! Date:    30.08.2016                                                 !
@@ -26,7 +22,6 @@ extern "C"{
 #endif 
 
 extern void pass_arrays(const char* , int*, int*, int*, double*);
-//extern void pass_parameters(char *file, int *length, int *natom, int *nbas, int *nbasf, int *env_bas_dim, int *ptr_env_start);
 extern void pass_parameters(const char*, int*, int*, int*, int*, int*, int*);
 extern char ang_label(int * ang);
 extern void c_norm_contr_coeff(int *atom, int *basis, double *env);
@@ -43,7 +38,6 @@ void makeDO_j(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>
 double solHar(double x,double y,double z, unsigned int l, unsigned int m);
 double solHar2(double x,double y,double z, unsigned int l, unsigned int m);
 double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
-//double evalDO(std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l, std::vector<double>& alpha, double x, double y,double z);
 
 void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double&  energy, double& normDO){
    //define the constants for accessing the atom, basis and env arrays:

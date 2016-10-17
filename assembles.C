@@ -4,7 +4,7 @@
 // libMesh include files.
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
-#include "libmesh/mesh_generation.h"
+//#include "libmesh/mesh_generation.h"
 #include "libmesh/eigen_system.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/fe.h"
@@ -25,7 +25,7 @@
 #include "libmesh/explicit_system.h"
 
 #include "libmesh/getpot.h" // for input-argument parsing
-#include "libmesh/exodusII_io.h"
+//#include "libmesh/exodusII_io.h"
 #include "libmesh/mesh_function.h"
 #include "libmesh/meshfree_interpolation.h"
 #include "radial_interpolation.h"

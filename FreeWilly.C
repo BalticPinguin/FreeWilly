@@ -6,21 +6,15 @@
 #include "libmesh/libmesh.h"
 #include "libmesh/mesh.h"
 #include "libmesh/elem.h"
-//#include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/eigen_system.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/fe.h"
-//#include "libmesh/quadrature_gauss.h"
-//#include "libmesh/dense_matrix.h"
-//#include "libmesh/sparse_matrix.h"
 #include "libmesh/numeric_vector.h"
-//#include "libmesh/dof_map.h"
 #include "libmesh/condensed_eigen_system.h"
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/fe_interface.h" // for dirichlet boundary conditions
 #include "libmesh/error_vector.h" // for dirichlet boundary conditions
-//#include "libmesh/explicit_system.h"
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
@@ -45,9 +39,6 @@ void assemble_DO(EquationSystems & es, const std::string & system_name);
 void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, std::string SysName);
 
 //This in the tetrahedralisation of a sphere
-//void tetrahedralise_sphere(libMesh::MeshBase& mesh, const libMesh::Parallel::Communicator& comm);
-// void tetrahedralise_sphere(mesh, const libMesh::Parallel::Communicator& comm);
-//void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, std::vector<Point> geometry, std::string creator);
 void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, unsigned int N);
 
 enum IntegralType: int{
@@ -396,7 +387,6 @@ int main (int argc, char** argv){
       out<< sqrt(norm_DO(equation_systems))<<std::endl;
    }
    else{
-   //if(nconv>0){
       eigen_system.get_eigenpair(0);
       Real intensity=normalise(equation_systems, infel);
       out<<"intensity:  "<<intensity<<std::endl;
