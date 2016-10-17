@@ -56,6 +56,7 @@ enum IntegralType: int{
 };
 
 Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, IntegralType int_type);
+Number norm_DO(EquationSystems& eq_sys);
 Real normalise(EquationSystems& equation_systems, bool infel);
 Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int var1, const std::string sys2, int var2 , IntegralType int_type);
 
@@ -392,8 +393,10 @@ int main (int argc, char** argv){
       out<<"norm of DO:   "<< normDO <<"  ";
       out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
       out<< sqrt(overlap_DO(equation_systems, "DO", 0, OVERLAP))<<std::endl;
+      out<< sqrt(norm_DO(equation_systems))<<std::endl;
    }
-   if(nconv>0){
+   else{
+   //if(nconv>0){
       eigen_system.get_eigenpair(0);
       Real intensity=normalise(equation_systems, infel);
       out<<"intensity:  "<<intensity<<std::endl;

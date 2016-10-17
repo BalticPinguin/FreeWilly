@@ -243,12 +243,74 @@ Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Int
          //norm += JxW[qp] * TensorTools::norm_sq(u_h);
          if(int_type==MU)
             overlap += JxW[qp] * std::conj(u_h) * q_point[qp].norm() * do_val;
+            //overlap += JxW[qp] * std::conj(do_val) * q_point[qp].norm() * do_val;
          else //if(int_type==OVERLAP)
             overlap += JxW[qp] * std::conj(u_h) * do_val;
+            //overlap += JxW[qp] * std::conj(do_val) * do_val;
       }
    }
 
    es1.comm().sum(overlap);
+
+   return overlap;
+}
+
+Number norm_DO(EquationSystems& eq_sys)
+{
+   //run at all processors at once:
+   //parallel_object_only(); --> can not be used here.
+
+   Number overlap=0;
+   System & es = eq_sys.get_system<System> ("DO");
+
+   // get the dyson orbital:
+   std::vector<std::vector<double> > do_j;
+   std::vector<unsigned int> l;
+   std::vector<double> alpha;
+   std::vector<Node> geometry= getGeometry(eq_sys.parameters.get<std::string>("DO_file"));
+   Real energy=0, normDO=0;
+   const char* filename=eq_sys.parameters.get<std::string>("DO_file").c_str();
+   int namelength=strlen(filename);
+   getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
+
+   const FEType & fe_type = es.get_dof_map().variable_type(0);
+   FEBase * cfe = libmesh_nullptr;
+
+   // Begin the loop over the elements
+   MeshBase::const_element_iterator       el     = es.get_mesh().active_local_elements_begin();
+   const MeshBase::const_element_iterator end_el = es.get_mesh().active_local_elements_end();
+   for(; el != end_el; ++el){
+       const Elem * elem = *el;
+       const unsigned int dim = elem->dim();
+
+      QGauss qrule (dim, FIFTH);
+      //QGauss qrule (dim, fe_type.default_quadrature_order());
+      UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
+      UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(dim, fe_type));
+      fe->attach_quadrature_rule (&qrule);
+      inf_fe->attach_quadrature_rule (&qrule);
+      
+      if (elem->infinite())
+         cfe = inf_fe.get();
+      else
+         cfe = fe.get();
+      const std::vector<Real> &  JxW     = cfe->get_JxW();
+      const std::vector<Point> & q_point = cfe->get_xyz();
+
+      cfe->reinit(elem);
+
+      //const unsigned int n_qp = qrule.n_points(); --> fails for infinite elements.
+      unsigned int n_qp = cfe->n_quadrature_points();
+
+      // Begin the loop over the Quadrature points.
+      for (unsigned int qp=0; qp<n_qp; qp++){
+         Number do_val=evalDO(do_j, l, alpha, geometry, q_point[qp]);
+         overlap += JxW[qp] * TensorTools::norm_sq(do_val);
+
+      }
+   }
+
+   es.comm().sum(overlap);
 
    return overlap;
 }
@@ -268,7 +330,7 @@ Real normalise(EquationSystems& equation_systems, bool infel){
       normDO= DO.calculate_norm(*DO.solution, 0, L2);
    out<<"norm of DO:   "<< normDO <<"  ";
    out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
-   out<< sqrt(overlap_DO(equation_systems, "DO", 0, OVERLAP))<<std::endl;
+   out<< sqrt(norm_DO(equation_systems))<<std::endl;
 
    Number overlap=0;
    //compute <DO| mu |phi>
