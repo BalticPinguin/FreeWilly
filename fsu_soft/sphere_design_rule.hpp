@@ -22,7 +22,8 @@ void design_20_216_3d (double** );
 void design_21_240_3d (double** );
 void design_order_max ( unsigned int*);
 void design_points(int, unsigned int, double**);
-void design_size (int order, int* n );
+void design_size2(int order, int* n );
+int  design_size (int order, int* n );
 double sphere_area_3d (double r);
 //void sphere_monomial_int_3d ( double r, int* e, double integral );
 //void design_quad ( double* xc, double r, double func_3d, int order, double quad ) --

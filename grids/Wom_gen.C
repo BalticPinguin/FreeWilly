@@ -1,27 +1,51 @@
 #include "Wom.h"
 
 // see http://web.maths.unsw.edu.au/~rsw/Sphere/
-int Wom_precision_table( unsigned int rule )
+int Wom_precision_table( unsigned int approx_pts, int* exact_pts)
+//////////////
+/* Function that decides on an approximate number of points, which scheme schould be used.
+ *  it returns the order of the scheme (via return) and the exact number of points used
+ *  (via the parameter exact_pts).
+ */
 {
-   unsigned int rule_max=10;
-   int table[10]= {4, 9, 16, 25, 36, 49, 64, 81, 100, 121};
-
-   if ( rule < 1 )
-   {
-      std::cerr << "\n";
-      std::cerr << "PRECISION_TABLE - Fatal error!\n";
-      std::cerr << "  RULE < 1.\n";
-      exit ( 1 );
+   if (approx_pts<=6){
+      exact_pts=4;
+      return 1;
    }
-   else if ( rule_max < rule )
-   {
-      std::cerr << "\n";
-      std::cerr << "PRECISION_TABLE - Fatal error!\n";
-      std::cerr << "  RULE_MAX < RULE.\n";
-      exit ( 1 );
+   if (approx_pts<=12){
+      *exact_pts=9;
+      return 2;
    }
-
-   return table[rule-1];
+   if (approx_pts<=20){
+      *exact_pts=16;
+      return 3;
+   }
+   if (approx_pts<=30){
+      *exact_pts=25;
+      return 4;
+   }
+   if (approx_pts<=43){
+      *exact_pts=36;
+      return 5;
+   }
+   if (approx_pts<=56){
+      *exact_pts=49;
+      return 6;
+   }
+   if (approx_pts<=72){
+      *exact_pts=64;
+      return 7;
+   }
+   if (approx_pts<=90){
+      *exact_pts=81;
+      return 8;
+   }
+   if (approx_pts<=110){
+      *exact_pts=100;
+      return 9;
+   }
+   *exat_pts=121;
+   return 10;
 }
 
 void Wom_points (int rule, unsigned int num_pts, double* x, double* y, double* z, double* w)

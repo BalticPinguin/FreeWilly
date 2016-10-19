@@ -112,10 +112,10 @@ std::vector<Point> spiral(unsigned int points_on_sphere){
    return points;
 }
 
-void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigned int points_on_sphere, std::vector<Node> geometry, std::string creator, const Real L, const unsigned int N){
+void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, std::string scheme, Real p, std::vector<Node> geometry, std::string creator, const Real L, const unsigned int N){
    #ifdef LIBMESH_HAVE_TETGEN
    std::vector<Point> point;
-   double x, scale;
+   double scale;
    // For each point in the map, insert it into the input mesh and copy it to all nuclear sites.
    // keep track of the ID assigned.
    unsigned int molsize=geometry.size();
@@ -131,13 +131,19 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
    // around the molecules; each sphere has a different radius (scale) in (0,r_max].
 
    //outermost loop: over different spheres
-   for(unsigned int circle=0; circle<N; circle++){
-      x = (double)(2.*circle)/N - 1.;
-      scale = L*(1.-x)/(1.+x+2.*L/r_max);
-      if (scale == 0.)
-         continue;
-      // create a unit sphere of respective type with slowly incr. number of points
-      pts_circle=(int)(r_max*scale*0.3+1)*points_on_sphere;
+   for(unsigned int circle=1; circle<N; circle++){
+      if (scheme=="son"){
+         scale=L*circle/(N-circle+L*N/r_max);
+         pts_circle=(int)12.5/ (1- (circle-1)/circle*(N-circle+ L*N/r_max)/(N-circle+1+L*N/r_max) )
+                             / (1- (circle-1)/circle*(N-circle+ L*N/r_max)/(N-circle+1+L*N/r_max) );
+      }
+      else if( scheme=="tm"){
+         scale=L*circle/( pow(N/circle, p)* (L*N/r_max-1)+1 );
+         pts_circle=(int)12.5/ (1- (circle-1)/circle* (pow(N/i,p)*(N*L/r_max-1)+1)
+                                                      /(pow(N/(i-1.),p)*(N*L/r_max-1)+1) )
+                             / (1- (circle-1)/circle* (pow(N/i,p)*(N*L/r_max-1)+1)
+                                                      /(pow(N/(i-1.),p)*(N*L/r_max-1)+1) );
+      }
       //pts_circle=points_on_sphere;
       if (creator=="fibonacci")
          point=fibonacci(pts_circle);
@@ -147,8 +153,8 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          point=spiral(pts_circle);
       else if (creator=="Sdesign"){
          int rule, num_pts;
-         rule = (int)sqrt(pts_circle/2);
-         design_size(rule, &num_pts);
+         // pts_circle approx num_pts, get resp. rule.
+         rule = design_size(pts_circle, &num_pts);
          double** x;
          x= new double*[3];
          x[0]=new double[num_pts];
@@ -168,27 +174,17 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
          //set the order:
          int rule, num_pts;
          if (creator=="lebedev"){
-            rule = (unsigned int)sqrt(pts_circle/2);
-            while (available_table(rule)==0)
-               // if it is 1, I can work with it
-               // if -1, it has become too large.
-               rule++;
-            num_pts=order_table (rule);
+            rule= avail_pts(pts_circle, &num_pts);
          }
          // these functions are disabled until I get them somehow working.
          //else if (creator=="geodesic4"){
-         //   rule=(int)log(pts_circle)/6;
-         //   num_pts=point_size(4, rule);
+         //   rule=point_size(4, pts_circle, rule);
          //}
          //else if (creator=="geodesic6"){
-         //   rule=(int)log(pts_circle)/6;
-         //   num_pts=point_size(6, rule);
+         //   rule=point_size(6, pts_circle, rule);
          //}
          else{ // some Womersley
-            rule = (int)sqrt(pts_circle/2);
-            if(unavailable(rule))
-               rule=max_avail();
-            num_pts=Wom_precision_table(rule);
+            rule=Wom_precision_table(pts_circle, &num_pts);
          }
          // not all orders are implemented.
          out<<"order: "<<num_pts<<"  ";
@@ -211,10 +207,10 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, unsigne
             Wom_points (3, num_pts, x, y, z, w);
          else if (creator=="fliME") 
             Wom_points (4, num_pts, x, y, z, w);
-         else if (creator=="geodesic4")
-            gen_grid(x, y, z, rule, 4);
-         else if (creator=="geodesic6")
-            gen_grid(x, y, z, rule, 6);
+         //else if (creator=="geodesic4")
+         //   gen_grid(x, y, z, rule, 4);
+         //else if (creator=="geodesic6")
+         //   gen_grid(x, y, z, rule, 6);
          else
             libmesh_error_msg("no valid creator specified.\n");
          // this is not needed at all.

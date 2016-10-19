@@ -113,7 +113,8 @@ int main (int argc, char** argv){
    std::string molec_file=cl("mol_file", "invalid_file"); // this file contains all informations on the molecule
    std::string angular_creator=cl("angular", "invalid"); 
    Real r=cl("radius", 20.);
-   int NrBall=cl("points", 50);
+   std::string NrBall=cl("scheme", "tm");
+   Real p=cl("p", 1.0);
    Real VolConst= cl("maxVol", 1./(32.*sqrt(E*E*E)) );
    Real L=cl("bending", 2.);
    int N=cl("circles", 5);
@@ -259,8 +260,8 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
    equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = maxiter;
    equation_systems.parameters.set<Real> ("radius") = r;
-   Real power=cl("power",12.);
-   equation_systems.parameters.set<Real> ("power") = power;
+   Real num_NN=cl("num_NN",12.);
+   equation_systems.parameters.set<Real> ("num_NN") = num_NN;
    Real gamma=cl("gamma",0.0);
    equation_systems.parameters.set<Real> ("gamma") = gamma;
    equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = geometry;

@@ -12,11 +12,12 @@ gamma=2   # parameter to scale the cap.
 angular=fibonacci # fibonacci, spiral, archimedes, lebedev, womEV, womMD, fliME, womMN, Sdesign #, geodesic4, geodesic6
 order = 1
 radius= 20.
-points= 30
+scheme= son      # son, tm
+p=1.0            # if scheme==tm, this option is evaluated.
 maxVol= 800.
 bending= 20.
 circles= 5
-power= 5
+num_NN= 5    # number of neighbours considered in the interpolation. Default: 12
 maxiter=700 #default-value.
 
 refine = false  # flag: mesh refinement allowed or not?

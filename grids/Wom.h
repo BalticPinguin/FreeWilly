@@ -55,7 +55,7 @@ void mn08_081 (double* x, double* y, double* z, double* w);
 void mn09_100 (double* x, double* y, double* z, double* w);
 void mn10_121 (double* x, double* y, double* z, double* w);
 
-int Wom_precision_table( unsigned int rule );
+int Wom_precision_table( unsigned int approx_pts, int* exact_pts)
 void Wom_points (int rule, unsigned int order, double* x, double* y, double* z, double* w);
 bool unavailable(int rule);
 int max_avail();

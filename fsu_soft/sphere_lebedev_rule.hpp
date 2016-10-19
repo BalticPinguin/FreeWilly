@@ -35,5 +35,6 @@ void ld4802 ( double *x, double *y, double *z, double *w );
 void ld5294 ( double *x, double *y, double *z, double *w );
 void ld5810 ( double *x, double *y, double *z, double *w );
 int order_table ( int rule );
+int avail_pts(int approx_pts, int* exact_pts);
 int precision_table ( int rule );
 void xyz_to_tp ( double x, double y, double z, double *t, double *p );

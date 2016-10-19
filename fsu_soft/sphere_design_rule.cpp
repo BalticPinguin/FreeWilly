@@ -2842,7 +2842,7 @@ void design_points (int order, unsigned int /*n*/, double** x )
  }
 }
 
-void design_size (int order, int* n )
+void design_size2(int order, int* n )
 
 //*****************************************************************************80
 //
@@ -2943,6 +2943,121 @@ void design_size (int order, int* n )
    return;
 }
 
+int design_size(int order, int* n )
+
+//*****************************************************************************80
+//
+//! DESIGN_SIZE returns the size of a 3D spherical design of a given order.
+//
+//  Licensing:
+//
+//    This code is distributed under the GNU LGPL license. 
+//
+//  Modified:
+//
+//    19 October 2016
+//
+//  Author:
+//
+//   Hubert Weissmann
+//
+//  Parameters:
+//
+//    Input, integer approx n.
+//
+//    Output, integer N, the number of points associated with 
+//    the design.
+//
+{
+   if(order < 1){
+      *n = 1;
+      return 0 ;
+   }
+   if (order<=2){
+      *n = 2;
+      return 1;
+   }
+   if (order<=5){
+      *n = 4;
+      return 2;
+   }
+   if (order<=9){
+      *n = 6;
+      return 3;
+   }
+   if (order<=13){
+      *n = 12;
+      return 5;
+   }
+   if (order<=19){
+      *n = 14 ;
+      return 4;
+   }
+   if (order<=19){
+      *n = 24;
+      return 7;
+   }
+   if (order<=31){
+      *n = 26;
+      return 6;
+   }
+   if (order<=42){
+      *n = 36;
+      return 8;
+   }
+   if (order<=54){
+      *n = 48;
+      return 9;
+   }
+   if (order<=65){
+      *n = 60;
+      return 10;
+   }
+   if (order<=77){
+      *n = 70;
+      return 11;
+   }
+   if (order<=89){
+      *n = 84;
+      return 12;
+   }
+   if (order<=101){
+      *n = 94;
+      return 13;
+   }
+   if (order<=114){
+      *n = 108;
+      return 14;
+   }
+   if (order<=127){
+      *n = 120;
+      return 15;
+   }
+   if (order<=150){
+      *n = 144;
+      return 16;
+   }
+   if (order<=168){
+      *n = 156;
+      return 17;
+   }
+   if (order<=192){
+      *n = 180;
+      return 18;
+   }
+   if (order<=210){
+      *n = 204;
+      return 19;
+   }
+   if (order<=228){
+      *n = 216;
+      return 20;
+   }
+   // else:
+   *n = 240;
+   return 21;
+   }
+}
 
 double sphere_area_3d (double r)
 

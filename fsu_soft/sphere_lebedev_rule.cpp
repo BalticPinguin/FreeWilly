@@ -6751,6 +6751,171 @@ int order_table ( int rule )
 
   return value;
 }
+
+//****************************************************************************80
+
+int avail_pts(int approx_pts, int* exact_pts)
+
+//****************************************************************************80
+//
+//  Purpose:
+//
+//    AVAIL_PTS returns the exact number of points and rule of a Lebedev scheme.
+//
+//  Modified:
+//
+//    19 October 2016
+//
+//  Author:
+//
+//    Hubert weissmann
+//
+//  Reference:
+//
+//    Vyacheslav Lebedev, Dmitri Laikov,
+//    A quadrature formula for the sphere of the 131st
+//    algebraic order of accuracy,
+//    Russian Academy of Sciences Doklady Mathematics,
+//    Volume 59, Number 3, 1999, pages 477-481.
+//
+//  Parameters:
+//
+//    Input, int APPROX_PTS, the number of points I want approximately.
+
+//    Output, int (rule), the index of the rule, between 1 and 65.
+//    Output, int EXACT_PTS, the exact number of points in the scheme.
+//
+{
+   if(appox_pts<4){
+      *exact_pts = 3;  
+      return 1;       
+   }
+   if(appox_pts<6){
+      *exact_pts = 5;  
+      return 2;       
+   }
+   if(appox_pts<8){
+      *exact_pts = 7;  
+      return 3;       
+   }
+   if(appox_pts<10){
+      *exact_pts = 9;  
+      return 4;       
+   }
+   if(appox_pts<12){
+      *exact_pts = 11; 
+      return 5;       
+   }
+   if(appox_pts<14){
+      *exact_pts = 13; 
+      return 6;       
+   }
+   if(appox_pts<16){
+      *exact_pts = 15; 
+      return 7;       
+   }
+   if(appox_pts<18){
+      *exact_pts = 17; 
+      return 8;       
+   }
+   if(appox_pts<20){
+      *exact_pts = 19; 
+      return 9;       
+   }
+   if(appox_pts<22){
+      *exact_pts = 21; 
+      return 10;      
+   }
+   if(appox_pts<24){
+      *exact_pts = 23; 
+      return 11;      
+   }
+   if(appox_pts<26){
+      *exact_pts = 25; 
+      return 12;      
+   }
+   if(appox_pts<28){
+      *exact_pts = 27; 
+      return 13;      
+   }
+   if(appox_pts<30){
+      *exact_pts = 29; 
+      return 14;      
+   }
+   if(appox_pts<33){
+      *exact_pts = 31; 
+      return 15;      
+   }
+   if(appox_pts<38){
+      *exact_pts = 35; 
+      return 17;      
+   }
+   if(appox_pts<44){
+      *exact_pts = 41; 
+      return 20;      
+   }
+   if(appox_pts<50){
+      *exact_pts = 47; 
+      return 23;      
+   }
+   if(appox_pts<56){
+      *exact_pts = 53; 
+      return 26;      
+   }
+   if(appox_pts<62){
+      *exact_pts = 59; 
+      return 29;      
+   }
+   if(appox_pts<68){
+      *exact_pts = 65; 
+      return 32;      
+   }
+   if(appox_pts<74){
+      *exact_pts = 71; 
+      return 35;      
+   }
+   if(appox_pts<80){
+      *exact_pts = 77; 
+      return 38;      
+   }
+   if(appox_pts<86){
+      *exact_pts = 83; 
+      return 41;      
+   }
+   if(appox_pts<92){
+      *exact_pts = 89; 
+      return 44;      
+   }
+   if(appox_pts<98){
+      *exact_pts = 95; 
+      return 47;      
+   }
+   if(appox_pts<104){
+      *exact_pts = 101;
+      return 50;      
+   }
+   if(appox_pts<110){
+      *exact_pts = 107;
+      return 53;      
+   }
+   if(appox_pts<116){
+      *exact_pts = 113;
+      return 56;      
+   }
+   if(appox_pts<122){
+      *exact_pts = 119;
+      return 59;      
+   }
+   if(appox_pts<128){
+      *exact_pts = 125;
+      return 62;      
+   }
+   // else:
+   *exact_pts = 131;
+   return 65;
+
+}
+
 //****************************************************************************80
 
 int precision_table ( int rule )
