@@ -776,7 +776,7 @@ void ld_by_order ( int order, double *x, double *y, double *z, double *w )
   }
   else if ( order == 974 )
   {
-     ld0974 ( x, y, z, w );
+    ld0974 ( x, y, z, w );
   }
   else if ( order == 1202 )
   {
@@ -6781,132 +6781,132 @@ int avail_pts(int approx_pts, int* exact_pts)
 //  Parameters:
 //
 //    Input, int APPROX_PTS, the number of points I want approximately.
-
+//
 //    Output, int (rule), the index of the rule, between 1 and 65.
 //    Output, int EXACT_PTS, the exact number of points in the scheme.
 //
 {
-   if(appox_pts<4){
+   if(approx_pts<4){
       *exact_pts = 3;  
       return 1;       
    }
-   if(appox_pts<6){
+   if(approx_pts<6){
       *exact_pts = 5;  
       return 2;       
    }
-   if(appox_pts<8){
+   if(approx_pts<8){
       *exact_pts = 7;  
       return 3;       
    }
-   if(appox_pts<10){
+   if(approx_pts<10){
       *exact_pts = 9;  
       return 4;       
    }
-   if(appox_pts<12){
+   if(approx_pts<12){
       *exact_pts = 11; 
       return 5;       
    }
-   if(appox_pts<14){
+   if(approx_pts<14){
       *exact_pts = 13; 
       return 6;       
    }
-   if(appox_pts<16){
+   if(approx_pts<16){
       *exact_pts = 15; 
       return 7;       
    }
-   if(appox_pts<18){
+   if(approx_pts<18){
       *exact_pts = 17; 
       return 8;       
    }
-   if(appox_pts<20){
+   if(approx_pts<20){
       *exact_pts = 19; 
       return 9;       
    }
-   if(appox_pts<22){
+   if(approx_pts<22){
       *exact_pts = 21; 
       return 10;      
    }
-   if(appox_pts<24){
+   if(approx_pts<24){
       *exact_pts = 23; 
       return 11;      
    }
-   if(appox_pts<26){
+   if(approx_pts<26){
       *exact_pts = 25; 
       return 12;      
    }
-   if(appox_pts<28){
+   if(approx_pts<28){
       *exact_pts = 27; 
       return 13;      
    }
-   if(appox_pts<30){
+   if(approx_pts<30){
       *exact_pts = 29; 
       return 14;      
    }
-   if(appox_pts<33){
+   if(approx_pts<33){
       *exact_pts = 31; 
       return 15;      
    }
-   if(appox_pts<38){
+   if(approx_pts<38){
       *exact_pts = 35; 
       return 17;      
    }
-   if(appox_pts<44){
+   if(approx_pts<44){
       *exact_pts = 41; 
       return 20;      
    }
-   if(appox_pts<50){
+   if(approx_pts<50){
       *exact_pts = 47; 
       return 23;      
    }
-   if(appox_pts<56){
+   if(approx_pts<56){
       *exact_pts = 53; 
       return 26;      
    }
-   if(appox_pts<62){
+   if(approx_pts<62){
       *exact_pts = 59; 
       return 29;      
    }
-   if(appox_pts<68){
+   if(approx_pts<68){
       *exact_pts = 65; 
       return 32;      
    }
-   if(appox_pts<74){
+   if(approx_pts<74){
       *exact_pts = 71; 
       return 35;      
    }
-   if(appox_pts<80){
+   if(approx_pts<80){
       *exact_pts = 77; 
       return 38;      
    }
-   if(appox_pts<86){
+   if(approx_pts<86){
       *exact_pts = 83; 
       return 41;      
    }
-   if(appox_pts<92){
+   if(approx_pts<92){
       *exact_pts = 89; 
       return 44;      
    }
-   if(appox_pts<98){
+   if(approx_pts<98){
       *exact_pts = 95; 
       return 47;      
    }
-   if(appox_pts<104){
+   if(approx_pts<104){
       *exact_pts = 101;
       return 50;      
    }
-   if(appox_pts<110){
+   if(approx_pts<110){
       *exact_pts = 107;
       return 53;      
    }
-   if(appox_pts<116){
+   if(approx_pts<116){
       *exact_pts = 113;
       return 56;      
    }
-   if(appox_pts<122){
+   if(approx_pts<122){
       *exact_pts = 119;
       return 59;      
    }
-   if(appox_pts<128){
+   if(approx_pts<128){
       *exact_pts = 125;
       return 62;      
    }
@@ -6949,35 +6949,35 @@ int precision_table ( int rule )
 //    Output, int PRECISION_TABLE, the precision of the rule.
 //
 {
-  int rule_max = 65;
-  int table[65]= {
-     3,   5,   7,   9,  11,  13,  15,  17,  19,  21,
-    23,  25,  27,  29,  31,  33,  35,  37,  39,  41,
-    43,  45,  47,  49,  51,  53,  55,  57,  59,  61,
-    63,  65,  67,  69,  71,  73,  75,  77,  79,  81,
-    83,  85,  87,  89,  91,  93,  95,  97,  99, 101,
-   103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 
-   123, 125, 127, 129, 131 };
-  int value;
-
-  if ( rule < 1 )
-  {
-    cerr << "\n";
-    cerr << "PRECISION_TABLE - Fatal error!\n";
-    cerr << "  RULE < 1.\n";
-    exit ( 1 );
-  }
-  else if ( rule_max < rule )
-  {
-    cerr << "\n";
-    cerr << "PRECISION_TABLE - Fatal error!\n";
-    cerr << "  RULE_MAX < RULE.\n";
-    exit ( 1 );
-  }
-
-  value = table[rule-1];
-
-  return value;
+   int rule_max = 65;
+   int table[65]= {
+      3,   5,   7,   9,  11,  13,  15,  17,  19,  21,
+      23,  25,  27,  29,  31,  33,  35,  37,  39,  41,
+      43,  45,  47,  49,  51,  53,  55,  57,  59,  61,
+      63,  65,  67,  69,  71,  73,  75,  77,  79,  81,
+      83,  85,  87,  89,  91,  93,  95,  97,  99, 101,
+      103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 
+      123, 125, 127, 129, 131 };
+      int value;
+   
+   if ( rule < 1 )
+   {
+      cerr << "\n";
+      cerr << "PRECISION_TABLE - Fatal error!\n";
+      cerr << "  RULE < 1.\n";
+      exit ( 1 );
+   }
+   else if ( rule_max < rule )
+   {
+      cerr << "\n";
+      cerr << "PRECISION_TABLE - Fatal error!\n";
+      cerr << "  RULE_MAX < RULE.\n";
+      exit ( 1 );
+   }
+   
+   value = table[rule-1];
+   
+   return value;
 }
 //****************************************************************************80
 

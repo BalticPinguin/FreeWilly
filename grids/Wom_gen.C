@@ -9,7 +9,7 @@ int Wom_precision_table( unsigned int approx_pts, int* exact_pts)
  */
 {
    if (approx_pts<=6){
-      exact_pts=4;
+      *exact_pts=4;
       return 1;
    }
    if (approx_pts<=12){
@@ -44,7 +44,7 @@ int Wom_precision_table( unsigned int approx_pts, int* exact_pts)
       *exact_pts=100;
       return 9;
    }
-   *exat_pts=121;
+   *exact_pts=121;
    return 10;
 }
 

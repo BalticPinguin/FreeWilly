@@ -3056,7 +3056,6 @@ int design_size(int order, int* n )
    // else:
    *n = 240;
    return 21;
-   }
 }
 
 double sphere_area_3d (double r)

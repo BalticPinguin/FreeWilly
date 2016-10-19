@@ -39,7 +39,7 @@ void assemble_DO(EquationSystems & es, const std::string & system_name);
 void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, std::string SysName);
 
 //This in the tetrahedralisation of a sphere
-void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, int NrBall, Real VolConst, Real L, unsigned int N);
+void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, std::string scheme, Real p, Real VolConst, Real L, unsigned int N);
 
 enum IntegralType: int{
    MU=0,
@@ -113,7 +113,7 @@ int main (int argc, char** argv){
    std::string molec_file=cl("mol_file", "invalid_file"); // this file contains all informations on the molecule
    std::string angular_creator=cl("angular", "invalid"); 
    Real r=cl("radius", 20.);
-   std::string NrBall=cl("scheme", "tm");
+   std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
    Real VolConst= cl("maxVol", 1./(32.*sqrt(E*E*E)) );
    Real L=cl("bending", 2.);
@@ -128,7 +128,7 @@ int main (int argc, char** argv){
    assert(pot_file!="none");
 
    // the function below creates a mesh using the molecular structure.
-   tetrahedralise_sphere(mesh, geometry, angular_creator, r, NrBall, VolConst, L, N);
+   tetrahedralise_sphere(mesh, geometry, angular_creator, r, scheme, p, VolConst, L, N);
    
    int order=cl("order", 1);
  
