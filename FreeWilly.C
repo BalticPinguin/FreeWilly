@@ -127,6 +127,10 @@ int main (int argc, char** argv){
    std::string pot_file=cl("mesh_file", "none");
    assert(pot_file!="none");
 
+   if (scheme=="tm" && N<r/L)
+      // this is necessary to be in numerically stable regime.
+      N=r/L;
+
    // the function below creates a mesh using the molecular structure.
    tetrahedralise_sphere(mesh, geometry, angular_creator, r, scheme, p, VolConst, L, N);
    
@@ -379,12 +383,7 @@ int main (int argc, char** argv){
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<".e" ;
          ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
       #endif // #ifdef LIBMESH_HAVE_EXODUS_API
-      Real normDO = 0;
-      if (!infel) 
-         normDO= DO.calculate_norm(*DO.solution, 0, L2);
-      out<<"norm of DO:   "<< normDO <<"  ";
-      out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
-      out<< sqrt(overlap_DO(equation_systems, "DO", 0, OVERLAP))<<std::endl;
+      out<<"norm of DO: ";
       out<< sqrt(norm_DO(equation_systems))<<std::endl;
    }
    else{
@@ -398,8 +397,8 @@ int main (int argc, char** argv){
          out<<"intensity:  "<<intensity<<std::endl;
       }
    }
-   Number normDO=equation_systems.parameters.get<Real>("DOnorm");
-   out<<"Norm DO:    "<<normDO<<std::endl;
+   //Number normDO=equation_systems.parameters.get<Real>("DOnorm");
+   //out<<"Norm DO:    "<<normDO<<std::endl;
 
    // All done.
    return 0;

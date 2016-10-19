@@ -132,20 +132,23 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, std::st
    // around the molecules; each sphere has a different radius (scale) in (0,r_max].
 
    //outermost loop: over different spheres
-   for(unsigned int circle=1; circle<N; circle++){
+   for(unsigned int circle=1; circle<=N; circle++){
       if (scheme=="son"){
          scale=L*circle/(N-circle+L*N/r_max);
-         pts_circle=(int)12.5/ (1- (circle-1)/circle*(N-circle+ L*N/r_max)/(N-circle+1+L*N/r_max) )
-                             / (1- (circle-1)/circle*(N-circle+ L*N/r_max)/(N-circle+1+L*N/r_max) );
+         pts_circle=(int)(12.5/ (1.- (circle-1.)/circle*(N-circle+ L*N/r_max)/(N-circle+1.+L*N/r_max) )
+                              / (1.- (circle-1.)/circle*(N-circle+ L*N/r_max)/(N-circle+1.+L*N/r_max)));
       }
       else if( scheme=="tm"){
-         scale=L*circle/( pow(N/circle, p)* (L*N/r_max-1)+1 );
-         pts_circle=(int)12.5/ (1- (circle-1)/circle* (pow(N/circle,p)*(N*L/r_max-1)+1)
-                                                      /(pow(N/(circle-1.),p)*(N*L/r_max-1)+1) )
-                             / (1- (circle-1)/circle* (pow(N/circle,p)*(N*L/r_max-1)+1)
-                                                      /(pow(N/(circle-1.),p)*(N*L/r_max-1)+1) );
+         Real power=pow((Real)N/circle,p);
+         scale=L*circle/( power* (L*N/r_max-1.)+1. );
+         pts_circle=(int)(12.5/ (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
+                                                      /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.) )
+                              / (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
+                                                      /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.)));
       }
-      //pts_circle=points_on_sphere;
+     // out<<" sphere nr "<< circle;
+     // out<<"  "<<scale;
+     // out<<"  "<<pts_circle<<std::endl;
       if (creator=="fibonacci")
          point=fibonacci(pts_circle);
       else if (creator=="archimedes")

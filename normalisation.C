@@ -317,25 +317,26 @@ Real normalise(EquationSystems& equation_systems, bool infel){
    CondensedEigenSystem& eigen_system=equation_systems.get_system<CondensedEigenSystem> ("EigenSE");
    LinearImplicitSystem & DO = equation_systems.get_system<LinearImplicitSystem> ("DO");
    //normalise eigen_system:
-   Real norm_phi=0;
-   if (!infel)
-      norm_phi=eigen_system.calculate_norm( *eigen_system.solution, 0, L2);
-   out<<"norm of phi: "<<norm_phi<<"   ";
-   out<< calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP) <<std::endl;
+   Number norm_phi=0;
+   //if (!infel)
+   //   norm_phi=eigen_system.calculate_norm( *eigen_system.solution, 0, L2);
+   //out<<"norm of phi: "<<norm_phi<<"   ";
+   //out<< calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP) <<std::endl;
+   norm_phi=calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP);
 
-   Real normDO = 0;
-   if (!infel) 
-      normDO= DO.calculate_norm(*DO.solution, 0, L2);
-   out<<"norm of DO:   "<< normDO <<"  ";
-   out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
-   out<< sqrt(norm_DO(equation_systems))<<std::endl;
+   //Real normDO = 0;
+   //if (!infel) 
+   //   normDO= DO.calculate_norm(*DO.solution, 0, L2);
+   //out<<"norm of DO:   "<< normDO <<"  ";
+   //out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
+   //out<< sqrt(norm_DO(equation_systems))<<std::endl;
 
    Number overlap=0;
    //compute <DO| mu |phi>
-   overlap=calculate_overlap(equation_systems, "DO", 0, "EigenSE", 0, MU);
-   out <<"solution overlap"<< overlap<<std::endl;
+   //overlap=calculate_overlap(equation_systems, "DO", 0, "EigenSE", 0, MU);
+   //out <<"solution overlap"<< overlap<<std::endl;
    overlap = overlap_DO(equation_systems, "EigenSE", 0, MU);
-   out <<"direct overlap"<< overlap<<std::endl;
+   //out <<"direct overlap"<< overlap<<std::endl;
    
    return abs(overlap)*abs(overlap)/(abs(norm_phi)*abs(norm_phi));
 }
