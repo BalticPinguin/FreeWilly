@@ -383,8 +383,8 @@ int main (int argc, char** argv){
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<".e" ;
          ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
       #endif // #ifdef LIBMESH_HAVE_EXODUS_API
-      out<<"norm of DO: ";
-      out<< sqrt(norm_DO(equation_systems))<<std::endl;
+      //out<<"norm of DO: ";
+      //out<< sqrt(norm_DO(equation_systems))<<std::endl;
    }
    else{
       eigen_system.get_eigenpair(0);
@@ -397,8 +397,10 @@ int main (int argc, char** argv){
          out<<"intensity:  "<<intensity<<std::endl;
       }
    }
-   //Number normDO=equation_systems.parameters.get<Real>("DOnorm");
-   //out<<"Norm DO:    "<<normDO<<std::endl;
+   out<<"norm of DO: ";
+   out<< sqrt(norm_DO(equation_systems))<<std::endl;
+   Number normDO=e
+   out<<" exact: "<<quation_systems.parameters.get<Real>("DOnorm")<<std::endl;
 
    // All done.
    return 0;
