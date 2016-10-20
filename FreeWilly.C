@@ -399,8 +399,7 @@ int main (int argc, char** argv){
    }
    out<<"norm of DO: ";
    out<< sqrt(norm_DO(equation_systems))<<std::endl;
-   Number normDO=e
-   out<<" exact: "<<quation_systems.parameters.get<Real>("DOnorm")<<std::endl;
+   out<<" exact: "<<equation_systems.parameters.get<Real>("DOnorm")<<std::endl;
 
    // All done.
    return 0;

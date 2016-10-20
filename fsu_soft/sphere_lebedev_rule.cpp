@@ -6786,133 +6786,133 @@ int avail_pts(int approx_pts, int* exact_pts)
 //    Output, int EXACT_PTS, the exact number of points in the scheme.
 //
 {
-   if(approx_pts<4){
-      *exact_pts = 3;  
-      return 1;       
-   }
-   if(approx_pts<6){
-      *exact_pts = 5;  
-      return 2;       
-   }
-   if(approx_pts<8){
-      *exact_pts = 7;  
-      return 3;       
-   }
    if(approx_pts<10){
-      *exact_pts = 9;  
-      return 4;       
-   }
-   if(approx_pts<12){
-      *exact_pts = 11; 
-      return 5;       
-   }
-   if(approx_pts<14){
-      *exact_pts = 13; 
-      return 6;       
-   }
-   if(approx_pts<16){
-      *exact_pts = 15; 
-      return 7;       
-   }
-   if(approx_pts<18){
-      *exact_pts = 17; 
-      return 8;       
+      *exact_pts = 6;
+      return 3; //1
    }
    if(approx_pts<20){
-      *exact_pts = 19; 
-      return 9;       
+      *exact_pts = 14;
+      return 5; // 2
    }
-   if(approx_pts<22){
-      *exact_pts = 21; 
-      return 10;      
-   }
-   if(approx_pts<24){
-      *exact_pts = 23; 
-      return 11;      
-   }
-   if(approx_pts<26){
-      *exact_pts = 25; 
-      return 12;      
-   }
-   if(approx_pts<28){
-      *exact_pts = 27; 
-      return 13;      
-   }
-   if(approx_pts<30){
-      *exact_pts = 29; 
-      return 14;      
-   }
-   if(approx_pts<33){
-      *exact_pts = 31; 
-      return 15;      
-   }
-   if(approx_pts<38){
-      *exact_pts = 35; 
-      return 17;      
+   if(approx_pts<32){
+      *exact_pts = 26;
+      return 7; //3
    }
    if(approx_pts<44){
-      *exact_pts = 41; 
-      return 20;      
+      *exact_pts = 38;
+      return 9; // 4
    }
-   if(approx_pts<50){
-      *exact_pts = 47; 
-      return 23;      
-   }
-   if(approx_pts<56){
-      *exact_pts = 53; 
-      return 26;      
-   }
-   if(approx_pts<62){
-      *exact_pts = 59; 
-      return 29;      
-   }
-   if(approx_pts<68){
-      *exact_pts = 65; 
-      return 32;      
-   }
-   if(approx_pts<74){
-      *exact_pts = 71; 
-      return 35;      
+   if(approx_pts<57){
+      *exact_pts = 50;
+      return 11; //5
    }
    if(approx_pts<80){
-      *exact_pts = 77; 
-      return 38;      
-   }
-   if(approx_pts<86){
-      *exact_pts = 83; 
-      return 41;      
-   }
-   if(approx_pts<92){
-      *exact_pts = 89; 
-      return 44;      
+      *exact_pts = 74;
+      return 13; //6
    }
    if(approx_pts<98){
-      *exact_pts = 95; 
-      return 47;      
-   }
-   if(approx_pts<104){
-      *exact_pts = 101;
-      return 50;      
-   }
-   if(approx_pts<110){
-      *exact_pts = 107;
-      return 53;      
-   }
-   if(approx_pts<116){
-      *exact_pts = 113;
-      return 56;      
-   }
-   if(approx_pts<122){
-      *exact_pts = 119;
-      return 59;      
+      *exact_pts = 86;
+      return 15; //7
    }
    if(approx_pts<128){
-      *exact_pts = 125;
-      return 62;      
+      *exact_pts = 110;
+      return 17; // 8   
+   }
+   if(approx_pts<158){
+      *exact_pts = 146;
+      return 19;
+   }
+   if(approx_pts<182){
+      *exact_pts = 170;
+      return 21; //10
+   }
+   if(approx_pts<212){
+      *exact_pts = 194;
+      return 23;
+   }
+   if(approx_pts<248){
+      *exact_pts = 230;
+      return 25;
+   }
+   if(approx_pts<284){
+      *exact_pts = 266;
+      return 27;
+   }
+   if(approx_pts<326){
+      *exact_pts = 302;
+      return 29;
+   }
+   if(approx_pts<392){
+      *exact_pts = 350;
+      return 31;
+   }
+   if(approx_pts<512){
+      *exact_pts = 434;
+      return 35;
+   }
+   if(approx_pts<680){
+      *exact_pts = 590;
+      return 41;
+   }
+   if(approx_pts<872){
+      *exact_pts = 770; 
+      return 47; 
+   }
+   if(approx_pts<1316){
+      *exact_pts = 974;
+      return 53;
+   }
+   if(approx_pts<1328){
+      *exact_pts = 1202;
+      return 59;
+   }
+   if(approx_pts<1592){
+      *exact_pts = 1454;
+      return 65;
+   }
+   if(approx_pts<1880){
+      *exact_pts = 1730;
+      return 71; // 35
+   }
+   if(approx_pts<2192){
+      *exact_pts = 2030;
+      return 77; // 38
+   }
+   if(approx_pts<2528){
+      *exact_pts = 2354;
+      return 83; // 41
+   }
+   if(approx_pts<2888){
+      *exact_pts = 2702;
+      return 89; //44 
+   }
+   if(approx_pts<3272){
+      *exact_pts = 3074;
+      return 95;//47 
+   }
+   if(approx_pts<3680){
+      *exact_pts = 3470;
+      return 101; //50 
+   }
+   if(approx_pts<4112){
+      *exact_pts = 3890;
+      return 107; //53      
+   }
+   if(approx_pts<4568){
+      *exact_pts = 4334;
+      return 113; //56
+   }
+   if(approx_pts<5047){
+      *exact_pts = 4802;
+      return 119; //59 
+   }
+   if(approx_pts<5551){
+      *exact_pts = 5294;
+      return 125; //62
    }
    // else:
-   *exact_pts = 131;
-   return 65;
+   *exact_pts = 5810;
+   return 131; //65
 
 }
 

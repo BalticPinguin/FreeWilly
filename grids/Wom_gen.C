@@ -44,8 +44,29 @@ int Wom_precision_table( unsigned int approx_pts, int* exact_pts)
       *exact_pts=100;
       return 9;
    }
-   *exact_pts=121;
-   return 10;
+   if (approx_pts<=133){
+      *exact_pts=121;
+      return 10;
+   }
+   if (approx_pts<=156){
+      *exact_pts=144;
+      return 11;
+   }
+   if (approx_pts<=187){
+      *exact_pts=169;
+      return 12;
+   }
+   if (approx_pts<=210){
+      *exact_pts=196;
+      return 13;
+   }
+   if (approx_pts<=240){
+      *exact_pts=225;
+      return 14;
+   }
+   // if larger:
+   *exact_pts=256;
+   return 15;
 }
 
 void Wom_points (int rule, unsigned int num_pts, double* x, double* y, double* z, double* w)
@@ -83,6 +104,21 @@ void Wom_points (int rule, unsigned int num_pts, double* x, double* y, double* z
          return;
       case 121:
          ev10_0121 (x,y,z,w);
+         return;
+      case 144:
+         ev11_144 (x,y,z,w);
+         return;
+      case 169:
+         ev12_169 (x,y,z,w);
+         return;
+      case 196:
+         ev13_196 (x,y,z,w);
+         return;
+      case 225:
+         ev14_225 (x,y,z,w);
+         return;
+      case 256:
+         ev15_256 (x,y,z,w);
          return;
       default:{
          std::cerr << "\n";
@@ -123,6 +159,21 @@ void Wom_points (int rule, unsigned int num_pts, double* x, double* y, double* z
       case 121:
          md10_121 (x,y,z,w);
          return;
+      case 144:
+         md11_144 (x,y,z,w);
+         return;
+      case 169:
+         md12_169 (x,y,z,w);
+         return;
+      case 196:
+         md13_196 (x,y,z,w);
+         return;
+      case 225:
+         md14_225 (x,y,z,w);
+         return;
+      case 256:
+         md15_256 (x,y,z,w);
+         return;
       default:{
          std::cerr << "\n";
          std::cerr << "WOB_POINTS - Fatal error!\n";
@@ -162,6 +213,21 @@ void Wom_points (int rule, unsigned int num_pts, double* x, double* y, double* z
       case 121:
          mn10_121 (x,y,z,w);
          return;
+      case 144:
+         mn11_144 (x,y,z,w);
+         return;
+      case 169:
+         mn12_169 (x,y,z,w);
+         return;
+      case 196:
+         mn13_196 (x,y,z,w);
+         return;
+      case 225:
+         mn14_225 (x,y,z,w);
+         return;
+      case 256:
+         mn15_256 (x,y,z,w);
+         return;
       default:{
          std::cerr << "\n";
          std::cerr << "WOB_POINTS - Fatal error!\n";
@@ -200,6 +266,21 @@ void Wom_points (int rule, unsigned int num_pts, double* x, double* y, double* z
          return;
       case 121:
          me10_121 (x,y,z,w);
+         return;
+      case 144:
+         me11_144 (x,y,z,w);
+         return;
+      case 169:
+         me12_169 (x,y,z,w);
+         return;
+      case 196:
+         me13_196 (x,y,z,w);
+         return;
+      case 225:
+         me14_225 (x,y,z,w);
+         return;
+      case 256:
+         me15_256 (x,y,z,w);
          return;
       default:{
          std::cerr << "\n";
