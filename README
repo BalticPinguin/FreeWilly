@@ -44,6 +44,63 @@ Good luck!
 All quantities specified are in atomic units here.
 
 ==================================================================================================
+********************************  Running of the Program  ****************************************
+==================================================================================================
+FreeWilly is called with all options concerning ... being set in an input file as a first argument.
+Here, the following options are available:
+
+ _______________________________________________________________________________________________________________
+|OPTION NAME  =  DEFAULT       POSSIBLE VALUES         EXPLANATION                                              |
+ --------------------------------------------------------------------------------------------------------------
+| nev         |    15     |        integers > 0     |  number of eigenvalues (and eigenvectors) requested.      |
+|             |           |                         |     The number of actually computed EVs may differ.       |
+| pot         |     -     |       string            |     ....                                                  |
+| spect       |    ?      |     sm lm sr lr si li   |  Position of the spectrum to search for: smallest/largest |
+|             |           |                         |   value each by magnitude, real and imaginary part        |
+| Energy      |     -     |      any real number    |  photon energy in atomic units.                           |
+| infinite    |    false  |      true , false       |  Switch between infinite elements and Dirichlet boundaries|
+|             |           |                         |                                                           |
+ ------------- ----------- ------------------------- ----------------------------------------------------------- 
+| cap         |    false  |      true, false        |  turns complex absorbing boundaries on/off. NOT TESTED    |
+| gamma       |     -     |       Real              |  the parameter governing the steapness of CAP             |
+|             |           |                         |                                                           |
+|             |           |  fibonacci, spiral,     |                                                           |
+|             |           |  archimedes, lebedev,   |  Algorithm used to obtain the spherical point distribution|
+| angular     |     -     |   womMD, fliME, womMN,  |                                                           | 
+|             |           |    womEV,  Sdesign      |                                                           |
+| scheme      |     -     |        son, tm          |                                                           |
+| p           |     ?     |     any real number     |                                                           |
+|             |           |                         |     ONLY VALID FOR scheme=tm                              |
+ ------------- ----------- ------------------------- ----------------------------------------------------------- 
+| radius      |     ?     |Any positive real number |   max. radius of the spheres around the nuclei            |
+| order       |     1     |      1, 2               |  order p of the FEM                                       |
+| maxVol      |           |                         |   maximum volume of the                                   |
+|             |           |                         |      finite elements                                      |
+| bending     |     ?     | any positive real number| ....                                                      |
+| circles     |           |                         |                                                           |
+| num_NN      |    12     |                         |      number of neighbours considered in the interpolation.|
+| maxiter     |   700     |                         |                                                           |
+|             |           |                         |                                                           |
+| refine      | false     |                         |     mesh refinement allowed or not?                       |
+ ------------- ----------- ------------------------- ----------------------------------------------------------- 
+| mesh_file   | -         |                         |                                                           |
+| mol_file    | -         |                         |                                                           |
+ _______________________________________________________________________________________________________________
+
+Further options:
+------------------------------------------
+|  --n-threads            | #threads
+|  --disable-mpi          |
+|  --disable-petsc        |
+|  --handle-mpi-errors    |  (default/ other options)
+|  --sync-with-stdio      |
+|  --separate-libmeshout  |
+|  --redirect-stdout      |
+------------------------------------------
+  
+  Some further options for more special purpuses can be found in the libmesh documentation.
+
+==================================================================================================
 *****************************  Functions to use in the future  ***********************************
 ==================================================================================================
 

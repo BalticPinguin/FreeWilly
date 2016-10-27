@@ -1,55 +1,7 @@
-#include <assert.h> // 
-#include <stdlib.h>    /* atof */
-#include <vector>
-// libMesh include files.
-#include "libmesh/getpot.h" // for input-argument parsing
-#include "libmesh/libmesh.h"
-#include "libmesh/mesh.h"
-#include "libmesh/elem.h"
-#include "libmesh/exodusII_io.h"
-#include "libmesh/eigen_system.h"
-#include "libmesh/equation_systems.h"
-#include "libmesh/fe.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/condensed_eigen_system.h"
-#include "libmesh/linear_implicit_system.h"
-#include "libmesh/fe_interface.h" // for dirichlet boundary conditions
-#include "libmesh/error_vector.h" // for dirichlet boundary conditions
-// for infinite elements:
-#include "libmesh/inf_fe.h"
-#include "libmesh/inf_elem_builder.h"
-#include <complex.h> // the infinite element version requires complex numbers explicitly.
-// for refinement:
-#include "libmesh/mesh_refinement.h"
-#include "libmesh/kelly_error_estimator.h"
+#include "FreeWilly.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
-
-// Function prototype.  This is the function that will assemble
-// the eigen system. Here, we will simply assemble a mass matrix.
-double normalise(EquationSystems& equation_systems, bool infel);
-std::vector<libMesh::Node> getGeometry(std::string filename);
-
-//prototypes of functions in assemble.C (that are called from out of it)
-void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::set<unsigned int>&);
-void assemble_InfSE(libMesh::EquationSystems & es, const std::string & system_name);
-void assemble_ESP(EquationSystems & es, const std::string & system_name);
-void assemble_DO(EquationSystems & es, const std::string & system_name);
-void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, std::string SysName);
-
-//This in the tetrahedralisation of a sphere
-void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, std::string creator, Real r, std::string scheme, Real p, Real VolConst, Real L, unsigned int N);
-
-enum IntegralType: int{
-   MU=0,
-   OVERLAP
-};
-
-Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, IntegralType int_type);
-Number norm_DO(EquationSystems& eq_sys);
-Real normalise(EquationSystems& equation_systems, bool infel);
-Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int var1, const std::string sys2, int var2 , IntegralType int_type);
 
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
@@ -138,7 +90,8 @@ int main (int argc, char** argv){
  
    // define the fe_type including infinite eleemnt parameters:
    //FEType (const int o=1, const FEFamily f=LAGRANGE, const int ro=THIRD, const FEFamily rf=JACOBI_20_00, const InfMapType im=CARTESIAN)
-   FEType fe_type(FIRST, LAGRANGE, FIFTH, JACOBI_20_00, CARTESIAN);
+   FEType fe_type(FIRST, LAGRANGE, FIRST, JACOBI_20_00, CARTESIAN);
+   //FEType fe_type(FIRST, LAGRANGE, FIFTH, JACOBI_20_00, CARTESIAN);
    if (order==2){
       //convert element to second-order mesh.
       // In case of tetrahedra: from Tet4 to Tet10
@@ -232,33 +185,10 @@ int main (int argc, char** argv){
 
    bool refinement=cl("refine", false);
    
-   eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
+   //eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
+   eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
    //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
    //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
-
-   const std::string spect = cl("spect","sm");
-   if (spect=="sm"){
-      eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_MAGNITUDE);
-   }
-   else if (spect=="lm"){
-      eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_MAGNITUDE);
-   }
-   else if (spect=="sr"){
-      eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_REAL);
-   }
-   else if (spect=="lr"){
-      eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_REAL);
-   }
-   else if (spect=="si"){
-      eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_IMAGINARY);
-   }
-   else if (spect=="li"){
-      eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_IMAGINARY);
-   }
-   else{
-      libmesh_error_msg("\nUnknown position in spectrum given. \n Only sm, lm, sr, lr, si, li are valid .\n");
-   }
-   // an alternative would be here: TARGET_MAGNITUDE --> get values closest to ...
    
    // Set the solver tolerance and the maximum number of iterations.
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
@@ -278,6 +208,37 @@ int main (int argc, char** argv){
    eigen_system.init();
    ESP.init();
    DO.init();
+   
+   // In Do.solve(): set energy-offset and dyson norm
+   DO.solve(); 
+   ESP.solve();
+
+   {
+      const std::string spect = cl("spect","r");
+      if (spect=="sm"){
+         eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_MAGNITUDE);
+      }
+      else if (spect=="lm"){
+         eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_MAGNITUDE);
+      }
+      else if (spect=="sr"){
+         eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_REAL);
+      }
+      else if (spect=="lr"){
+         eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_REAL);
+      }
+      else if (spect=="si"){
+         eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_IMAGINARY);
+      }
+      else if (spect=="li"){
+         eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_IMAGINARY);
+      }
+      else{
+         eigen_system.eigen_solver->set_position_of_spectrum( 
+                           E-equation_systems.parameters.get<Real>("E_do"));
+          equation_systems.parameters.set<Real>("energy")=0;
+      }
+   }
 
     // add boundary conditions if not infinite elements used. In the latter case ...
    if (not infel){
@@ -286,18 +247,18 @@ int main (int argc, char** argv){
       eigen_system.initialize_condensed_dofs(dirichlet_dof_ids);
    }
 
-   // Solve the system "Eigensystem".
-   
-   // In Do.solve(): set energy-offset and dyson norm
-   DO.solve(); 
-   ESP.solve();
-   // set the photone energy:
-   equation_systems.parameters.set<Real>("energy")=E-equation_systems.parameters.get<Real>("E_do");
+   if(!equation_systems.parameters.set<Real>("energy"))
+      // If not set in th position_of_spectrum,set the photon energy:
+      // else: eigenvalues are kinetic energy themselves.
+      equation_systems.parameters.set<Real>("energy")=E-equation_systems.parameters.get<Real>("E_do");
+
    out<<"E_ph: "<<E<<"  ";
-   out<<"E_do: "<<equation_systems.parameters.get<Real>("E_do")<<std::endl;
+   out<<"E_do: "<<equation_systems.parameters.get<Real>("E_do");
    out<<"E_kin:"<<equation_systems.parameters.get<Real>("energy")<<std::endl;
+
    // set the ESP as initial guess for solution vector.
-   * eigen_system.solution = * ESP.solution; 
+   //* eigen_system.solution = * ESP.solution;  --> this doesn't work!
+   eigen_system.eigen_solver->set_initial_space(*ESP.solution);
 
    //now, do refinement loop, if refinement is allowd:
    if (refinement){
@@ -334,14 +295,9 @@ int main (int argc, char** argv){
       //DO.reinit();
       DO.solve();
    }
-   else{
+   else
       // else: simply solve the system
       eigen_system.solve();
-
-      // the other two are solved already!
-      //ESP.solve();
-      //DO.solve();
-   }
 
    // Get the number of converged eigen pairs.
    unsigned int nconv = eigen_system.get_n_converged();
@@ -356,9 +312,14 @@ int main (int argc, char** argv){
    cube_io(equation_systems, geometry, eigenvector_output_name.str(), "DO");
 
    // Write the eigen vector to file.
+   nconv=std::min(nconv, nev);
    for(unsigned int i=0; i<nconv; i++){
       std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
-      std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first+equation_systems.parameters.get<Real>("energy")<<std::endl;
+      
+      if( equation_systems.parameters.set<Real>("energy")!=0)
+         std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first+equation_systems.parameters.get<Real>("energy")<<std::endl;
+      else
+         std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
       #ifdef LIBMESH_HAVE_EXODUS_API
          eigenvector_output_name.str(std::string());
          if (infel)
@@ -387,10 +348,8 @@ int main (int argc, char** argv){
       //out<< sqrt(norm_DO(equation_systems))<<std::endl;
    }
    else{
-      eigen_system.get_eigenpair(0);
-      Real intensity=normalise(equation_systems, infel);
-      out<<"intensity:  "<<intensity<<std::endl;
-      for(unsigned int i=1; i<nconv; i++){
+      Real intensity;
+      for(unsigned int i=0; i<nconv; i++){
          out<<" for the solution nr "<<i<<":"<<std::endl;
          eigen_system.get_eigenpair(i);
          intensity=normalise(equation_systems, infel);

@@ -1,43 +1,7 @@
-#include <math.h> // needed for sqrt function
-#include <iostream> 
-#include <complex.h> // the infinite element version requires complex numbers explicitly.
-// libMesh include files.
-#include "libmesh/libmesh.h"
-#include "libmesh/mesh.h"
-//#include "libmesh/mesh_generation.h"
-#include "libmesh/eigen_system.h"
-#include "libmesh/equation_systems.h"
-#include "libmesh/fe.h"
-#include "libmesh/quadrature_gauss.h"
-#include "libmesh/dense_matrix.h"
-#include "libmesh/sparse_matrix.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/dof_map.h"
-#include "libmesh/condensed_eigen_system.h"
-#include "libmesh/linear_implicit_system.h"
-#include "libmesh/fe_interface.h" // for dirichlet boundary conditions
-#include "libmesh/error_vector.h" // for dirichlet boundary conditions
-#include "libmesh/elem.h"
-// for infinite elements:
-#include "libmesh/inf_fe.h"
-#include "libmesh/inf_elem_builder.h"
-// for the ESP system
-#include "libmesh/explicit_system.h"
-
-#include "libmesh/getpot.h" // for input-argument parsing
-//#include "libmesh/exodusII_io.h"
-#include "libmesh/mesh_function.h"
-#include "libmesh/meshfree_interpolation.h"
-#include "radial_interpolation.h"
-#include "NN_interpolation.h"
-
+#include "FreeWilly.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
-
-void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double&  energy, double& normDO);
-double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
-std::vector<libMesh::Node> getGeometry(std::string fname);
 
 struct ESP{
    // these vectors store the points and potential (at the points) as given.
