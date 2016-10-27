@@ -133,7 +133,8 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
 
          //norm += JxW[qp] * TensorTools::norm_sq(u_h);
          if(int_type==MU)
-            overlap += JxW[qp] * std::conj(u_h) * q_point[qp].norm() * v_h;
+            // this expression is wrong:
+            overlap += JxW[qp] * std::conj(u_h) * q_point[qp].norm() * v_h* 0.;
          else //if(int_type==OVERLAP)
             overlap += JxW[qp] * std::conj(u_h) * v_h;
       }
@@ -158,11 +159,14 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
    return overlap;
 }
 
-Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, IntegralType int_type){
+Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, IntegralType int_type){
    //run at all processors at once:
    //parallel_object_only(); --> can not be used here.
 
-   Number overlap=0;
+   Number overlap_x=0;
+   Number overlap_y=0;
+   Number overlap_z=0;
+   Number overlap;
    
    // this should be checked somehow as well:
    //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
@@ -241,17 +245,31 @@ Number overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Int
          }
          //norm += JxW[qp] * TensorTools::norm_sq(u_h);
          if(int_type==MU)
-            overlap += JxW[qp] * std::conj(u_h) * q_point[qp].norm() * do_val;
+         {
+            overlap_x += JxW[qp] * std::conj(u_h) * q_point[qp](0) * do_val;
+            overlap_y += JxW[qp] * std::conj(u_h) * q_point[qp](1) * do_val;
+            overlap_z += JxW[qp] * std::conj(u_h) * q_point[qp](2) * do_val;
             //overlap += JxW[qp] * std::conj(do_val) * q_point[qp].norm() * do_val;
+         }
          else //if(int_type==OVERLAP)
-            overlap += JxW[qp] * std::conj(u_h) * do_val;
+            overlap+= JxW[qp] * std::conj(u_h) * do_val;
             //overlap += JxW[qp] * std::conj(do_val) * do_val;
       }
    }
+   
+   if(int_type==MU)
+      {
+      overlap=overlap_x*conj(overlap_x)+
+              overlap_y*conj(overlap_y)+
+              overlap_z*conj(overlap_z);
+     }
+   else
+      overlap*=conj(overlap);
 
    es1.comm().sum(overlap);
-
-   return overlap;
+   
+   // abs is needed here to avoid compiler errors.
+   return std::abs(overlap);
 }
 
 Number norm_DO(EquationSystems& eq_sys){
@@ -318,25 +336,26 @@ Real normalise(EquationSystems& equation_systems, bool infel){
    LinearImplicitSystem & DO = equation_systems.get_system<LinearImplicitSystem> ("DO");
    //normalise eigen_system:
    Number norm_phi=0;
-   //if (!infel)
-   //   norm_phi=eigen_system.calculate_norm( *eigen_system.solution, 0, L2);
-   //out<<"norm of phi: "<<norm_phi<<"   ";
-   //out<< calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP) <<std::endl;
+   if (!infel)
+      norm_phi=eigen_system.calculate_norm( *eigen_system.solution, 0, L2);
+   out<<"norm of phi: ";
+   out<< calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP) <<std::endl;
    norm_phi=calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP);
 
-   //Real normDO = 0;
-   //if (!infel) 
-   //   normDO= DO.calculate_norm(*DO.solution, 0, L2);
-   //out<<"norm of DO:   "<< normDO <<"  ";
+   Real normDO = 0;
+   if (!infel) 
+      normDO= DO.calculate_norm(*DO.solution, 0, L2);
+   out<<"norm of DO:   "<< normDO <<"  ";
    //out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
-   //out<< sqrt(norm_DO(equation_systems))<<std::endl;
+   out<< sqrt(norm_DO(equation_systems))<<std::endl;
 
-   Number overlap=0;
+   Real overlap=0;
    //compute <DO| mu |phi>
    //overlap=calculate_overlap(equation_systems, "DO", 0, "EigenSE", 0, MU);
    //out <<"solution overlap"<< overlap<<std::endl;
    overlap = overlap_DO(equation_systems, "EigenSE", 0, MU);
-   //out <<"direct overlap"<< overlap<<std::endl;
+   out <<"direct overlap "<< overlap<<std::endl;
    
-   return abs(overlap)*abs(overlap)/(abs(norm_phi)*abs(norm_phi));
+   // abs needed for type conversion.
+   return overlap/std::abs((norm_phi*conj(norm_phi)));
 }
