@@ -1,4 +1,5 @@
-#include "FreeWilly.h"
+# include "FreeWilly.h"
+# include "SlepcConfig.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -185,8 +186,8 @@ int main (int argc, char** argv){
 
    bool refinement=cl("refine", false);
    
-   //eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
-   eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
+   eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
+   //eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
    //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
    //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
    
@@ -247,18 +248,41 @@ int main (int argc, char** argv){
       eigen_system.initialize_condensed_dofs(dirichlet_dof_ids);
    }
 
-   if(!equation_systems.parameters.set<Real>("energy"))
+
+   bool shift=true;
+   if(!equation_systems.parameters.have_parameter<Real>("energy")){
       // If not set in th position_of_spectrum,set the photon energy:
       // else: eigenvalues are kinetic energy themselves.
+      shift=false;
       equation_systems.parameters.set<Real>("energy")=E-equation_systems.parameters.get<Real>("E_do");
+   }
 
    out<<"E_ph: "<<E<<"  ";
-   out<<"E_do: "<<equation_systems.parameters.get<Real>("E_do");
-   out<<"E_kin:"<<equation_systems.parameters.get<Real>("energy")<<std::endl;
+   out<<"E_do: "<<equation_systems.parameters.get<Real>("E_do")<<"  ";
+   if (!shift)
+      out<<"E_kin:"<<equation_systems.parameters.get<Real>("energy")<<std::endl;
+   else // "energy" = 0, so get it on the other way:
+      out<<"E_kin:"<<E-equation_systems.parameters.get<Real>("E_do")<<std::endl;
 
    // set the ESP as initial guess for solution vector.
-   //* eigen_system.solution = * ESP.solution;  --> this doesn't work!
    eigen_system.eigen_solver->set_initial_space(*ESP.solution);
+
+   SlepcEigenSolver<Number>* solver = 
+                 libmesh_cast_ptr<SlepcEigenSolver<Number>* >( &(*eigen_system.eigen_solver) );
+
+   SlepcSolverConfiguration ConfigSolver( *solver);
+
+   // set the spectral transformation:
+   //nfigSolver->real_valued_data.insert(pair<std::string, Real>(,))
+   //ConfigSolver->int_valued_data.insert(pair<std::string, int>(,))
+   ConfigSolver.SetST(SINVERT);
+   
+   // do a spectral inversion around requested eigenvalue.
+   //eigen_system.eigen_solver->set_spectral_transform(CAYLEY);
+   //eigen_system.eigen_solver->set_spectral_transform(INVERT);
+   //eigen_system.eigen_solver->set_spectral_transform(SHIFT);
+   solver ->set_solver_configuration(ConfigSolver);
+
 
    //now, do refinement loop, if refinement is allowd:
    if (refinement){
@@ -313,10 +337,11 @@ int main (int argc, char** argv){
 
    // Write the eigen vector to file.
    nconv=std::min(nconv, nev);
+   std::pair<Real,Real> eigpair;
    for(unsigned int i=0; i<nconv; i++){
-      std::pair<Real,Real> eigpair = eigen_system.get_eigenpair(i);
+      eigpair = eigen_system.get_eigenpair(i);
       
-      if( equation_systems.parameters.set<Real>("energy")!=0)
+      if(!shift)
          std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first+equation_systems.parameters.get<Real>("energy")<<std::endl;
       else
          std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
@@ -333,11 +358,20 @@ int main (int argc, char** argv){
       eigenvector_output_name.str(std::string());
       eigenvector_output_name<< "phi-"<<i <<".cube" ;
       cube_io(equation_systems, geometry, eigenvector_output_name.str(), "EigenSE");
+
+      if( !shift)
+         std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first+equation_systems.parameters.get<Real>("energy")<<std::endl;
+      else
+         std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
    }
    if (nconv==0){
       // that one can look at the mesh and some properties...
       #ifdef LIBMESH_HAVE_EXODUS_API
-         eigenvector_output_name.str(std::string());
+         if(!shift)
+            equation_systems.parameters.set<Real>("current frequency")=
+                  eigpair.first+equation_systems.parameters.get<Real>("energy");
+         else
+            equation_systems.parameters.set<Real>("current frequency")=eigpair.first;
          if (infel)
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
          else
@@ -351,7 +385,12 @@ int main (int argc, char** argv){
       Real intensity;
       for(unsigned int i=0; i<nconv; i++){
          out<<" for the solution nr "<<i<<":"<<std::endl;
-         eigen_system.get_eigenpair(i);
+         eigpair = eigen_system.get_eigenpair(i);
+         if(!shift)
+            equation_systems.parameters.set<Real>("current frequency")=
+                  eigpair.first+equation_systems.parameters.get<Real>("energy");
+         else
+            equation_systems.parameters.set<Real>("current frequency")=eigpair.first;
          intensity=normalise(equation_systems, infel);
          out<<"intensity:  "<<intensity<<std::endl;
       }
@@ -359,6 +398,20 @@ int main (int argc, char** argv){
    out<<"norm of DO: ";
    out<< sqrt(norm_DO(equation_systems))<<std::endl;
    out<<" exact: "<<equation_systems.parameters.get<Real>("DOnorm")<<std::endl;
+
+
+   bool spherical_analysis=true;
+   if (spherical_analysis){
+      for(unsigned int i=0; i<nconv; i++){
+         eigpair = eigen_system.get_eigenpair(i);
+         if(!shift)
+            equation_systems.parameters.set<Real>("current frequency")=
+                  eigpair.first+equation_systems.parameters.get<Real>("energy");
+         else
+            equation_systems.parameters.set<Real>("current frequency")=eigpair.first;
+         ProjectSphericals (equation_systems, 5, i);
+      }
+   }
 
    // All done.
    return 0;

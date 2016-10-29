@@ -9,7 +9,7 @@ LIBMESH_DIR ?= /home/tm162/bin/libmesh/my_libmesh
 include $(LIBMESH_DIR)/Make.common
 
 #target	   := ./InSpect-$(METHOD)
-target	   := ./FrWll-$(METHOD)
+target	   := ./FrWll_test-$(METHOD)
 #target	   := ./test-$(METHOD)
 
 ###############################################################################
@@ -17,7 +17,7 @@ target	   := ./FrWll-$(METHOD)
 # defined
 
 #srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.cpp
-srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C fsu_soft/r8lib.C fsu_soft/rbf_interp_nd.C read_DO.C bas_pars_library/build/libbas_pars.a normalisation.C fsu_soft/legendre_polynomial.cpp Cube_IO.C fsu_soft/sphere_lebedev_rule.cpp grids/Wom_gen.C grids/Wom_ev.C grids/Wom_md.C grids/Wom_me.C grids/Wom_mn.C fsu_soft/sphere_design_rule.cpp grids/geodesic.C
+srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C fsu_soft/r8lib.C fsu_soft/rbf_interp_nd.C read_DO.C bas_pars_library/build/libbas_pars.a normalisation.C fsu_soft/legendre_polynomial.cpp Cube_IO.C fsu_soft/sphere_lebedev_rule.cpp grids/Wom_gen.C grids/Wom_ev.C grids/Wom_md.C grids/Wom_me.C grids/Wom_mn.C fsu_soft/sphere_design_rule.cpp grids/geodesic.C fsu_soft/fn_prb.cpp fsu_soft/besselj.cpp SlepcConfig.C
 #   bas_pars_library/build/libbas_pars.a
 
 objects		:= $(patsubst %.C, %.$(obj-suffix), $(srcfiles))
