@@ -167,8 +167,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    // set parameters for infinite elements:
    es.parameters.set<Real>("speed")=1.;
-   // --> it would be better if 'current frequency' could be <Number>, not <Real>.
-   es.parameters.set<Real>("current frequency")=sqrt(2.*std::abs(E));
 
    libMesh::Number temp; // -->try this for now...
       
