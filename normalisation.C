@@ -1,21 +1,9 @@
-#include <vector>
-#include <math.h> // needed for sqrt function
 #include <cstring> // for strlen.
-#include "libmesh/libmesh.h"
-#include "libmesh/equation_systems.h"
-#include "libmesh/condensed_eigen_system.h"
-#include "libmesh/linear_implicit_system.h"
 
-#include "libmesh/dof_map.h"
-#include "libmesh/equation_systems.h"
-#include "libmesh/libmesh_logging.h"
-#include "libmesh/mesh_base.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/parameter_vector.h"
-#include "libmesh/point.h"
-#include "libmesh/system.h"
-#include "libmesh/elem.h"
-#include "libmesh/fe_type.h"
+#include "read_DO.h"
+#include "FreeWilly.h"
+
+#include "fsu_soft/besselj.hpp"
 
 // includes for calculate_norm, point_*
 #include "libmesh/fe_base.h"
@@ -23,22 +11,13 @@
 #include "libmesh/fe_compute_data.h"
 #include "libmesh/parallel.h"
 #include "libmesh/parallel_algebra.h"
-#include "libmesh/quadrature_gauss.h"
 #include "libmesh/tensor_value.h"
 #include "libmesh/vector_value.h"
 #include "libmesh/tensor_tools.h"
 
-void getDyson(const char *filename, int namelength, std::vector<std::vector<double> >& do_j, std::vector<unsigned int>& l,std::vector<double>& alpha, double&  energy, double& normDO);
-double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt);
-std::vector<libMesh::Node> getGeometry(std::string fname);
-
 using namespace libMesh;
 
-enum IntegralType: int{
-   MU=0,
-   OVERLAP
-};
-
+// Functions to get intensities and norms
 Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int var1, const std::string sys2, int var2 , IntegralType int_type){
    //run at all processors at once:
    //parallel_object_only(); --> can not be used here.
@@ -194,10 +173,6 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
    const FEType & fe_type = es1.get_dof_map().variable_type(var1);
    std::vector<dof_id_type> dof_indices;
    FEBase * cfe = libmesh_nullptr;
-
-   // set correct k-vector
-   eq_sys.parameters.set<Real>("current frequency")=sqrt(2.*
-                     std::abs(eq_sys.parameters.get<Real>("energy")));
 
    // Begin the loop over the elements
    MeshBase::const_element_iterator       el     = es1.get_mesh().active_local_elements_begin();
@@ -358,4 +333,174 @@ Real normalise(EquationSystems& equation_systems, bool infel){
    
    // abs needed for type conversion.
    return overlap/std::abs((norm_phi*conj(norm_phi)));
+}
+
+// functions used to project solution onto spherical waves
+Number Y_lm(Real x, Real y, Real z, int l, int m){
+   //http://www.ppsloan.org/publications/StupidSH36.pdf
+   //12.5663706144=4*pi
+   libmesh_assert(l>=abs(m));
+   Real K_lm=sqrt((2*l+1)*factorial(l-abs(m))/(12.5663706144*factorial(l+abs(m))));
+   Real* value;
+   double r=sqrt(x*x+y*y+z*z),
+            thetaval=0,
+            phival=0;
+   double* theta=&thetaval;
+
+   if( r<1e-12){
+      thetaval=0;
+      phival=0;
+   }
+   else{
+      thetaval=acos ( z/r ); //0-> pi
+      phival=atan2(y,x); //-pi -> pi
+   }
+   thetaval=cos(thetaval); // make cos(theta) out of it.
+
+   if (m==0){
+      value = p_polynomial_value(1, l, theta );
+      return value[0]*K_lm*Number(1.,0.);
+   }
+   value= p_polynomial_value(1, l, theta);
+   return value[0]*K_lm* Number(cos(m*phival),sin(m*phival));
+}
+
+Number evalSphWave(int l, int m, Point qp, Real k){
+   int error;
+   Number wave;
+   if(l>2){
+      //out<<"how often do I come here?"<<std::endl;
+   }
+   Real* R = new Real[l+1];
+
+   Real kr=qp.norm()*k;
+   rjbesl(kr, 0 ,l+1, R, error);
+   if (error!=l+1){
+      err<<"The evaluation of bessel functions returned"<<std::endl;
+      err<<"   "<<error<<std::endl;
+      if ( 0 > qp.norm()*k )
+         err<<"   qp.norm*k < 0"<<std::endl;
+      if ( qp.norm()*k > 1e+04 )
+         err<<"   qp.norm*k > x_max "<<std::endl;
+   }
+
+   wave=R[l]*Y_lm(qp(0), qp(1), qp(2), l, m);
+
+   delete [] R;
+
+   return wave;
+}
+
+Number projection(EquationSystems& es, const std::string sys, int l, int quant_m){
+   // this should be checked somehow as well:
+   //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
+   //libmesh_assert_not_equal_to(es1.get_dof_map().variable_type(var1),
+   //                            es2.get_dof_map().variable_type(var2));
+   //CondensedEigenSystem& es1=equation_systems.get_system<CondensedEigenSystem> (sys1);
+   //LinearImplicitSystem & es2 = equation_systems.get_system<LinearImplicitSystem> (sys2);
+   System & es1 = es.get_system<System> (sys);
+
+   Number overlap;
+    
+   Real k = es.parameters.get<Real>("current frequency");
+
+   // Localize the potentially parallel vectors
+   UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
+   local_v1->init((*es1.solution).size(), true, SERIAL);
+   (*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
+
+   const FEType & fe_type = es1.get_dof_map().variable_type(0);
+   std::vector<dof_id_type> dof_indices;
+   FEBase * cfe = libmesh_nullptr;
+
+   // Begin the loop over the elements
+   MeshBase::const_element_iterator       el     = es1.get_mesh().active_local_elements_begin();
+   const MeshBase::const_element_iterator end_el = es1.get_mesh().active_local_elements_end();
+   for(; el != end_el; ++el){
+       const Elem * elem = *el;
+       const unsigned int dim = elem->dim();
+
+      //QGauss qrule (dim, FIFTH);
+      QGauss qrule (dim, fe_type.default_quadrature_order());
+      UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
+      UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(dim, fe_type));
+      fe->attach_quadrature_rule (&qrule);
+      inf_fe->attach_quadrature_rule (&qrule);
+      
+      if (elem->infinite())
+         cfe = inf_fe.get();
+      else
+         cfe = fe.get();
+      const std::vector<Real> &  JxW     = cfe->get_JxW();
+      const std::vector<Point> & q_point = cfe->get_xyz();
+
+      cfe->reinit(elem);
+
+      es1.get_dof_map().dof_indices (elem, dof_indices, 0);
+
+      //const unsigned int n_qp = qrule.n_points(); --> fails for infinite elements.
+      unsigned int n_qp = cfe->n_quadrature_points();
+      const unsigned int n_sf = cast_int<unsigned int>(dof_indices.size());
+
+      // Begin the loop over the Quadrature points.
+      for (unsigned int qp=0; qp<n_qp; qp++){
+         Number u_h = 0.;
+         Number spherical_qp=evalSphWave(l, quant_m, q_point[qp], k);
+               
+         Point mapped_qp = FEInterface::inverse_map(dim, fe_type, elem, q_point[qp], TOLERANCE, true); 
+         FEComputeData fe_data(es, mapped_qp);
+         FEInterface::compute_data(dim, fe_type, elem, fe_data);
+
+         for (unsigned int i=0; i != n_sf; ++i){
+            //Use FEComputeData because with infinite elements the value at q_point[i][qp]
+            // is not just phi[i][qp].
+            u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
+         }
+         overlap+= JxW[qp] * std::conj(u_h) * spherical_qp;
+      }
+   }
+
+   es1.comm().sum(overlap);
+   
+   // abs is needed here to avoid compiler errors.
+   return overlap;
+}
+
+void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
+   Number norm_phi=calculate_overlap(es, "EigenSE", 0, "EigenSE", 0, OVERLAP);
+   norm_phi=sqrt(norm_phi*conj(norm_phi));
+   int m;
+   libmesh_assert_greater(l_max,0);
+   // make some nice output:
+   out<<"============";
+   for(int l=0; l<=2*l_max+1; l++){
+      out<<"========================";
+   }
+   out<<std::endl;
+   out<<"|     l       ";
+   for( int l=0; l<=2*l_max+1; l++){
+      m=l_max;
+      m-=l;
+      out<<"|        m = "<<m<<"         ";
+   }
+   out<<"|"<<std::endl;
+   for( int l=0; l<=l_max; l++){
+      out<<"|     "<<l<<"      ";
+      for (m = 0; m< l_max-l; m++){
+         out<<"                        ";
+      }
+      for(m=-l; m<=l; m++){
+         //out<<" l "<<l<<"  m "<<m<<std::endl;
+         out<<" "<<projection(es,"EigenSE", l, m)/norm_phi<<" ";
+      }
+      for (m = 0; m< l_max-l; m++){
+         out<<"                    ";
+      }
+      out<<std::endl;
+   }
+   out<<"============";
+   for(int l=0; l<=2*l_max+1; l++){
+      out<<"========================";
+   }
+   out<<std::endl;
 }

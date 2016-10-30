@@ -30,10 +30,10 @@
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/fe_interface.h" // for dirichlet boundary conditions
 #include "libmesh/error_vector.h" // for dirichlet boundary conditions
+
 // for infinite elements:
 #include "libmesh/inf_fe.h"
 #include "libmesh/inf_elem_builder.h"
-#include <complex.h> // the infinite element version requires complex numbers explicitly.
 // for refinement:
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/kelly_error_estimator.h"
@@ -49,6 +49,7 @@
 # include "fsu_soft/sphere_design_rule.hpp"
 # include "grids/Wom.h"
 # include "grids/geodesic.h"
+
 
 
 // own enumeration type for integral types.
@@ -108,7 +109,7 @@ double evalDO(const std::vector<std::vector<double> >& ,
               const libMesh::Point);
 
 // functions to calculate norms and overlaps:
-libMesh::Number overlap_DO(libMesh::EquationSystems& eq_sys,
+libMesh::Real overlap_DO(libMesh::EquationSystems& eq_sys,
                            const std::string sys1, int var1, IntegralType int_type);
 libMesh::Number norm_DO(libMesh::EquationSystems& eq_sys);
 libMesh::Real normalise(libMesh::EquationSystems& equation_systems, bool infel);
@@ -116,5 +117,7 @@ libMesh::Number calculate_overlap(libMesh::EquationSystems& eq_sys,
                                   const std::string sys1, int var1, 
                                   const std::string sys2, int var2 , 
                                   IntegralType int_type);
+
+void ProjectSphericals (libMesh::EquationSystems&, int ,int);
 
 #endif //define FREEWILLY_H
