@@ -39,6 +39,8 @@ void SlepcSolverConfiguration::configure_solver()
             // print a warning but do nothing more.
             break;
          }  //tell the \p EPS object which \p ST to use
+      // this is not needed because it is called in the
+      // in the \p EPSSetUP() anyway.
       //ierr = EPSSetST(_slepc_solver.eps(), st);
 
       libmesh_assert(ierr == 0);

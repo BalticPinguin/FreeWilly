@@ -37,8 +37,9 @@ public:
    
 private:
    // The linear solver object that we are configuring
-   libMesh::SlepcEigenSolver<libMesh::Number> _slepc_solver;
+   libMesh::SlepcEigenSolver<libMesh::Number>& _slepc_solver;
    SpectralTransform _st;
+   //ST st;
 
 };
 

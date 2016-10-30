@@ -358,11 +358,6 @@ int main (int argc, char** argv){
       eigenvector_output_name.str(std::string());
       eigenvector_output_name<< "phi-"<<i <<".cube" ;
       cube_io(equation_systems, geometry, eigenvector_output_name.str(), "EigenSE");
-
-      if( !shift)
-         std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first+equation_systems.parameters.get<Real>("energy")<<std::endl;
-      else
-         std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
    }
    if (nconv==0){
       // that one can look at the mesh and some properties...
