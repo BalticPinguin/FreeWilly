@@ -54,7 +54,8 @@
 
 // own enumeration type for integral types.
 enum IntegralType: int{
-   MU=0,
+   LENGTH=0,
+   VELOCITY,
    OVERLAP
 };
 

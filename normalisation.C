@@ -111,7 +111,7 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
          //out<<"  "<<u_h<<std::endl;
 
          //norm += JxW[qp] * TensorTools::norm_sq(u_h);
-         if(int_type==MU)
+         if(int_type==LENGTH)
             // this expression is wrong:
             overlap += JxW[qp] * std::conj(u_h) * q_point[qp].norm() * v_h* 0.;
          else //if(int_type==OVERLAP)
@@ -219,7 +219,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
             
          }
          //norm += JxW[qp] * TensorTools::norm_sq(u_h);
-         if(int_type==MU)
+         if(int_type==LENGTH)
          {
             overlap_x += JxW[qp] * std::conj(u_h) * q_point[qp](0) * do_val;
             overlap_y += JxW[qp] * std::conj(u_h) * q_point[qp](1) * do_val;
@@ -232,11 +232,19 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
       }
    }
    
-   if(int_type==MU)
+   if(int_type==LENGTH)
       {
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
-              overlap_z*conj(overlap_z);
+              overlap_z*conj(overlap_z)*
+              eq_sys.parameters.get<Real>("current frequency");
+     }
+   else if (int_type==VELOCITY)
+      {
+      overlap=overlap_x*conj(overlap_x)+
+              overlap_y*conj(overlap_y)+
+              overlap_z*conj(overlap_z)/
+              eq_sys.parameters.get<Real>("current frequency");
      }
    else
       overlap*=conj(overlap);
@@ -326,9 +334,9 @@ Real normalise(EquationSystems& equation_systems, bool infel){
 
    Real overlap=0;
    //compute <DO| mu |phi>
-   //overlap=calculate_overlap(equation_systems, "DO", 0, "EigenSE", 0, MU);
+   //overlap=calculate_overlap(equation_systems, "DO", 0, "EigenSE", 0, LENGTH);
    //out <<"solution overlap"<< overlap<<std::endl;
-   overlap = overlap_DO(equation_systems, "EigenSE", 0, MU);
+   overlap = overlap_DO(equation_systems, "EigenSE", 0, LENGTH);
    out <<"direct overlap "<< overlap<<std::endl;
    
    // abs needed for type conversion.
@@ -401,6 +409,7 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
    System & es1 = es.get_system<System> (sys);
 
    Number overlap;
+   Number norm;
     
    Real k = es.parameters.get<Real>("current frequency");
 
@@ -457,10 +466,14 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
             u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
          }
          overlap+= JxW[qp] * std::conj(u_h) * spherical_qp;
+         norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
       }
    }
 
    es1.comm().sum(overlap);
+   es1.comm().sum(norm);
+   
+   out<<"norm is:"<<norm<<std::endl;
    
    // abs is needed here to avoid compiler errors.
    return overlap;
@@ -469,38 +482,26 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
 void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
    Number norm_phi=calculate_overlap(es, "EigenSE", 0, "EigenSE", 0, OVERLAP);
    norm_phi=sqrt(norm_phi*conj(norm_phi));
+   Number tot_proj=0, this_proj;
    int m;
    libmesh_assert_greater(l_max,0);
    // make some nice output:
-   out<<"============";
-   for(int l=0; l<=2*l_max+1; l++){
-      out<<"========================";
-   }
+   out<<"====================================";
    out<<std::endl;
-   out<<"|     l       ";
-   for( int l=0; l<=2*l_max+1; l++){
-      m=l_max;
-      m-=l;
-      out<<"|        m = "<<m<<"         ";
-   }
-   out<<"|"<<std::endl;
    for( int l=0; l<=l_max; l++){
-      out<<"|     "<<l<<"      ";
-      for (m = 0; m< l_max-l; m++){
-         out<<"                        ";
-      }
       for(m=-l; m<=l; m++){
+         out<<"|     l = "<<l<<"       ";
+         out<<"        m = "<<m<<"       ";
          //out<<" l "<<l<<"  m "<<m<<std::endl;
-         out<<" "<<projection(es,"EigenSE", l, m)/norm_phi<<" ";
-      }
-      for (m = 0; m< l_max-l; m++){
-         out<<"                    ";
+         this_proj=projection(es,"EigenSE", l, m)/norm_phi;
+         out<<" \t"<<abs(this_proj)<<" ";
+         out<<"\t|"<<std::endl;
+         tot_proj+=this_proj*conj(this_proj);
       }
       out<<std::endl;
    }
-   out<<"============";
-   for(int l=0; l<=2*l_max+1; l++){
-      out<<"========================";
-   }
-   out<<std::endl;
+   out<<"||  Total:  ";
+   out<<sqrt(tot_proj)<<"   |"<<std::endl;
+   out<<"====================================";
+   out<<std::endl<<std::endl;
 }

@@ -26,7 +26,7 @@ int main (int argc, char** argv){
       #endif
     }
    
-   // Check for proper usage.
+   // Check for proper usage and print the input file to output.
    if (argc < 2)
       libmesh_error_msg("\nUsage: " << argv[0] << " <input-filename>");
    // Tell the user what we are doing.
@@ -62,8 +62,12 @@ int main (int argc, char** argv){
    // default MPI communicator.
    Mesh mesh(init.comm(), dim);
    
+
+   //Read in the options provided in the input-file and store them in
+   // local variables.
    Real E = cl("Energy", 0.0);
-   std::string molec_file=cl("mol_file", "invalid_file"); // this file contains all informations on the molecule
+   // \p molec_file contains all informations on the molecule
+   std::string molec_file=cl("mol_file", "invalid_file"); 
    std::string angular_creator=cl("angular", "invalid"); 
    Real r=cl("radius", 20.);
    std::string scheme=cl("scheme", "tm");
@@ -74,9 +78,9 @@ int main (int argc, char** argv){
    int maxiter=cl("maxiter", 700);
    bool cap = cl("cap", false);
    std::vector<Node> geometry=getGeometry(molec_file);
-   // Use the internal mesh generator to create a uniform
-   // 2D grid on a square.
-   // be aware: it is pot file, not pot whale!
+   bool refinement=cl("refine", false);
+
+   // it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
    assert(pot_file!="none");
 
@@ -90,9 +94,8 @@ int main (int argc, char** argv){
    int order=cl("order", 1);
  
    // define the fe_type including infinite eleemnt parameters:
-   //FEType (const int o=1, const FEFamily f=LAGRANGE, const int ro=THIRD, const FEFamily rf=JACOBI_20_00, const InfMapType im=CARTESIAN)
-   FEType fe_type(FIRST, LAGRANGE, FIRST, JACOBI_20_00, CARTESIAN);
-   //FEType fe_type(FIRST, LAGRANGE, FIFTH, JACOBI_20_00, CARTESIAN);
+   //FEType fe_type(FIRST, LAGRANGE, FIRST, JACOBI_20_00, CARTESIAN);
+   FEType fe_type(FIRST, LAGRANGE, FIFTH, JACOBI_20_00, CARTESIAN);
    if (order==2){
       //convert element to second-order mesh.
       // In case of tetrahedra: from Tet4 to Tet10
@@ -109,7 +112,6 @@ int main (int argc, char** argv){
 
    // in case of infinite elements, they are added now. This is done in the following by an automatized interface
    // that finds the center of finite elemnts and so on.
-   //ExodusII_IO (mesh).write("Molec_Mesh2.e");
    if (infel){
       // determine geometric center of molecule:
       InfElemBuilder::InfElemOriginValue com_x;
@@ -145,23 +147,29 @@ int main (int argc, char** argv){
       // find the neighbours; for correct linking the two areas
       mesh.find_neighbors();
    }
+
    // Print information about the mesh to the screen.
    mesh.print_info();
 
    // Create an equation systems object.
    EquationSystems equation_systems (mesh);
    
-   // Create a EigenSystem named "Eigensystem" and (for convenience)
-   // use a reference to the system we create.
+   // Create the systems needed here: 
+   // \p eigen_system solves the 1-p SE for the free electron
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
+   // \p ESP solves a simple matrix equation for the electrostatic potential;
+   //   this system is for illustrative purposes only.
    LinearImplicitSystem & ESP = equation_systems.add_system<LinearImplicitSystem> ("ESP");
+   // \p DO solves a simple matrix equation for the dyson orbital, also for illustrative purposes
+   //   but here also some important options are set: the energy of the free electron and othels.
    LinearImplicitSystem & DO = equation_systems.add_system<LinearImplicitSystem> ("DO");
 
+   // set the parameters of the calculation now as (globally available) paramers:
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
    equation_systems.parameters.set<bool >("cap")=cap;
-
    equation_systems.parameters.set<std::string>("potential")=pot_file;
    equation_systems.parameters.set<std::string>("DO_file")=molec_file;
+
    // Declare the system variables.
    // Adds the variables to the different equation systems.
    eigen_system.add_variable("phi", fe_type);
@@ -183,9 +191,8 @@ int main (int argc, char** argv){
    // ncv >= nev must hold and ncv >= 2*nev is recommended.
    equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
-
-   bool refinement=cl("refine", false);
    
+   // chose among the solver options.  
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
    //eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
    //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
@@ -214,6 +221,9 @@ int main (int argc, char** argv){
    DO.solve(); 
    ESP.solve();
 
+   bool shift=false;
+   // the position of spectrum needs to be set after solving \p DO since it sets the
+   // value of kinetic energy.
    {
       const std::string spect = cl("spect","r");
       if (spect=="sm"){
@@ -237,26 +247,24 @@ int main (int argc, char** argv){
       else{
          eigen_system.eigen_solver->set_position_of_spectrum( 
                            E-equation_systems.parameters.get<Real>("E_do"));
-          equation_systems.parameters.set<Real>("energy")=0;
+         equation_systems.parameters.set<Real>("energy")=0;
+         shift = true;
       }
    }
-
-    // add boundary conditions if not infinite elements used. In the latter case ...
+      
+   // If not set in \p position_of_spectrum, set the photon energy:
+   // else: eigenvalues are kinetic energy themselves.
+   if (!shift)
+      equation_systems.parameters.set<Real>("energy")=E-equation_systems.parameters.get<Real>("E_do");
+   
+    // add boundary conditions if not infinite elements used. 
    if (not infel){
       std::set<unsigned int> dirichlet_dof_ids;
       get_dirichlet_dofs(equation_systems, "EigenSE" ,dirichlet_dof_ids);
       eigen_system.initialize_condensed_dofs(dirichlet_dof_ids);
    }
 
-
-   bool shift=true;
-   if(!equation_systems.parameters.have_parameter<Real>("energy")){
-      // If not set in th position_of_spectrum,set the photon energy:
-      // else: eigenvalues are kinetic energy themselves.
-      shift=false;
-      equation_systems.parameters.set<Real>("energy")=E-equation_systems.parameters.get<Real>("E_do");
-   }
-
+   // print the energy values: photon energy, dyson orbital energy and kinetic energy
    out<<"E_ph: "<<E<<"  ";
    out<<"E_do: "<<equation_systems.parameters.get<Real>("E_do")<<"  ";
    if (!shift)
@@ -267,22 +275,17 @@ int main (int argc, char** argv){
    // set the ESP as initial guess for solution vector.
    eigen_system.eigen_solver->set_initial_space(*ESP.solution);
 
+   // set in addition set a spectral transformation to stabilise the numerical scheme.
    SlepcEigenSolver<Number>* solver = 
                  libmesh_cast_ptr<SlepcEigenSolver<Number>* >( &(*eigen_system.eigen_solver) );
 
    SlepcSolverConfiguration ConfigSolver( *solver);
 
    // set the spectral transformation:
-   //nfigSolver->real_valued_data.insert(pair<std::string, Real>(,))
-   //ConfigSolver->int_valued_data.insert(pair<std::string, int>(,))
    ConfigSolver.SetST(SINVERT);
-   
-   // do a spectral inversion around requested eigenvalue.
-   //eigen_system.eigen_solver->set_spectral_transform(CAYLEY);
-   //eigen_system.eigen_solver->set_spectral_transform(INVERT);
-   //eigen_system.eigen_solver->set_spectral_transform(SHIFT);
+   //ConfigSolver.SetST(CAYLEY);
+   //ConfigSolver.SetST(SHIFT); // this is default
    solver ->set_solver_configuration(ConfigSolver);
-
 
    //now, do refinement loop, if refinement is allowd:
    if (refinement){
@@ -394,7 +397,7 @@ int main (int argc, char** argv){
    out<< sqrt(norm_DO(equation_systems))<<std::endl;
    out<<" exact: "<<equation_systems.parameters.get<Real>("DOnorm")<<std::endl;
 
-
+   // this will become an option for the input later.
    bool spherical_analysis=true;
    if (spherical_analysis){
       for(unsigned int i=0; i<nconv; i++){
