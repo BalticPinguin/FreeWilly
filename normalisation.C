@@ -145,7 +145,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
    Number overlap_x=0;
    Number overlap_y=0;
    Number overlap_z=0;
-   Number overlap;
+   Number overlap=0;
    
    // this should be checked somehow as well:
    //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
@@ -408,8 +408,9 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
    //LinearImplicitSystem & es2 = equation_systems.get_system<LinearImplicitSystem> (sys2);
    System & es1 = es.get_system<System> (sys);
 
-   Number overlap;
-   Number norm;
+   Number overlap=0;
+   Number norm=0;
+   Number norm2=0;
     
    Real k = es.parameters.get<Real>("current frequency");
 
@@ -467,13 +468,15 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
          }
          overlap+= JxW[qp] * std::conj(u_h) * spherical_qp;
          norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
+         norm2 += JxW[qp] * TensorTools::norm_sq(spherical_qp);
       }
    }
 
    es1.comm().sum(overlap);
    es1.comm().sum(norm);
+   es1.comm().sum(norm2);
    
-   out<<"norm is:"<<norm<<std::endl;
+   out<<"norm is:"<<norm<<"  "<<norm2<<std::endl;
    
    // abs is needed here to avoid compiler errors.
    return overlap;
@@ -490,10 +493,10 @@ void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
    out<<std::endl;
    for( int l=0; l<=l_max; l++){
       for(m=-l; m<=l; m++){
+         this_proj=projection(es,"EigenSE", l, m)/norm_phi;
          out<<"|     l = "<<l<<"       ";
          out<<"        m = "<<m<<"       ";
          //out<<" l "<<l<<"  m "<<m<<std::endl;
-         this_proj=projection(es,"EigenSE", l, m)/norm_phi;
          out<<" \t"<<abs(this_proj)<<" ";
          out<<"\t|"<<std::endl;
          tot_proj+=this_proj*conj(this_proj);

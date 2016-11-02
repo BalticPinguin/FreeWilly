@@ -79,6 +79,7 @@ int main (int argc, char** argv){
    bool cap = cl("cap", false);
    std::vector<Node> geometry=getGeometry(molec_file);
    bool refinement=cl("refine", false);
+   bool quadrature_print = cl("print_quadrature", false);
 
    // it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
@@ -169,6 +170,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<bool >("cap")=cap;
    equation_systems.parameters.set<std::string>("potential")=pot_file;
    equation_systems.parameters.set<std::string>("DO_file")=molec_file;
+   equation_systems.parameters.set<bool>("quadrat_print") = quadrature_print;
 
    // Declare the system variables.
    // Adds the variables to the different equation systems.

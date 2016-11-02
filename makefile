@@ -8,17 +8,17 @@ LIBMESH_DIR ?= /home/tm162/bin/libmesh/my_libmesh
 # include the library options determined by configure
 include $(LIBMESH_DIR)/Make.common
 
-#target	   := ./InSpect-$(METHOD)
-target	   := ./FrWll_test-$(METHOD)
-#target	   := ./test-$(METHOD)
+target	   := ./FrWll-$(METHOD)
 
 ###############################################################################
 # File management.  This is where the source, header, and object files are
 # defined
 
-#srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.cpp
-srcfiles	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C fsu_soft/r8lib.C fsu_soft/rbf_interp_nd.C read_DO.C bas_pars_library/build/libbas_pars.a normalisation.C fsu_soft/legendre_polynomial.cpp Cube_IO.C fsu_soft/sphere_lebedev_rule.cpp grids/Wom_gen.C grids/Wom_ev.C grids/Wom_md.C grids/Wom_me.C grids/Wom_mn.C fsu_soft/sphere_design_rule.cpp grids/geodesic.C fsu_soft/fn_prb.cpp fsu_soft/besselj.cpp SlepcConfig.C
+this_files	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C read_DO.C normalisation.C Cube_IO.C SlepcConfig.C
+fsu_files       := fsu_soft/r8lib.C fsu_soft/rbf_interp_nd.C fsu_soft/legendre_polynomial.C fsu_soft/sphere_lebedev_rule.C fsu_soft/sphere_design_rule.C grids/geodesic.C fsu_soft/fn_prb.C fsu_soft/besselj.C
+grd_files       := grids/Wom_gen.C grids/Wom_ev.C grids/Wom_md.C grids/Wom_me.C grids/Wom_mn.C 
 #   bas_pars_library/build/libbas_pars.a
+srcfiles        := $(this_files) $(fsu_files) $(grd_files) bas_pars_library/build/libbas_pars.a
 
 objects		:= $(patsubst %.C, %.$(obj-suffix), $(srcfiles))
 ###############################################################################
@@ -56,22 +56,6 @@ echo:
 	@echo srcfiles = $(srcfiles)
 	@echo objects = $(objects)
 	@echo target = $(target)
-
-run: complete
-
-complete: $(wildcard *.in)
-#	@$(MAKE) dust
-	@$(MAKE) -C $(dir $(target)) $(notdir $(target))
-	@echo "***************************************************************"
-	@echo "* Running App " $(notdir $(target))
-	@echo "***************************************************************"
-	@echo " "
-	${LIBMESH_RUN} $(target) ${LIBMESH_OPTIONS} 2>&1 | tee output.txt
-	@bzip2 -f output.txt
-	@echo " "
-	@echo "***************************************************************"
-	@echo "* Done Running App " $(notdir $(target))
-	@echo "***************************************************************"
 
 # include the dependency list
 -include .depend

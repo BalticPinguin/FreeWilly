@@ -1,3 +1,5 @@
+#ifndef LEGENDRE_H
+#define LEDENGRE_H
 char digit_to_ch ( int i );
 int i4_log_10 ( int i );
 int i4_max ( int i1, int i2 );
@@ -27,3 +29,5 @@ double *pn_polynomial_coefficients ( int n );
 double *pn_polynomial_value ( int m, int n, double x[] );
 void pn_polynomial_values ( int &n_data, int &n, double &x, 
   double &fx );
+
+#endif

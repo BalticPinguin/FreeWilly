@@ -116,10 +116,11 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    //const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & potfile = es.parameters.get<std::string>("potential");
    bool cap=es.parameters.get<bool >("cap");
-   Real radius=es.parameters.get<Real>("radius")*0.9;
+   Real radius=es.parameters.get<Real>("radius");
    Real gamma =es.parameters.get<Real>("gamma");
    Real num_NN=es.parameters.get<Real>("num_NN");
    std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
+   bool quadrature = es.parameters.get<bool>("quadrat_print");
 
    struct ESP esp;
    Read(esp, potfile);
@@ -255,11 +256,13 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
-      //   out<<"quadrature: ";
-      //   out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
-      //   out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
-      //   out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
-      //   out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
+         if(quadrature){
+            out<<"quadrature: ";
+            out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
+            out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
+            out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
+            out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
+         }
          //out<<1/(q_point[qp].norm())<<std::endl;
          pot=potval[qp];
          if (cap){

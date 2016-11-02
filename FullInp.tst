@@ -5,6 +5,7 @@ pot = FooBar    # a string used later for the name of output-files
 spect =sm       #  sm, lm, (magnitude) sr, lr, (real) si, li, (imaginary) 
 Energy =0.05    # photon energy!
 infinite =true  # whether infinite elements should be allowed
+print_quadrature = false # whether quadrature points should be printed or not
 
 cap=false # switches complex absorbing boundaries on and off.
 gamma=2   # parameter to scale the cap.
