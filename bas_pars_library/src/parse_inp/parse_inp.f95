@@ -306,7 +306,7 @@ subroutine get_do_array(filehandle,filename, dyorb, energy, normDO)
    character(len=ll) :: stream
    ! name of the inputfile
    character(len=*) :: filename
-   character(len=ll) :: dump1, dump2
+   character(len=ll) :: dump1, dump2, e_unit
    ! up-spin and down-spin dyson orbitals
    real(c_double), intent(out), dimension(0:NBASF-1) :: dyorb
    real(kind=dp), dimension(:), allocatable :: dyDO
@@ -356,7 +356,15 @@ subroutine get_do_array(filehandle,filename, dyorb, energy, normDO)
          ! read geometry and charges into the ENV and ATOM array, respectively.
          if(enerfound .ne. 0) then ! energy is found
             ! read the energy
-            read(stream,*,IOSTAT=stat)dump1,dump1,dump1,dump1,dump1,dump1,energy
+            read(stream,*,IOSTAT=stat)dump1,dump1,dump1,dump1,dump1,dump1,energy,e_unit
+            if (e_unit .eq. 'eV') then
+                energy=energy*0.0367493
+            elseif (e_unit .eq. 'Hartree') then
+                ! this is dummy line needed for the 'else'.
+                energy=energy
+            else
+              call read_error("Unknown energy unit specified.",key, stream, stat)
+            endif
          elseif (atomfound .ne. 0) then !the atom statement is found --> ignore it.
             ! don't read data from that line, just skip it.
             read(stream,*,IOSTAT=stat)
