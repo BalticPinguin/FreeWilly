@@ -274,8 +274,10 @@ int main (int argc, char** argv){
    else // "energy" = 0, so get it on the other way:
       out<<"E_kin:"<<E-equation_systems.parameters.get<Real>("E_do")<<std::endl;
 
-   // set the ESP as initial guess for solution vector.
-   eigen_system.eigen_solver->set_initial_space(*ESP.solution);
+   if (infinite)
+      // set the ESP as initial guess for solution vector.
+      // does not work for finite element due to different boundary conditions.
+      eigen_system.eigen_solver->set_initial_space(*ESP.solution);
 
    // set in addition set a spectral transformation to stabilise the numerical scheme.
    SlepcEigenSolver<Number>* solver = 
