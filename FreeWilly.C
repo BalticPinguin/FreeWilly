@@ -274,7 +274,7 @@ int main (int argc, char** argv){
    else // "energy" = 0, so get it on the other way:
       out<<"E_kin:"<<E-equation_systems.parameters.get<Real>("E_do")<<std::endl;
 
-   if (infinite)
+   if (infel)
       // set the ESP as initial guess for solution vector.
       // does not work for finite element due to different boundary conditions.
       eigen_system.eigen_solver->set_initial_space(*ESP.solution);
@@ -398,7 +398,7 @@ int main (int argc, char** argv){
       }
    }
    out<<"norm of DO: ";
-   out<< sqrt(norm_DO(equation_systems))<<std::endl;
+   out<< sqrt(norm_DO(equation_systems, false))<<std::endl;
    out<<" exact: "<<equation_systems.parameters.get<Real>("DOnorm")<<std::endl;
 
    // this will become an option for the input later.

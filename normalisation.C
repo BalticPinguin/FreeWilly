@@ -138,7 +138,7 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
    return overlap;
 }
 
-Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, IntegralType int_type){
+Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, IntegralType int_type, bool infinite){
    //run at all processors at once:
    //parallel_object_only(); --> can not be used here.
 
@@ -180,6 +180,10 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
    for(; el != end_el; ++el){
        const Elem * elem = *el;
        const unsigned int dim = elem->dim();
+   
+      // skip infinite elements if inf
+      if (!infinite && elem->infinite())
+         continue;
 
       //QGauss qrule (dim, FIFTH);
       QGauss qrule (dim, fe_type.default_quadrature_order());
@@ -255,7 +259,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
    return std::abs(overlap);
 }
 
-Number norm_DO(EquationSystems& eq_sys){
+Number norm_DO(EquationSystems& eq_sys, bool infinite){
    //run at all processors at once:
    //parallel_object_only(); --> can not be used here.
 
@@ -281,6 +285,10 @@ Number norm_DO(EquationSystems& eq_sys){
    for(; el != end_el; ++el){
        const Elem * elem = *el;
        const unsigned int dim = elem->dim();
+   
+      // skip infinite elements if inf
+      if (!infinite && elem->infinite())
+         continue;
 
       QGauss qrule (dim, FIFTH);
       //QGauss qrule (dim, fe_type.default_quadrature_order());
@@ -330,7 +338,7 @@ Real normalise(EquationSystems& equation_systems, bool infel){
       normDO= DO.calculate_norm(*DO.solution, 0, L2);
    out<<"norm of DO:   "<< normDO <<"  ";
    //out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
-   out<< sqrt(norm_DO(equation_systems))<<std::endl;
+   out<< sqrt(norm_DO(equation_systems, true))<<std::endl;
 
    Real overlap=0;
    //compute <DO| mu |phi>
@@ -340,7 +348,7 @@ Real normalise(EquationSystems& equation_systems, bool infel){
    out <<"direct overlap "<< overlap<<std::endl;
    
    // abs needed for type conversion.
-   return overlap/std::abs((norm_phi*conj(norm_phi)));
+   return overlap; ///std::abs((norm_phi*conj(norm_phi)));
 }
 
 // functions used to project solution onto spherical waves
@@ -399,7 +407,7 @@ Number evalSphWave(int l, int m, Point qp, Real k){
    return wave;
 }
 
-Number projection(EquationSystems& es, const std::string sys, int l, int quant_m){
+Number projection(EquationSystems& es, const std::string sys, int l, int quant_m, bool only_infinite=true){
    // this should be checked somehow as well:
    //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
    //libmesh_assert_not_equal_to(es1.get_dof_map().variable_type(var1),
@@ -409,8 +417,8 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
    System & es1 = es.get_system<System> (sys);
 
    Number overlap=0;
-   Number norm=0;
-   Number norm2=0;
+   //Number norm=0;
+   //Number norm2=0;
     
    Real k = es.parameters.get<Real>("current frequency");
 
@@ -429,6 +437,10 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
    for(; el != end_el; ++el){
        const Elem * elem = *el;
        const unsigned int dim = elem->dim();
+
+      // skip infinite elements if inf
+      if (only_infinite && !elem->infinite())
+         continue;
 
       //QGauss qrule (dim, FIFTH);
       QGauss qrule (dim, fe_type.default_quadrature_order());
@@ -467,16 +479,16 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
             u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
          }
          overlap+= JxW[qp] * std::conj(u_h) * spherical_qp;
-         norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
-         norm2 += JxW[qp] * TensorTools::norm_sq(spherical_qp);
+         //norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
+         //norm2 += JxW[qp] * TensorTools::norm_sq(spherical_qp);
       }
    }
 
    es1.comm().sum(overlap);
-   es1.comm().sum(norm);
-   es1.comm().sum(norm2);
+   //es1.comm().sum(norm);
+   //es1.comm().sum(norm2);
    
-   out<<"norm is:"<<norm<<"  "<<norm2<<std::endl;
+   //out<<"norm is:"<<norm<<"  "<<norm2<<std::endl;
    
    // abs is needed here to avoid compiler errors.
    return overlap;

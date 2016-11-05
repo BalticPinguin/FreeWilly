@@ -111,12 +111,12 @@ double evalDO(const std::vector<std::vector<double> >& ,
 
 // functions to calculate norms and overlaps:
 libMesh::Real overlap_DO(libMesh::EquationSystems& eq_sys,
-                           const std::string sys1, int var1, IntegralType int_type);
-libMesh::Number norm_DO(libMesh::EquationSystems& eq_sys);
-libMesh::Real normalise(libMesh::EquationSystems& equation_systems, bool infel);
+                           const std::string sys1, int var1, IntegralType int_type, bool infinite=false);
+libMesh::Number norm_DO(libMesh::EquationSystems& , bool );
+libMesh::Real normalise(libMesh::EquationSystems& , bool infel=false);
 libMesh::Number calculate_overlap(libMesh::EquationSystems& eq_sys, 
                                   const std::string sys1, int var1, 
-                                  const std::string sys2, int var2 , 
+                                  const std::string sys2, int var2,
                                   IntegralType int_type);
 
 void ProjectSphericals (libMesh::EquationSystems&, int ,int);
