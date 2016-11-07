@@ -494,6 +494,93 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
    return overlap;
 }
 
+Number normSphWave(EquationSystems& es, const std::string sys, int l, int quant_m, bool only_infinite=true){
+   // this should be checked somehow as well:
+   //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
+   //libmesh_assert_not_equal_to(es1.get_dof_map().variable_type(var1),
+   //                            es2.get_dof_map().variable_type(var2));
+   //CondensedEigenSystem& es1=equation_systems.get_system<CondensedEigenSystem> (sys1);
+   //LinearImplicitSystem & es2 = equation_systems.get_system<LinearImplicitSystem> (sys2);
+   System & es1 = es.get_system<System> (sys);
+
+   Number overlap=0;
+   //Number norm=0;
+   //Number norm2=0;
+    
+   Real k = es.parameters.get<Real>("current frequency");
+
+   // Localize the potentially parallel vectors
+   UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
+   local_v1->init((*es1.solution).size(), true, SERIAL);
+   (*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
+
+   const FEType & fe_type = es1.get_dof_map().variable_type(0);
+   std::vector<dof_id_type> dof_indices;
+   FEBase * cfe = libmesh_nullptr;
+
+   // Begin the loop over the elements
+   MeshBase::const_element_iterator       el     = es1.get_mesh().active_local_elements_begin();
+   const MeshBase::const_element_iterator end_el = es1.get_mesh().active_local_elements_end();
+   for(; el != end_el; ++el){
+       const Elem * elem = *el;
+       const unsigned int dim = elem->dim();
+
+      // skip infinite elements if inf
+      if (only_infinite && !elem->infinite())
+         continue;
+
+      //QGauss qrule (dim, FIFTH);
+      QGauss qrule (dim, fe_type.default_quadrature_order());
+      UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
+      UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(dim, fe_type));
+      fe->attach_quadrature_rule (&qrule);
+      inf_fe->attach_quadrature_rule (&qrule);
+      
+      if (elem->infinite())
+         cfe = inf_fe.get();
+      else
+         cfe = fe.get();
+      const std::vector<Real> &  JxW     = cfe->get_JxW();
+      const std::vector<Point> & q_point = cfe->get_xyz();
+
+      cfe->reinit(elem);
+
+      es1.get_dof_map().dof_indices (elem, dof_indices, 0);
+
+      //const unsigned int n_qp = qrule.n_points(); --> fails for infinite elements.
+      unsigned int n_qp = cfe->n_quadrature_points();
+      const unsigned int n_sf = cast_int<unsigned int>(dof_indices.size());
+
+      // Begin the loop over the Quadrature points.
+      for (unsigned int qp=0; qp<n_qp; qp++){
+         Number u_h = 0.;
+         Number spherical_qp=evalSphWave(l, quant_m, q_point[qp], k);
+               
+         Point mapped_qp = FEInterface::inverse_map(dim, fe_type, elem, q_point[qp], TOLERANCE, true); 
+         FEComputeData fe_data(es, mapped_qp);
+         FEInterface::compute_data(dim, fe_type, elem, fe_data);
+
+         for (unsigned int i=0; i != n_sf; ++i){
+            //Use FEComputeData because with infinite elements the value at q_point[i][qp]
+            // is not just phi[i][qp].
+            u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
+         }
+         overlap+= JxW[qp] * std::conj(spherical_qp) * spherical_qp;
+         //norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
+         //norm2 += JxW[qp] * TensorTools::norm_sq(spherical_qp);
+      }
+   }
+
+   es1.comm().sum(overlap);
+   //es1.comm().sum(norm);
+   //es1.comm().sum(norm2);
+   
+   //out<<"norm is:"<<norm<<"  "<<norm2<<std::endl;
+   
+   // abs is needed here to avoid compiler errors.
+   return overlap;
+}
+
 void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
    Number norm_phi=calculate_overlap(es, "EigenSE", 0, "EigenSE", 0, OVERLAP);
    norm_phi=sqrt(norm_phi*conj(norm_phi));
@@ -506,12 +593,16 @@ void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
    for( int l=0; l<=l_max; l++){
       for(m=-l; m<=l; m++){
          this_proj=projection(es,"EigenSE", l, m)/norm_phi;
+         tot_proj+=this_proj*conj(this_proj);
          out<<"|     l = "<<l<<"       ";
          out<<"        m = "<<m<<"       ";
          //out<<" l "<<l<<"  m "<<m<<std::endl;
-         out<<" \t"<<abs(this_proj)<<" ";
+         out<<"  \t"<<abs(this_proj)<<" ";
          out<<"\t|"<<std::endl;
-         tot_proj+=this_proj*conj(this_proj);
+         this_proj=projection(es, "EigenSE", l, m, false)/norm_phi;
+         out<<"  \t"<<abs(this_proj)<<" ";
+         out<<"  \t"<<norm_phi<<" ";
+         out<<"  \t"<<abs(normSphWave(es, "EigenSE", l, m))<<" ";
       }
       out<<std::endl;
    }
