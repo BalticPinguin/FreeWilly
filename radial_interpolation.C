@@ -144,7 +144,7 @@ void RBFInterpolation<KDDim>::interpolate_field_data (const std::vector<std::str
 template <unsigned int KDDim>
 void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
                                                        const std::vector<size_t> & src_indices,
-                                                       const std::vector<Real>   & src_dist_sqr,
+                                                       const std::vector<Real>   & /*src_dist_sqr*/,
                                                        std::vector<Number>::iterator & out_it) const
 {
    // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
@@ -158,12 +158,18 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    const unsigned int n_src=src_indices.size();
    Real* xd= new Real[n_src*KDDim];
    Real* fd= new Real[n_src*KDDim];
+   Real max_fd=0;
+   Real min_fd=_src_vals[src_indices[0]].real();
    // convert (input) vector to pointer-notation for rbf-functions:
    for (unsigned int i=0; i<n_src; i++){
       for (unsigned int j=0; j<KDDim; j++){
           xd[j+KDDim*i]=_src_pts[src_indices[i]](j)-pt(j);
       }
       fd[i]=_src_vals[src_indices[i]].real();
+      if(fd[i]>max_fd)
+         max_fd=fd[i];
+      if(fd[i]<min_fd)
+         min_fd=fd[i];
    }
    
    int closest=-1;
@@ -177,7 +183,7 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
  
    Real r0=_power;
    Real inner_range=1.2; // about half of the typical binding length...
-   Real outer_range=4.;  // 'far away' from any nucleus.
+   //Real outer_range=4.;  // 'far away' from any nucleus.
          
    Real *w;
    /*
@@ -203,26 +209,28 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
       fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
       Real r=(pt-_geom[closest]).norm();
-      if (r>1e-7)
-         fi[0]-=(Real)_geom[closest].id()/r;
-      else
-         fi[0]-=(Real)_geom[closest].id()*1e+7;
-   }
-   else if (minnorm > outer_range){
-      //r0=0.7;
-      // if the distance to the closest source point is too large: interpolate as
-      // simple Coulomb-pot. of nearest atom.
-      if (src_dist_sqr[0]>1.5){
-         for (unsigned int v=0; v<n_fv; v++, ++out_it){
-            _vals[v] = fd[0]/(pt-_geom[closest]).norm()*
-                       (_src_pts[src_indices[0]]-_geom[closest]).norm();
-            *out_it = _vals[v];
-         }
-         return ;
+      for (unsigned int v=0; v<n_fv; v++){
+         if (r>1e-7)
+            fi[v]-=(Real)_geom[closest].id()/r;
+         else
+            fi[v]-=(Real)_geom[closest].id()*1e+7;
       }
-      w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
-      fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
    }
+   //else if (minnorm > outer_range){
+   //   //r0=0.7;
+   //   // if the distance to the closest source point is too large: interpolate as
+   //   // simple Coulomb-pot. of nearest atom.
+   //   if (src_dist_sqr[0]>1.5){
+   //      for (unsigned int v=0; v<n_fv; v++, ++out_it){
+   //         _vals[v] = fd[0]/(pt-_geom[closest]).norm()*
+   //                    (_src_pts[src_indices[0]]-_geom[closest]).norm();
+   //         *out_it = _vals[v];
+   //      }
+   //      return ;
+   //   }
+   //   w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
+   //   fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
+   //}
    else{
       // intermediate case: don't change parameters.
       try{
@@ -238,20 +246,34 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
          for(unsigned int i=0; i<std::min(n_src, four); i++){
             fi+=fd[i];
          }
+
+         //just in case soemthing went wrong...
+         if(fi>=max_fd*n_src || fi<=min_fd*n_src)
+            fi=(max_fd+min_fd)/2;
          _vals[0]=fi/n_src;
          *out_it=_vals[0];
          return ;
       }
       fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
+
+      // if the interpolation failed: just take average of extremal points.
+      // Usually it only failes in the outer part of the mesh where both are 
+      // 0 anyways.
+      for (unsigned int v=0; v<n_fv; v++)
+         {
+         if(fi[v]>=max_fd || fi[v]<=min_fd)
+            fi[v]=(max_fd+min_fd)/2;
+         }
    }
    //w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
    //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
 
    delete xi;
    delete w;
+   
       
    for (unsigned int v=0; v<n_fv; v++, ++out_it)
-      {
+   {
       _vals[v] = fi[v];
       *out_it = _vals[v];
    }
