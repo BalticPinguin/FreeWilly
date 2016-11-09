@@ -2,7 +2,7 @@
 
 nev = 15        # any integer
 pot = FooBar    # a string used later for the name of output-files
-spect =sm       #  sm, lm, (magnitude) sr, lr, (real) si, li, (imaginary) 
+#spect =sm      # This option is no more possible.
 Energy =0.05    # photon energy!
 infinite =true  # whether infinite elements should be allowed
 print_quadrature = false # whether quadrature points should be printed or not

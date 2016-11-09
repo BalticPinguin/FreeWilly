@@ -161,14 +161,14 @@ int main (int argc, char** argv){
 
    //Read in the options provided in the input-file and store them in
    // local variables.
-   Real E = cl("Energy", 0.0);
    // \p molec_file contains all informations on the molecule
    std::string molec_file=cl("mol_file", "invalid_file"); 
    std::string angular_creator=cl("angular", "invalid"); 
    Real r=cl("radius", 20.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
-   Real VolConst= cl("maxVol", 1./(32.*sqrt(E*E*E)) );
+   //cl("Energy",0.0);
+   Real VolConst= cl("maxVol", 1.);
    Real L=cl("bending", 2.);
    int N=cl("circles", 5);
    int maxiter=cl("maxiter", 700);
@@ -319,41 +319,36 @@ int main (int argc, char** argv){
    DO.solve(); 
    ESP.solve();
 
-   bool shift=false;
    // the position of spectrum needs to be set after solving \p DO since it sets the
    // value of kinetic energy.
-   {
-      const std::string spect = cl("spect","r");
-      if (spect=="sm"){
-         eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_MAGNITUDE);
-      }
-      else if (spect=="lm"){
-         eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_MAGNITUDE);
-      }
-      else if (spect=="sr"){
-         eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_REAL);
-      }
-      else if (spect=="lr"){
-         eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_REAL);
-      }
-      else if (spect=="si"){
-         eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_IMAGINARY);
-      }
-      else if (spect=="li"){
-         eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_IMAGINARY);
-      }
-      else{
-         eigen_system.eigen_solver->set_position_of_spectrum( 
-                           E-equation_systems.parameters.get<Real>("E_do"));
-         equation_systems.parameters.set<Real>("energy")=0;
-         shift = true;
-      }
-   }
-      
+   //const std::string spect = cl("spect","r");
+   //f (spect=="sm"){
+   //  eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_MAGNITUDE);
+   //
+   //lse if (spect=="lm"){
+   //  eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_MAGNITUDE);
+   //
+   //lse if (spect=="sr"){
+   //  eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_REAL);
+   //
+   //lse if (spect=="lr"){
+   //  eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_REAL);
+   //
+   //lse if (spect=="si"){
+   //  eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_IMAGINARY);
+   //}
+   //else if (spect=="li"){
+   //   eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_IMAGINARY);
+   //}
+   Real energy = cl("Energy", 0.0) -equation_systems.parameters.get<Real>("E_do");
+
+   eigen_system.eigen_solver->set_position_of_spectrum( energy);
+ 
    // If not set in \p position_of_spectrum, set the photon energy:
    // else: eigenvalues are kinetic energy themselves.
-   if (!shift)
-      equation_systems.parameters.set<Real>("energy")=E-equation_systems.parameters.get<Real>("E_do");
+   equation_systems.parameters.set<Real>("energy")=energy;
+ 
+   equation_systems.parameters.set<Real>("momentum")=sqrt(2.*energy);
    
     // add boundary conditions if not infinite elements used. 
    if (not infel){
@@ -363,12 +358,9 @@ int main (int argc, char** argv){
    }
 
    // print the energy values: photon energy, dyson orbital energy and kinetic energy
-   out<<"E_ph: "<<E<<"  ";
+   out<<"E_ph: "<<cl("Energy",0.0)<<"  ";
    out<<"E_do: "<<equation_systems.parameters.get<Real>("E_do")<<"  ";
-   if (!shift)
-      out<<"E_kin:"<<equation_systems.parameters.get<Real>("energy")<<std::endl;
-   else // "energy" = 0, so get it on the other way:
-      out<<"E_kin:"<<E-equation_systems.parameters.get<Real>("E_do")<<std::endl;
+   out<<"E_kin:"<<energy<<std::endl;
 
    if (infel)
       // set the ESP as initial guess for solution vector.
@@ -380,7 +372,7 @@ int main (int argc, char** argv){
                  libmesh_cast_ptr<SlepcEigenSolver<Number>* >( &(*eigen_system.eigen_solver) );
 
    SlepcSolverConfiguration ConfigSolver( *solver);
-
+  
    // set the spectral transformation:
    ConfigSolver.SetST(SINVERT);
    //ConfigSolver.SetST(CAYLEY);
@@ -444,10 +436,7 @@ int main (int argc, char** argv){
    for(unsigned int i=0; i<nconv; i++){
       eigpair = eigen_system.get_eigenpair(i);
       
-      if(!shift)
-         std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first+equation_systems.parameters.get<Real>("energy")<<std::endl;
-      else
-         std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
+      std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
       #ifdef LIBMESH_HAVE_EXODUS_API
          eigenvector_output_name.str(std::string());
          if (infel)
@@ -467,11 +456,7 @@ int main (int argc, char** argv){
    if (nconv==0){
       // that one can look at the mesh and some properties...
       #ifdef LIBMESH_HAVE_EXODUS_API
-         if(!shift)
-            equation_systems.parameters.set<Real>("current frequency")=
-                  eigpair.first+equation_systems.parameters.get<Real>("energy");
-         else
-            equation_systems.parameters.set<Real>("current frequency")=eigpair.first;
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(2.*eigpair.first);
          if (infel)
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
          else
@@ -486,11 +471,7 @@ int main (int argc, char** argv){
       for(unsigned int i=0; i<nconv; i++){
          out<<" for the solution nr "<<i<<":"<<std::endl;
          eigpair = eigen_system.get_eigenpair(i);
-         if(!shift)
-            equation_systems.parameters.set<Real>("current frequency")=
-                  eigpair.first+equation_systems.parameters.get<Real>("energy");
-         else
-            equation_systems.parameters.set<Real>("current frequency")=eigpair.first;
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(2.*eigpair.first);
          intensity=normalise(equation_systems, infel);
          out<<"intensity:  "<<intensity<<std::endl;
       }
@@ -504,11 +485,7 @@ int main (int argc, char** argv){
    if (spherical_analysis){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
-         if(!shift)
-            equation_systems.parameters.set<Real>("current frequency")=
-                  eigpair.first+equation_systems.parameters.get<Real>("energy");
-         else
-            equation_systems.parameters.set<Real>("current frequency")=eigpair.first;
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(2.*eigpair.first);
          ProjectSphericals (equation_systems, 5, i);
       }
    }

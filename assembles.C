@@ -133,8 +133,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    potential.add_field_data(esp_data, esp.node, esp.potential);
 
    potential.prepare_for_use();
-      
-   Real E = es.parameters.get<Real>("energy"); // at this point it is already E_kin
+     
    // Get a constant reference to the Finite Element type
    // for the first (and only) variable in the system.
    FEType fe_type = eigen_system.get_dof_map().variable_type(0);
@@ -160,16 +159,16 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    fe->attach_quadrature_rule (&qrule);
    inf_fe->attach_quadrature_rule (&qrule);
       
-   libMesh::Number co0_5= 0.5;
-   libMesh::Number co2= 2.;
+   Number co0_5= 0.5;
    //libMesh::Number k=omega; //divided by c which is 1 in atomic units.
-   // -->ik = -i*k => for neg. energy: exp(-i*sqrt(2E)*mu(x))= exp(-sqrt(2|E|)*mu(x)) ==> expon. decay in function.
-   libMesh::Number ik=sqrt(-co2*E); 
+   // -->ik = -i*k 
+   Number ik=sqrt(-1)*es.parameters.get<Real>("momentum");
+   out<<" i*k= "<<ik<<std::endl;
 
    // set parameters for infinite elements:
    es.parameters.set<Real>("speed")=1.;
 
-   libMesh::Number temp; // -->try this for now...
+   Number temp; 
       
    // A reference to the \p DofMap object for this system.  The \p DofMap
    // object handles the index translation from node and element numbers
@@ -285,7 +284,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
                      weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
                      ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-phi[j][qp]*dphi[i][qp]));
-               H(i,j) += JxW[qp]*(co0_5*temp + (pot- E)*weight[qp]*phi[i][qp]*phi[j][qp]);
+               H(i,j) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
             }
          }
       }
