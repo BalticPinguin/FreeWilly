@@ -71,7 +71,7 @@ void assemble_DO(libMesh::EquationSystems & es, const std::string & system_name)
 // self-written output formats:
 void cube_io(libMesh::EquationSystems& es, std::vector<libMesh::Node> geom, 
              std::string output, std::string SysName);
-void line_out(EquationSystems& es, std::string output, std::string SysName);
+void line_out(libMesh::EquationSystems& es, std::string output, std::string SysName);
 
 //This in the tetrahedralisation of a sphere
 void tetrahedralise_sphere(libMesh::UnstructuredMesh& mesh, 

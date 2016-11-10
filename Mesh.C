@@ -142,9 +142,24 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, std::st
                               / (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
                                                       /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.)));
       }
-     // out<<" sphere nr "<< circle;
-     // out<<"  "<<scale;
-     // out<<"  "<<pts_circle<<std::endl;
+      else if (scheme == "const"){
+         scale=pow(L,circle)*r_max/pow(L,N);
+         pts_circle = min((int)(12.5*L*L/((1-L)*(1-L))), 300);
+      }
+      else if (scheme == "const_tm"){
+         scale=L*circle/( pow((Real)N/circle,p)* (L*N/r_max-1.)+1. );
+         pts_circle = min((int)(12.5*L*L/((1-L)*(1-L))), 300);
+      }
+      else if (scheme == "quadr" ){
+         scale=circle/N*r_max;
+         pts_circle=(int)(12.5*(circle*r_max*circle*r_max/(N*N)));
+      }
+      else if (scheme == "sqrt_tm" ){
+         scale=L*circle/( pow((Real)N/circle,p)* (L*N/r_max-1.)+1. );
+         pts_circle = (int)(40*sqrt(scale)); 
+      } 
+      // out<<" sphere nr "<< circle; // out<<"  "<<scale;
+      // out<<"  "<<pts_circle<<std::endl;
       if (creator=="fibonacci")
          point=fibonacci(pts_circle);
       else if (creator=="archimedes")

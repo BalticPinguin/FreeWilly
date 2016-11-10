@@ -92,9 +92,22 @@ int main (int argc, char** argv){
    std::string pot_file=cl("mesh_file", "none");
    assert(pot_file!="none");
 
-   if (scheme=="tm" && N<r/L)
+   // make sure that the distance between two spheres is 
+   // at least ~ 1/(4*lambda)
+   if (N<=(int)(sqrt(E)*r/17.8))
+      N=(int)(r*sqrt(E)/17.8);
+ 
+
+   if (scheme=="tm"){
+      // assure that L is not larger than ~lambda/3 (i.e. 2*pi/(3*k)).
+      // This estimate might be bad since E is only the photon energy.
+      if (L<sqrt(2./Energy))
+         L=sqrt(2./Energy);
+
       // this is necessary to be in numerically stable regime.
-      N=r/L;
+      if( N<r/L)
+         N=r/L;
+   }
 
    // the function below creates a mesh using the molecular structure.
    tetrahedralise_sphere(mesh, geometry, angular_creator, r, scheme, p, VolConst, L, N);

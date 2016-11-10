@@ -594,17 +594,14 @@ void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
    out<<std::endl;
    for( int l=0; l<=l_max; l++){
       for(m=-l; m<=l; m++){
-         this_proj=projection(es,"EigenSE", l, m)/norm_phi;
+         this_proj=projection(es,"EigenSE", l, m)*norm_phi/
+                           abs(sqrt(normSphWave(es, "EigenSE", l, m)));
          tot_proj+=this_proj*conj(this_proj);
          out<<"|     l = "<<l<<"       ";
          out<<"        m = "<<m<<"       ";
          //out<<" l "<<l<<"  m "<<m<<std::endl;
          out<<"  \t"<<abs(this_proj)<<" ";
          out<<"\t|"<<std::endl;
-         this_proj=projection(es, "EigenSE", l, m, false)/norm_phi;
-         out<<"  \t"<<abs(this_proj)<<" ";
-         out<<"  \t"<<norm_phi<<" ";
-         out<<"  \t"<<abs(normSphWave(es, "EigenSE", l, m))<<" ";
       }
       out<<std::endl;
    }
