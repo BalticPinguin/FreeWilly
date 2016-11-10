@@ -269,3 +269,82 @@ void  solution_write(EquationSystems& equation_systems, std::string filename, st
    }
    out<<std::endl<<std::endl;
 }
+
+void line_out(EquationSystems& es, std::string output, std::string SysName){
+   //CondensedEigenSystem & system = es.get_system<CondensedEigenSystem> ("EigenSE"); // --> how to generalise??
+   System & system = es.get_system<System> (SysName); 
+   const MeshBase & mesh = es.get_mesh();
+   const DofMap & dof_map = system.get_dof_map();
+   
+   UniquePtr<NumericVector<Number> > solution_vect = 
+        NumericVector<Number>::build(es.comm());
+
+   solution_vect->init((*system.solution).size(), true, SERIAL);
+   (*system.solution).localize(* solution_vect);
+   Real r = 5.*es.parameters.get<Real>("radius");
+   
+   const FEType & fe_type = dof_map.variable_type(0);
+   UniquePtr<FEBase> fe (FEBase::build(3, fe_type));
+   UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(3, fe_type));
+   FEBase * cfe = libmesh_nullptr;
+   QGauss qrule (3, SECOND);
+   std::vector<dof_id_type> dof_indices;
+   // Tell the finite element object to use our quadrature rule.
+   fe->attach_quadrature_rule (&qrule);
+   inf_fe->attach_quadrature_rule (&qrule);
+
+   // set output to filename
+   std::ostringstream re_output;
+   re_output<<"re_"<<output;
+   std::ostringstream im_output;
+   im_output<<"im_"<<output;
+   std::ostringstream abs_output;
+   abs_output<<"abs_"<<output;
+   std::ofstream re_out(re_output.str());
+   std::ofstream im_out(im_output.str());
+   std::ofstream abs_out(abs_output.str());
+
+   PointLocatorTree pt_lctr(mesh);
+   unsigned int num_line=0;
+   Real N = 600.;
+   Point q_point;
+   for (int pts=1;pts<=N;pts++) {
+      q_point = Point(  pts*r/N, 0., 0.);
+      num_line++;
+      
+      const Elem * elem=pt_lctr(q_point);
+      if(elem==NULL){
+         //abs_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
+         //im_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
+         //re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
+      }
+      else{
+
+         dof_map.dof_indices (elem, dof_indices);
+  
+         Point map_point=FEInterface::inverse_map(3, fe_type, elem, q_point, TOLERANCE, true); 
+         FEComputeData data(es, map_point); 
+         FEInterface::compute_data(3, fe_type, elem, data);
+      
+         //compute solution value at that point.
+         Number soln=0;
+         if (elem->infinite())
+            cfe = inf_fe.get();
+         else
+            cfe = fe.get();
+         cfe->reinit(elem);
+         unsigned int n_sf= cfe->n_shape_functions();
+         for (unsigned int i=0; i<n_sf; i++){
+            soln+=(*solution_vect)(dof_indices[i])*data.shape[i];
+         }
+         re_out<<" "<<std::setw(12)<<q_point(0);
+         im_out<<" "<<std::setw(12)<<q_point(0);
+         abs_out<<" "<<std::setw(12)<<q_point(0);
+         re_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::real(soln)<<std::endl;
+         im_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::imag(soln)<<std::endl;
+         abs_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::abs(soln)<<std::endl;
+
+      }
+   }
+}
+

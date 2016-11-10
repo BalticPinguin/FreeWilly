@@ -162,8 +162,10 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    Number co0_5= 0.5;
    //libMesh::Number k=omega; //divided by c which is 1 in atomic units.
    // -->ik = -i*k 
-   Number ik=sqrt(-1)*es.parameters.get<Real>("momentum");
-   out<<" i*k= "<<ik<<std::endl;
+   Number ik=sqrt(-(Number)1.)*es.parameters.get<Number>("momentum");
+   //out<<" i*k= "<<ik<<es.parameters.get<Number>("momentum")<<std::endl;
+   //ik=sqrt(-es.parameters.get<Real>("energy")*(Number)2);
+   //out<<" i*k= "<<ik<<sqrt(-(Number)1.)<<std::endl;
 
    // set parameters for infinite elements:
    es.parameters.set<Real>("speed")=1.;

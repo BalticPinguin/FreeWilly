@@ -241,6 +241,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
               overlap_z*conj(overlap_z)*
+              eq_sys.parameters.get<Real>("current frequency")*
               eq_sys.parameters.get<Real>("current frequency");
      }
    else if (int_type==VELOCITY)
@@ -248,7 +249,8 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
               overlap_z*conj(overlap_z)/
-              eq_sys.parameters.get<Real>("current frequency");
+              (eq_sys.parameters.get<Real>("current frequency")*
+               eq_sys.parameters.get<Real>("current frequency"));
      }
    else
       overlap*=conj(overlap);
@@ -420,7 +422,7 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
    //Number norm=0;
    //Number norm2=0;
     
-   Real k = es.parameters.get<Real>("current frequency");
+   Real k = es.parameters.get<Real>("current frequency")*2.*pi;
 
    // Localize the potentially parallel vectors
    UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
@@ -507,7 +509,7 @@ Number normSphWave(EquationSystems& es, const std::string sys, int l, int quant_
    //Number norm=0;
    //Number norm2=0;
     
-   Real k = es.parameters.get<Real>("current frequency");
+   Real k = es.parameters.get<Real>("current frequency")*2.*pi;
 
    // Localize the potentially parallel vectors
    UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());

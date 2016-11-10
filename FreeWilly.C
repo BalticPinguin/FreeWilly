@@ -11,95 +11,6 @@
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
 
-void line_out(EquationSystems& es, std::string output, std::string SysName){
-   //CondensedEigenSystem & system = es.get_system<CondensedEigenSystem> ("EigenSE"); // --> how to generalise??
-   System & system = es.get_system<System> (SysName); 
-   const MeshBase & mesh = es.get_mesh();
-   const DofMap & dof_map = system.get_dof_map();
-   
-   UniquePtr<NumericVector<Number> > solution_vect = 
-        NumericVector<Number>::build(es.comm());
-
-   solution_vect->init((*system.solution).size(), true, SERIAL);
-   (*system.solution).localize(* solution_vect);
-   Real r = 3.*es.parameters.get<Real>("radius");
-   
-   const FEType & fe_type = dof_map.variable_type(0);
-   UniquePtr<FEBase> fe (FEBase::build(3, fe_type));
-   UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(3, fe_type));
-   FEBase * cfe = libmesh_nullptr;
-   QGauss qrule (3, SECOND);
-   std::vector<dof_id_type> dof_indices;
-   // Tell the finite element object to use our quadrature rule.
-   fe->attach_quadrature_rule (&qrule);
-   inf_fe->attach_quadrature_rule (&qrule);
-
-   // set output to filename
-   std::ostringstream re_output;
-   re_output<<"re_"<<output;
-   std::ostringstream im_output;
-   im_output<<"im_"<<output;
-   std::ostringstream abs_output;
-   abs_output<<"abs_"<<output;
-   std::ofstream re_out(re_output.str());
-   std::ofstream im_out(im_output.str());
-   std::ofstream abs_out(abs_output.str());
-
-   PointLocatorTree pt_lctr(mesh);
-   unsigned int num_line=0;
-   Real N = 300.;
-   Point q_point;
-   for (int pts=1;pts<=4*N;pts++) {
-      if (pts%4==0){
-         q_point = Point(  pts*r/(4.*N), 0., 0.);
-         }
-      else if (pts%4==1){
-         q_point = Point( -pts*r/(4.*N), 0., 0.);
-         }
-      else if (pts%4==2 && pts>10){
-         q_point = Point ( -N*4./(pts*r), 0., 0.);
-         }
-      else if (pts%4==3 && pts>10){
-         q_point = Point (  N*4./(pts*r), 0., 0.);
-         }
-      num_line++;
-      
-      const Elem * elem=pt_lctr(q_point);
-      if(elem==NULL){
-         //abs_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
-         //im_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
-         //re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
-      }
-      else{
-
-         dof_map.dof_indices (elem, dof_indices);
-  
-         Point map_point=FEInterface::inverse_map(3, fe_type, elem, q_point, TOLERANCE, true); 
-         FEComputeData data(es, map_point); 
-         FEInterface::compute_data(3, fe_type, elem, data);
-      
-         //compute solution value at that point.
-         Number soln=0;
-         if (elem->infinite())
-            cfe = inf_fe.get();
-         else
-            cfe = fe.get();
-         cfe->reinit(elem);
-         unsigned int n_sf= cfe->n_shape_functions();
-         for (unsigned int i=0; i<n_sf; i++){
-            soln+=(*solution_vect)(dof_indices[i])*data.shape[i];
-         }
-         re_out<<" "<<std::setw(12)<<q_point(0);
-         im_out<<" "<<std::setw(12)<<q_point(0);
-         abs_out<<" "<<std::setw(12)<<q_point(0);
-         re_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::real(soln)<<std::endl;
-         im_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::imag(soln)<<std::endl;
-         abs_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::abs(soln)<<std::endl;
-
-      }
-   }
-}
-
 int main (int argc, char** argv){
    // Initialize libMesh and the dependent libraries.
    LibMeshInit init (argc, argv);
@@ -167,8 +78,8 @@ int main (int argc, char** argv){
    Real r=cl("radius", 20.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
-   //cl("Energy",0.0);
-   Real VolConst= cl("maxVol", 1.);
+   Real E = cl("Energy",0.0);
+   Real VolConst= cl("maxVol", 1./(2*E*E*E));
    Real L=cl("bending", 2.);
    int N=cl("circles", 5);
    int maxiter=cl("maxiter", 700);
@@ -310,8 +221,8 @@ int main (int argc, char** argv){
    // Prints information about the system to the screen.
    //equation_systems.print_info();
          
-   // Initialize the data structures for the equation system.
-   eigen_system.init();
+   // Initialize the data structures ESP and DO, eigen_system is treated
+   // after solving DO since it provides some required information.
    ESP.init();
    DO.init();
    
@@ -340,16 +251,20 @@ int main (int argc, char** argv){
    //else if (spect=="li"){
    //   eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_IMAGINARY);
    //}
-   Real energy = cl("Energy", 0.0) -equation_systems.parameters.get<Real>("E_do");
+
+   // Initialize the data structures for the equation system.
+   eigen_system.init();
+   Real energy = E -equation_systems.parameters.get<Real>("E_do");
 
    eigen_system.eigen_solver->set_position_of_spectrum( energy);
  
    // If not set in \p position_of_spectrum, set the photon energy:
    // else: eigenvalues are kinetic energy themselves.
    equation_systems.parameters.set<Real>("energy")=energy;
- 
-   equation_systems.parameters.set<Real>("momentum")=sqrt(2.*energy);
-   
+   equation_systems.parameters.set<Number>("momentum")=sqrt(energy*2.);
+   out<<" momentum= "<<equation_systems.parameters.get<Number>("momentum")<<std::endl;
+   out<<" energy= "<<equation_systems.parameters.get<Real>("energy")<<std::endl;
+
     // add boundary conditions if not infinite elements used. 
    if (not infel){
       std::set<unsigned int> dirichlet_dof_ids;
@@ -447,6 +362,9 @@ int main (int argc, char** argv){
       #endif // #ifdef LIBMESH_HAVE_EXODUS_API
       //eigenvector_output_name<< i <<"_err.e";
       //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
+  
+      // frequency=k/2*pi.
+      equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);
       eigenvector_output_name.str(std::string());
       //eigenvector_output_name<< "phi-"<<i <<".cube";
       eigenvector_output_name<< "phi-"<<i <<".line";
@@ -456,7 +374,7 @@ int main (int argc, char** argv){
    if (nconv==0){
       // that one can look at the mesh and some properties...
       #ifdef LIBMESH_HAVE_EXODUS_API
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(2.*eigpair.first);
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);
          if (infel)
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
          else
@@ -471,7 +389,7 @@ int main (int argc, char** argv){
       for(unsigned int i=0; i<nconv; i++){
          out<<" for the solution nr "<<i<<":"<<std::endl;
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(2.*eigpair.first);
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);
          intensity=normalise(equation_systems, infel);
          out<<"intensity:  "<<intensity<<std::endl;
       }
@@ -485,7 +403,7 @@ int main (int argc, char** argv){
    if (spherical_analysis){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(2.*eigpair.first);
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);
          ProjectSphericals (equation_systems, 5, i);
       }
    }
