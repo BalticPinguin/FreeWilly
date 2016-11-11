@@ -84,23 +84,27 @@ int main (int argc, char** argv){
    int N=cl("circles", 5);
    int maxiter=cl("maxiter", 700);
    bool cap = cl("cap", false);
-   std::vector<Node> geometry=getGeometry(molec_file);
    bool refinement=cl("refine", false);
    bool quadrature_print = cl("print_quadrature", false);
+   bool pictorious = cl("pictorious", false);
+   int spherical_analysis= cl("spherical_analysis", -1);
 
    // it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
    assert(pot_file!="none");
 
+   DOrbit dyson(molec_file);
+   Real Energy= E-dyson.get_energy();
+
    // make sure that the distance between two spheres is 
    // at least ~ 1/(4*lambda)
-   if (N<=(int)(sqrt(E)*r/17.8))
-      N=(int)(r*sqrt(E)/17.8);
+   if (N<=(int)(sqrt(Energy)*r/17.8))
+      N=(int)(r*sqrt(Energy)/17.8);
  
 
-   if (scheme=="tm"){
+   if (scheme=="tm" || scheme=="tm_300" ||
+       scheme=="const_tm" || scheme=="sqrt_tm"){
       // assure that L is not larger than ~lambda/3 (i.e. 2*pi/(3*k)).
-      // This estimate might be bad since E is only the photon energy.
       if (L<sqrt(2./Energy))
          L=sqrt(2./Energy);
 
@@ -108,9 +112,9 @@ int main (int argc, char** argv){
       if( N<r/L)
          N=r/L;
    }
-
+  
    // the function below creates a mesh using the molecular structure.
-   tetrahedralise_sphere(mesh, geometry, angular_creator, r, scheme, p, VolConst, L, N);
+   tetrahedralise_sphere(mesh, dyson.geometry, angular_creator, r, scheme, p, VolConst, L, N);
    
    int order=cl("order", 1);
  
@@ -141,14 +145,14 @@ int main (int argc, char** argv){
       com_x.first=true;
       com_y.first=true;
       com_z.first=true;
-      for (unsigned int atom=0;atom<geometry.size(); atom++){
-         com_x.second+=geometry[atom](0);
-         com_y.second+=geometry[atom](1);
-         com_z.second+=geometry[atom](2);
+      for (unsigned int atom=0;atom<dyson.geometry.size(); atom++){
+         com_x.second+=dyson.geometry[atom](0);
+         com_y.second+=dyson.geometry[atom](1);
+         com_z.second+=dyson.geometry[atom](2);
       }
-      com_x.second/=geometry.size();
-      com_y.second/=geometry.size();
-      com_z.second/=geometry.size();
+      com_x.second/=dyson.geometry.size();
+      com_y.second/=dyson.geometry.size();
+      com_z.second/=dyson.geometry.size();
       InfElemBuilder builder(mesh);
       builder.build_inf_elem(com_x, com_y, com_z, 
                              false,  false,  false,
@@ -178,12 +182,6 @@ int main (int argc, char** argv){
    // Create the systems needed here: 
    // \p eigen_system solves the 1-p SE for the free electron
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
-   // \p ESP solves a simple matrix equation for the electrostatic potential;
-   //   this system is for illustrative purposes only.
-   LinearImplicitSystem & ESP = equation_systems.add_system<LinearImplicitSystem> ("ESP");
-   // \p DO solves a simple matrix equation for the dyson orbital, also for illustrative purposes
-   //   but here also some important options are set: the energy of the free electron and othels.
-   LinearImplicitSystem & DO = equation_systems.add_system<LinearImplicitSystem> ("DO");
 
    // set the parameters of the calculation now as (globally available) paramers:
    equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
@@ -195,14 +193,36 @@ int main (int argc, char** argv){
    // Declare the system variables.
    // Adds the variables to the different equation systems.
    eigen_system.add_variable("phi", fe_type);
-   ESP.add_variable("esp", fe_type);
-   DO.add_variable("do", fe_type);
  
    // Give the system a pointer to the matrix assembly
    // function defined below.
    eigen_system.attach_assemble_function (assemble_InfSE);
-   ESP.attach_assemble_function (assemble_ESP);
-   DO.attach_assemble_function (assemble_DO);
+   if (pictorious){
+      // \p ESP solves a simple matrix equation for the electrostatic potential;
+      //   this system is for illustrative purposes only.
+      LinearImplicitSystem & ESP = equation_systems.add_system<LinearImplicitSystem> ("ESP");
+      // \p DO solves a simple matrix equation for the dyson orbital, also for illustrative purposes
+      //   but here also some important options are set: the energy of the free electron and othels.
+      LinearImplicitSystem & DO = equation_systems.add_system<LinearImplicitSystem> ("DO");
+
+      ESP.add_variable("esp", fe_type);
+      DO.add_variable("do", fe_type);
+
+      ESP.attach_assemble_function (assemble_ESP);
+      DO.attach_assemble_function (assemble_DO);
+
+      ESP.init();
+      DO.init();
+   
+      // In Do.solve(): set energy-offset and dyson norm
+      DO.solve(); 
+      ESP.solve();
+
+      if (infel) 
+         // set the ESP as initial guess for solution vector.
+         // does not work for finite element due to different boundary conditions.
+         eigen_system.eigen_solver->set_initial_space(*ESP.solution);
+   }
 
    eigen_system.set_eigenproblem_type(GHEP);
    //eigen_system.set_eigenproblem_type(GNHEP);
@@ -228,57 +248,25 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real> ("num_NN") = num_NN;
    Real gamma=cl("gamma",0.0);
    equation_systems.parameters.set<Real> ("gamma") = gamma;
-   equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = geometry;
+   equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = dyson.geometry;
    equation_systems.parameters.set<bool> ("cap") = cap;
+
+   equation_systems.parameters.set<Real>("energy")=Energy;
+   equation_systems.parameters.set<Number>("momentum")=sqrt((Energy)*2.);
+   equation_systems.parameters.set<Real>("E_do")=dyson.get_energy();
 
    // Prints information about the system to the screen.
    //equation_systems.print_info();
          
-   // Initialize the data structures ESP and DO, eigen_system is treated
-   // after solving DO since it provides some required information.
-   ESP.init();
-   DO.init();
-   
-   // In Do.solve(): set energy-offset and dyson norm
-   DO.solve(); 
-   ESP.solve();
-
-   // the position of spectrum needs to be set after solving \p DO since it sets the
-   // value of kinetic energy.
-   //const std::string spect = cl("spect","r");
-   //f (spect=="sm"){
-   //  eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_MAGNITUDE);
-   //
-   //lse if (spect=="lm"){
-   //  eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_MAGNITUDE);
-   //
-   //lse if (spect=="sr"){
-   //  eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_REAL);
-   //
-   //lse if (spect=="lr"){
-   //  eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_REAL);
-   //
-   //lse if (spect=="si"){
-   //  eigen_system.eigen_solver->set_position_of_spectrum(SMALLEST_IMAGINARY);
-   //}
-   //else if (spect=="li"){
-   //   eigen_system.eigen_solver->set_position_of_spectrum(LARGEST_IMAGINARY);
-   //}
-
    // Initialize the data structures for the equation system.
    eigen_system.init();
-   Real energy = E -equation_systems.parameters.get<Real>("E_do");
+   //Real energy = E -equation_systems.parameters.get<Real>("E_do");
+   libmesh_assert(Energy ==E -equation_systems.parameters.get<Real>("E_do"));
 
-   eigen_system.eigen_solver->set_position_of_spectrum( energy);
+   eigen_system.eigen_solver->set_position_of_spectrum(
+                          equation_systems.parameters.get<Real>("energy"));
  
-   // If not set in \p position_of_spectrum, set the photon energy:
-   // else: eigenvalues are kinetic energy themselves.
-   equation_systems.parameters.set<Real>("energy")=energy;
-   equation_systems.parameters.set<Number>("momentum")=sqrt(energy*2.);
-   out<<" momentum= "<<equation_systems.parameters.get<Number>("momentum")<<std::endl;
-   out<<" energy= "<<equation_systems.parameters.get<Real>("energy")<<std::endl;
-
-    // add boundary conditions if not infinite elements used. 
+   // add boundary conditions if not infinite elements used. 
    if (not infel){
       std::set<unsigned int> dirichlet_dof_ids;
       get_dirichlet_dofs(equation_systems, "EigenSE" ,dirichlet_dof_ids);
@@ -288,12 +276,7 @@ int main (int argc, char** argv){
    // print the energy values: photon energy, dyson orbital energy and kinetic energy
    out<<"E_ph: "<<cl("Energy",0.0)<<"  ";
    out<<"E_do: "<<equation_systems.parameters.get<Real>("E_do")<<"  ";
-   out<<"E_kin:"<<energy<<std::endl;
-
-   if (infel)
-      // set the ESP as initial guess for solution vector.
-      // does not work for finite element due to different boundary conditions.
-      eigen_system.eigen_solver->set_initial_space(*ESP.solution);
+   out<<"E_kin:"<<Energy<<std::endl;
 
    // set in addition set a spectral transformation to stabilise the numerical scheme.
    SlepcEigenSolver<Number>* solver = 
@@ -336,11 +319,13 @@ int main (int argc, char** argv){
             equation_systems.reinit();
          }
       }
-      // reinitialise and estimate the esp-system
-      //ESP.reinit();
-      ESP.solve();
-      //DO.reinit();
-      DO.solve();
+     // reinitialise and estimate the esp-system
+     // if (pictorious){
+     //    //ESP.reinit();
+     //    ESP.solve();
+     //    //DO.reinit();
+     //    DO.solve();
+     // }
    }
    else
       // else: simply solve the system
@@ -352,11 +337,13 @@ int main (int argc, char** argv){
    std::cout << "Number of converged eigenpairs: " << nconv << "\n" << std::endl;
    
    std::ostringstream eigenvector_output_name;
-   eigenvector_output_name<< "esp.cube";
-   cube_io(equation_systems, geometry, eigenvector_output_name.str(), "ESP");
-   eigenvector_output_name.str(std::string());
-   eigenvector_output_name<< "do.cube";
-   cube_io(equation_systems, geometry, eigenvector_output_name.str(), "DO");
+   if (pictorious){
+      eigenvector_output_name<< "esp.cube";
+      cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "ESP");
+      eigenvector_output_name.str(std::string());
+      eigenvector_output_name<< "do.cube";
+      cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "DO");
+   }
 
    // Write the eigen vector to file.
    nconv=std::min(nconv, nev);
@@ -381,7 +368,7 @@ int main (int argc, char** argv){
       eigenvector_output_name.str(std::string());
       //eigenvector_output_name<< "phi-"<<i <<".cube";
       eigenvector_output_name<< "phi-"<<i <<".line";
-      //cube_io(equation_systems, geometry, eigenvector_output_name.str(), "EigenSE");
+      //cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE");
       line_out(equation_systems, eigenvector_output_name.str(), "EigenSE");
    }
    if (nconv==0){
@@ -409,11 +396,11 @@ int main (int argc, char** argv){
    }
    out<<"norm of DO: ";
    out<< sqrt(norm_DO(equation_systems, false))<<std::endl;
-   out<<" exact: "<<equation_systems.parameters.get<Real>("DOnorm")<<std::endl;
+   out<<" exact: "<<dyson.get_norm()<<std::endl;
 
    // this will become an option for the input later.
-   bool spherical_analysis=true;
-   if (spherical_analysis){
+   //bool spherical_analysis=true;
+   if (spherical_analysis>=0){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
          equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);

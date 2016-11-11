@@ -60,6 +60,51 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, s
    #endif // LIBMESH_HAVE_TETGEN
 }
 
+std::pair<int, Real> chose_scheme(int circle, int N, Real L, Real p, Real r_max, std::string scheme){
+   Real scale;
+   int pts_circle;
+   if (scheme=="son"){
+      scale=L*circle/(N-circle+L*N/r_max);
+      pts_circle=(int)(12.5/ (1.- (circle-1.)/circle*(N-circle+ L*N/r_max)/(N-circle+1.+L*N/r_max) )
+                           / (1.- (circle-1.)/circle*(N-circle+ L*N/r_max)/(N-circle+1.+L*N/r_max)));
+   }
+   else if( scheme=="tm"){
+      Real power=pow((Real)N/circle,p);
+      scale=L*circle/( power* (L*N/r_max-1.)+1. );
+      pts_circle=(int)(12.5/ (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
+                                                   /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.) )
+                           / (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
+                                                   /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.)));
+   }
+   else if( scheme=="tm_300"){
+      Real power=pow((Real)N/circle,p);
+      scale=L*circle/(power* (L*N/r_max-1.)+1.);
+      pts_circle=std::min((int)(12.5/ (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
+                                                   /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.) )
+                           / (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
+                                                   /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.)))
+                     ,300);
+   }
+   else if (scheme == "const"){
+      scale=pow(L,circle)*r_max/pow(L,N);
+      pts_circle = std::min((int)(12.5*L*L/((1-L)*(1-L))), 300);
+   }
+   else if (scheme == "const_tm"){
+      scale=L*circle/( pow((Real)N/circle,p)* (L*N/r_max-1.)+1. );
+      pts_circle = std::min((int)(12.5*L*L/((1-L)*(1-L))), 300);
+   }
+   else if (scheme == "quadr" ){
+      scale=circle/N*r_max;
+      pts_circle=(int)(12.5*(circle*r_max*circle*r_max/(N*N)));
+   }
+   else if (scheme == "sqrt_tm" ){
+      scale=L*circle/( pow((Real)N/circle,p)* (L*N/r_max-1.)+1. );
+      pts_circle = (int)(40*sqrt(scale)); 
+   } 
+
+   return std::pair<int, Real>(pts_circle,scale);
+}
+
 std::vector<Point> fibonacci(unsigned int points_on_sphere){
    std::vector<Point> points(points_on_sphere);
    double x,y,z,r,phi;
@@ -127,37 +172,19 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, std::st
    //now, add further points to the mesh: The nodes are located on spheres (circle)
    // around the molecules; each sphere has a different radius (scale) in (0,r_max].
 
+   std::pair<int, Real> ball;
    //outermost loop: over different spheres
    for(unsigned int circle=1; circle<=N; circle++){
-      if (scheme=="son"){
-         scale=L*circle/(N-circle+L*N/r_max);
-         pts_circle=(int)(12.5/ (1.- (circle-1.)/circle*(N-circle+ L*N/r_max)/(N-circle+1.+L*N/r_max) )
-                              / (1.- (circle-1.)/circle*(N-circle+ L*N/r_max)/(N-circle+1.+L*N/r_max)));
-      }
-      else if( scheme=="tm"){
-         Real power=pow((Real)N/circle,p);
-         scale=L*circle/( power* (L*N/r_max-1.)+1. );
-         pts_circle=(int)(12.5/ (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
-                                                      /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.) )
-                              / (1.- (circle-1.)/circle* (power*(N*L/r_max-1.)+1.)
-                                                      /(pow(N/(circle-1.),p)*(N*L/r_max-1.)+1.)));
-      }
-      else if (scheme == "const"){
-         scale=pow(L,circle)*r_max/pow(L,N);
-         pts_circle = min((int)(12.5*L*L/((1-L)*(1-L))), 300);
-      }
-      else if (scheme == "const_tm"){
-         scale=L*circle/( pow((Real)N/circle,p)* (L*N/r_max-1.)+1. );
-         pts_circle = min((int)(12.5*L*L/((1-L)*(1-L))), 300);
-      }
-      else if (scheme == "quadr" ){
-         scale=circle/N*r_max;
-         pts_circle=(int)(12.5*(circle*r_max*circle*r_max/(N*N)));
-      }
-      else if (scheme == "sqrt_tm" ){
-         scale=L*circle/( pow((Real)N/circle,p)* (L*N/r_max-1.)+1. );
-         pts_circle = (int)(40*sqrt(scale)); 
-      } 
+      
+      // chose the number of points on the sphere and the radius according to the
+      // scheme requested by the user:
+      ball=chose_scheme(circle, N, L, p, r_max, scheme);
+      pts_circle=ball.first;
+      scale=ball.second;
+
+      libmesh_assert(pts_circle>0);
+      libmesh_assert(scale>0.);
+
       // out<<" sphere nr "<< circle; // out<<"  "<<scale;
       // out<<"  "<<pts_circle<<std::endl;
       if (creator=="fibonacci")
@@ -249,6 +276,9 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, std::st
             point[it]*=scale;
             point[it]+=geometry[i];
             if (i==closest(geometry, point[it])){
+               out<<"mesh:  "<<point[it](0)<<"  ";
+               out<<point[it](1)<<"  ";
+               out<<point[it](2)<<std::endl;
                mesh.add_point( point[it] );
             }
             // shift and scale back for use in the next round.

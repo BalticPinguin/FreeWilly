@@ -88,7 +88,7 @@ void getDyson(const char *filename, int namelength, std::vector<std::vector<doub
    delete[] DyOr;
 }
 
-double evalDO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt){
+double eval_DO(const std::vector<std::vector<double> >& do_j, const std::vector<unsigned int>& l, const std::vector<double>& alpha, const std::vector<libMesh::Node>& geometry, const libMesh::Point pt){
    // evaluates the value of dyson orbital at x,y,z. I would consider 
    // this as quite efficient way.
    double angular, do_xyz=0;

@@ -478,24 +478,14 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    // The dimension that we are running.
    const unsigned int dim = mesh.mesh_dimension();
    
-   std::vector<std::vector<double> > do_j;
-   std::vector<unsigned int> l;
-   std::vector<double> alpha;
-   std::vector<Node> geometry= getGeometry(es.parameters.get<std::string>("DO_file"));
-   Real energy=0, normDO=0;
-   const char* filename=es.parameters.get<std::string>("DO_file").c_str();
-   int namelength=strlen(filename);
-   getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
-
-   es.parameters.set<Real>("DOnorm")=normDO;
-   es.parameters.set<Real>("E_do")=energy;
-
    // Get a reference to our system.
    LinearImplicitSystem & eigen_system = es.get_system<LinearImplicitSystem> (system_name);
 
    // Get a constant reference to the Finite Element type
    // for the first (and only) variable in the system.
    FEType fe_type = eigen_system.get_dof_map().variable_type(0);
+
+   DOrbit dyson(es.parameters.get<std::string>("DO_file"));
       
    // Build a Finite Element object of the specified type.  Since the
    // \p FEBase::build() member dynamically creates memory we will
@@ -582,7 +572,7 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
          // get the value of DO at q_point[qp]
-         do_val=evalDO(do_j, l, alpha, geometry, q_point[qp]);
+         do_val=dyson.evalDO(q_point[qp]);
          
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();

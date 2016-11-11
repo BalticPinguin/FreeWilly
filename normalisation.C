@@ -161,14 +161,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
    (*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
 
    // get the dyson orbital:
-   std::vector<std::vector<double> > do_j;
-   std::vector<unsigned int> l;
-   std::vector<double> alpha;
-   std::vector<Node> geometry= getGeometry(eq_sys.parameters.get<std::string>("DO_file"));
-   Real energy=0, normDO=0;
-   const char* filename=eq_sys.parameters.get<std::string>("DO_file").c_str();
-   int namelength=strlen(filename);
-   getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
+   DOrbit dyson (eq_sys.parameters.get<std::string>("DO_file"));
 
    const FEType & fe_type = es1.get_dof_map().variable_type(var1);
    std::vector<dof_id_type> dof_indices;
@@ -210,7 +203,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
       // Begin the loop over the Quadrature points.
       for (unsigned int qp=0; qp<n_qp; qp++){
          Number u_h = 0.;
-         Number do_val=evalDO(do_j, l, alpha, geometry, q_point[qp]);
+         Number do_val=dyson.evalDO(q_point[qp]);
                
          Point mapped_qp = FEInterface::inverse_map(dim, fe_type, elem, q_point[qp], TOLERANCE, true); 
          FEComputeData fe_data(eq_sys, mapped_qp);
@@ -266,17 +259,10 @@ Number norm_DO(EquationSystems& eq_sys, bool infinite){
    //parallel_object_only(); --> can not be used here.
 
    Number overlap=0;
-   System & es = eq_sys.get_system<System> ("DO");
+   System & es = eq_sys.get_system<System> ("EigenSE");
 
    // get the dyson orbital:
-   std::vector<std::vector<double> > do_j;
-   std::vector<unsigned int> l;
-   std::vector<double> alpha;
-   std::vector<Node> geometry= getGeometry(eq_sys.parameters.get<std::string>("DO_file"));
-   Real energy=0, normDO=0;
-   const char* filename=eq_sys.parameters.get<std::string>("DO_file").c_str();
-   int namelength=strlen(filename);
-   getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
+   DOrbit dyson (eq_sys.parameters.get<std::string>("DO_file"));
 
    const FEType & fe_type = es.get_dof_map().variable_type(0);
    FEBase * cfe = libmesh_nullptr;
@@ -313,7 +299,7 @@ Number norm_DO(EquationSystems& eq_sys, bool infinite){
 
       // Begin the loop over the Quadrature points.
       for (unsigned int qp=0; qp<n_qp; qp++){
-         Number do_val=evalDO(do_j, l, alpha, geometry, q_point[qp]);
+         Number do_val=dyson.evalDO(q_point[qp]);
          overlap += JxW[qp] * TensorTools::norm_sq(do_val);
 
       }
@@ -325,29 +311,17 @@ Number norm_DO(EquationSystems& eq_sys, bool infinite){
 }
 
 Real normalise(EquationSystems& equation_systems, bool infel){
-   CondensedEigenSystem& eigen_system=equation_systems.get_system<CondensedEigenSystem> ("EigenSE");
-   LinearImplicitSystem & DO = equation_systems.get_system<LinearImplicitSystem> ("DO");
    //normalise eigen_system:
-   Number norm_phi=0;
-   if (!infel)
-      norm_phi=eigen_system.calculate_norm( *eigen_system.solution, 0, L2);
+   Number norm_phi=calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP);
    out<<"norm of phi: ";
-   out<< calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP) <<std::endl;
-   norm_phi=calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP);
+   out<< sqrt(norm_phi) <<std::endl;
 
-   Real normDO = 0;
-   if (!infel) 
-      normDO= DO.calculate_norm(*DO.solution, 0, L2);
-   out<<"norm of DO:   "<< normDO <<"  ";
-   //out<< sqrt(calculate_overlap(equation_systems, "DO", 0, "DO", 0, OVERLAP))<<"  ";
+   out<<"norm of DO:   ";
    out<< sqrt(norm_DO(equation_systems, true))<<std::endl;
 
    Real overlap=0;
    //compute <DO| mu |phi>
-   //overlap=calculate_overlap(equation_systems, "DO", 0, "EigenSE", 0, LENGTH);
-   //out <<"solution overlap"<< overlap<<std::endl;
    overlap = overlap_DO(equation_systems, "EigenSE", 0, LENGTH);
-   out <<"direct overlap "<< overlap<<std::endl;
    
    // abs needed for type conversion.
    return overlap; ///std::abs((norm_phi*conj(norm_phi)));
