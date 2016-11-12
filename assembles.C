@@ -118,16 +118,16 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    bool cap=es.parameters.get<bool >("cap");
    Real radius=es.parameters.get<Real>("radius");
    Real gamma =es.parameters.get<Real>("gamma");
-   Real num_NN=es.parameters.get<Real>("num_NN");
+   Real r_0=es.parameters.get<Real>("r_0");
    std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
    bool quadrature = es.parameters.get<bool>("quadrat_print");
 
    struct ESP esp;
    Read(esp, potfile);
 
-   //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, num_NN);
-   RBFInterpolation<3> potential(mesh.comm(), 9, num_NN, mol_geom);
-   //NeNeInterpolation<3> potential(mesh.comm(), 1, num_NN, mol_geom);
+   //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
+   RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -328,7 +328,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    // Get a reference to our system.
    LinearImplicitSystem & eigen_system = es.get_system<LinearImplicitSystem> (system_name);
 
-   Real num_NN=es.parameters.get<Real>("num_NN");
+   Real r_0=es.parameters.get<Real>("r_0");
    const std::string & potfile = es.parameters.get<std::string>("potential");
    std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
    bool cap=es.parameters.get<bool >("cap");
@@ -338,9 +338,9 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    struct ESP esp;
    Read(esp, potfile);
 
-   //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, num_NN);
-   RBFInterpolation<3> potential(mesh.comm(), 9, num_NN, mol_geom);
-   //NeNeInterpolation<3> potential(mesh.comm(), 1, num_NN, mol_geom);
+   //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
+   RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);

@@ -21,7 +21,7 @@ p=1.0            # if scheme==tm, this option is evaluated.
 maxVol= 800.
 bending= 20.
 circles= 5
-num_NN= 5    # number of neighbours considered in the interpolation. Default: 12
+r_0= 0.5    # number of neighbours considered in the interpolation. Default: 12
 maxiter=700 #default-value.
 
 refine = false  # flag: mesh refinement allowed or not?

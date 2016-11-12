@@ -88,6 +88,8 @@ int main (int argc, char** argv){
    bool quadrature_print = cl("print_quadrature", false);
    bool pictorious = cl("pictorious", false);
    int spherical_analysis= cl("spherical_analysis", -1);
+   Real r_0=cl("r_0",12.);
+   Real gamma=cl("gamma",0.0);
 
    // it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
@@ -194,6 +196,35 @@ int main (int argc, char** argv){
    // Adds the variables to the different equation systems.
    eigen_system.add_variable("phi", fe_type);
  
+   eigen_system.set_eigenproblem_type(GHEP);
+   //eigen_system.set_eigenproblem_type(GNHEP);
+   
+   // Set necessary parametrs used in EigenSystem::solve(),
+   // i.e. the number of requested eigenpairs \p nev and the number
+   // of basis vectors \p ncv used in the solution algorithm. Note that
+   // ncv >= nev must hold and ncv >= 2*nev is recommended.
+   equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
+   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
+   
+   // chose among the solver options.  
+   eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
+   //eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
+   //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
+   //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
+   
+   // Set the solver tolerance and the maximum number of iterations.
+   equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
+   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = maxiter;
+   equation_systems.parameters.set<Real> ("radius") = r;
+   equation_systems.parameters.set<Real> ("r_0") = r_0;
+   equation_systems.parameters.set<Real> ("gamma") = gamma;
+   equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = dyson.geometry;
+   equation_systems.parameters.set<bool> ("cap") = cap;
+
+   equation_systems.parameters.set<Real>("energy")=Energy;
+   equation_systems.parameters.set<Number>("momentum")=sqrt((Energy)*2.);
+   equation_systems.parameters.set<Real>("E_do")=dyson.get_energy();
+
    // Give the system a pointer to the matrix assembly
    // function defined below.
    eigen_system.attach_assemble_function (assemble_InfSE);
@@ -223,37 +254,6 @@ int main (int argc, char** argv){
          // does not work for finite element due to different boundary conditions.
          eigen_system.eigen_solver->set_initial_space(*ESP.solution);
    }
-
-   eigen_system.set_eigenproblem_type(GHEP);
-   //eigen_system.set_eigenproblem_type(GNHEP);
-   
-   // Set necessary parametrs used in EigenSystem::solve(),
-   // i.e. the number of requested eigenpairs \p nev and the number
-   // of basis vectors \p ncv used in the solution algorithm. Note that
-   // ncv >= nev must hold and ncv >= 2*nev is recommended.
-   equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
-   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
-   
-   // chose among the solver options.  
-   eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
-   //eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
-   //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
-   //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
-   
-   // Set the solver tolerance and the maximum number of iterations.
-   equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
-   equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = maxiter;
-   equation_systems.parameters.set<Real> ("radius") = r;
-   Real num_NN=cl("num_NN",12.);
-   equation_systems.parameters.set<Real> ("num_NN") = num_NN;
-   Real gamma=cl("gamma",0.0);
-   equation_systems.parameters.set<Real> ("gamma") = gamma;
-   equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = dyson.geometry;
-   equation_systems.parameters.set<bool> ("cap") = cap;
-
-   equation_systems.parameters.set<Real>("energy")=Energy;
-   equation_systems.parameters.set<Number>("momentum")=sqrt((Energy)*2.);
-   equation_systems.parameters.set<Real>("E_do")=dyson.get_energy();
 
    // Prints information about the system to the screen.
    //equation_systems.print_info();

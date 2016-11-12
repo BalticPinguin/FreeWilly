@@ -175,7 +175,6 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, std::st
    std::pair<int, Real> ball;
    //outermost loop: over different spheres
    for(unsigned int circle=1; circle<=N; circle++){
-      
       // chose the number of points on the sphere and the radius according to the
       // scheme requested by the user:
       ball=chose_scheme(circle, N, L, p, r_max, scheme);
@@ -276,9 +275,9 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, std::st
             point[it]*=scale;
             point[it]+=geometry[i];
             if (i==closest(geometry, point[it])){
-               out<<"mesh:  "<<point[it](0)<<"  ";
-               out<<point[it](1)<<"  ";
-               out<<point[it](2)<<std::endl;
+              // out<<"mesh:  "<<point[it](0)<<"  ";
+              // out<<point[it](1)<<"  ";
+              // out<<point[it](2)<<std::endl;
                mesh.add_point( point[it] );
             }
             // shift and scale back for use in the next round.
