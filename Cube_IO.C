@@ -85,17 +85,20 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    mol_center(0)=mol_center(0)/geom.size();
    mol_center(1)=mol_center(1)/geom.size();
    mol_center(2)=mol_center(2)/geom.size();
+   
+   Real r = 2.*es.parameters.get<Real>("radius");
+   Real lambda = 1./es.parameters.get<Real>("current frequency");
 
-   Real dx=0.2;
-   Real dy=0.2;
-   Real dz=0.2;
-   unsigned int nx=30+(max(0)-min(0))*10;
-   unsigned int ny=30+(max(1)-min(1))*10;
-   unsigned int nz=30+(max(2)-min(2))*10;
+   Real dx=lambda/6.;
+   Real dy=lambda/6.;
+   Real dz=lambda/6.;
+   unsigned int nx=(2*r+(max(0)-min(0)))/dx;
+   unsigned int ny=(2*r+(max(1)-min(1)))/dy;
+   unsigned int nz=(2*r+(max(2)-min(2)))/dz;
 
-   Point start(mol_center(0)-dx*nx/2,
-               mol_center(1)-dy*ny/2,
-               mol_center(2)-dz*nz/2);
+   Point start(mol_center(0)-dx*nx/2.,
+               mol_center(1)-dy*ny/2.,
+               mol_center(2)-dz*nz/2.);
 
    re_out<<std::setw(12)<<std::setprecision(6)<<"   "<<start(0);
    re_out<<std::setw(12)<<std::setprecision(6)<<"   "<<start(1);
@@ -310,6 +313,44 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
    Point q_point;
    for (int pts=1;pts<=N;pts++) {
       q_point = Point(  pts*r/N, 0., 0.);
+      num_line++;
+      
+      const Elem * elem=pt_lctr(q_point);
+      if(elem==NULL){
+         //abs_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
+         //im_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
+         //re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<0.0;
+      }
+      else{
+
+         dof_map.dof_indices (elem, dof_indices);
+  
+         Point map_point=FEInterface::inverse_map(3, fe_type, elem, q_point, TOLERANCE, true); 
+         FEComputeData data(es, map_point); 
+         FEInterface::compute_data(3, fe_type, elem, data);
+      
+         //compute solution value at that point.
+         Number soln=0;
+         if (elem->infinite())
+            cfe = inf_fe.get();
+         else
+            cfe = fe.get();
+         cfe->reinit(elem);
+         unsigned int n_sf= cfe->n_shape_functions();
+         for (unsigned int i=0; i<n_sf; i++){
+            soln+=(*solution_vect)(dof_indices[i])*data.shape[i];
+         }
+         re_out<<" "<<std::setw(12)<<q_point(0);
+         im_out<<" "<<std::setw(12)<<q_point(0);
+         abs_out<<" "<<std::setw(12)<<q_point(0);
+         re_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::real(soln)<<std::endl;
+         im_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::imag(soln)<<std::endl;
+         abs_out<<"  "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::abs(soln)<<std::endl;
+
+      }
+   }
+   for (int pts=0;pts<N;pts++) {
+      q_point = Point( r+N/((N-pts)*r), 0., 0.);
       num_line++;
       
       const Elem * elem=pt_lctr(q_point);
