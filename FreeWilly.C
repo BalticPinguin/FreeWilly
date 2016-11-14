@@ -98,6 +98,10 @@ int main (int argc, char** argv){
    DOrbit dyson(molec_file);
    Real Energy= E-dyson.get_energy();
 
+   // make sure the box contains at least two waves:
+   if(r<= 2.*pi*sqrt(2/Energy))
+      r= 2.*pi*sqrt(2/Energy);
+
    // make sure that the distance between two spheres is 
    // at least ~ 1/(4*lambda)
    if (N<=(int)(sqrt(Energy)*r/17.8))
@@ -114,7 +118,7 @@ int main (int argc, char** argv){
       if( N<r/L)
          N=r/L;
    }
-  
+
    // the function below creates a mesh using the molecular structure.
    tetrahedralise_sphere(mesh, dyson.geometry, angular_creator, r, scheme, p, VolConst, L, N);
    
@@ -221,9 +225,16 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = dyson.geometry;
    equation_systems.parameters.set<bool> ("cap") = cap;
 
+   // E=0.5* k*k   -> k=sqrt(2*E)
+   // k= 2*pi*f
+   // f=1/lambda   -> lambda=2*pi/k=2*pi/sqrt(2E)=pi*sqrt(2/E)
+   // f = sqrt(E/2)/pi
+   
    equation_systems.parameters.set<Real>("energy")=Energy;
    equation_systems.parameters.set<Number>("momentum")=sqrt((Energy)*2.);
    equation_systems.parameters.set<Real>("E_do")=dyson.get_energy();
+
+   equation_systems.parameters.print();
 
    // Give the system a pointer to the matrix assembly
    // function defined below.
@@ -260,8 +271,6 @@ int main (int argc, char** argv){
          
    // Initialize the data structures for the equation system.
    eigen_system.init();
-   //Real energy = E -equation_systems.parameters.get<Real>("E_do");
-   libmesh_assert(Energy ==E -equation_systems.parameters.get<Real>("E_do"));
 
    eigen_system.eigen_solver->set_position_of_spectrum(
                           equation_systems.parameters.get<Real>("energy"));
@@ -364,7 +373,7 @@ int main (int argc, char** argv){
       //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
   
       // frequency=k/2*pi.
-      equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);
+      equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
       eigenvector_output_name.str(std::string());
       //eigenvector_output_name<< "phi-"<<i <<".cube";
       eigenvector_output_name<< "phi-"<<i <<".line";
@@ -374,7 +383,7 @@ int main (int argc, char** argv){
    if (nconv==0){
       // that one can look at the mesh and some properties...
       #ifdef LIBMESH_HAVE_EXODUS_API
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
          if (infel)
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
          else
@@ -389,7 +398,7 @@ int main (int argc, char** argv){
       for(unsigned int i=0; i<nconv; i++){
          out<<" for the solution nr "<<i<<":"<<std::endl;
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
          intensity=normalise(equation_systems, infel);
          out<<"intensity:  "<<intensity<<std::endl;
       }
@@ -403,7 +412,7 @@ int main (int argc, char** argv){
    if (spherical_analysis>=0){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/pi);
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
          ProjectSphericals (equation_systems, 5, i);
       }
    }
