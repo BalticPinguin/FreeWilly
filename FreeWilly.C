@@ -81,6 +81,8 @@ int main (int argc, char** argv){
    Real E = cl("Energy",0.0);
    Real VolConst= cl("maxVol", 1./(2*E*E*E));
    Real L=cl("bending", 2.);
+   Real r_0=cl("r_0",12.);
+   Real gamma=cl("gamma",0.0);
    int N=cl("circles", 5);
    int maxiter=cl("maxiter", 700);
    bool cap = cl("cap", false);
@@ -88,8 +90,7 @@ int main (int argc, char** argv){
    bool quadrature_print = cl("print_quadrature", false);
    bool pictorious = cl("pictorious", false);
    int spherical_analysis= cl("spherical_analysis", -1);
-   Real r_0=cl("r_0",12.);
-   Real gamma=cl("gamma",0.0);
+   bool cubes = cl("cubes", false);
 
    // it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
@@ -233,6 +234,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real>("energy")=Energy;
    equation_systems.parameters.set<Number>("momentum")=sqrt((Energy)*2.);
    equation_systems.parameters.set<Real>("E_do")=dyson.get_energy();
+   equation_systems.parameters.set<Real>("current frequency")=sqrt(Energy/2.)/pi;
 
    equation_systems.parameters.print();
 
@@ -346,7 +348,7 @@ int main (int argc, char** argv){
    std::cout << "Number of converged eigenpairs: " << nconv << "\n" << std::endl;
    
    std::ostringstream eigenvector_output_name;
-   if (pictorious){
+   if (pictorious && cubes){
       eigenvector_output_name<< "esp.cube";
       cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "ESP");
       eigenvector_output_name.str(std::string());
@@ -374,10 +376,13 @@ int main (int argc, char** argv){
   
       // frequency=k/2*pi.
       equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
+      if(cubes){
+         eigenvector_output_name.str(std::string());
+         eigenvector_output_name<< "phi-"<<i <<".cube";
+         cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE");
+      }
       eigenvector_output_name.str(std::string());
-      //eigenvector_output_name<< "phi-"<<i <<".cube";
       eigenvector_output_name<< "phi-"<<i <<".line";
-      //cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE");
       line_out(equation_systems, eigenvector_output_name.str(), "EigenSE");
    }
    if (nconv==0){

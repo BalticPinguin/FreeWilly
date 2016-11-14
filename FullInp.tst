@@ -9,6 +9,7 @@ print_quadrature = false # whether quadrature points should be printed or not
 pictorious = false # if DO and ESP should be computed explicitly
 spherical_analysis= -1 # if a projection onto spherical waves should be performed 
                        # number gives maximum l to be used
+cubes=true      # whether or not to make cube files
 
 cap=false # switches complex absorbing boundaries on and off.
 gamma=2   # parameter to scale the cap.
