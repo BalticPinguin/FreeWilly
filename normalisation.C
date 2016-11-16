@@ -332,29 +332,43 @@ Number Y_lm(Real x, Real y, Real z, int l, int m){
    //http://www.ppsloan.org/publications/StupidSH36.pdf
    //12.5663706144=4*pi
    libmesh_assert(l>=abs(m));
+   // valid for m>0 and m<0; the Legendre polynomial always uses m>0.
    Real K_lm=sqrt((2*l+1)*factorial(l-abs(m))/(12.5663706144*factorial(l+abs(m))));
    Real* value;
+   value=new Real[l+1];
    double r=sqrt(x*x+y*y+z*z),
             thetaval=0,
             phival=0;
-   double* theta=&thetaval;
+   double theta[1];
 
    if( r<1e-12){
-      thetaval=0;
+      theta[0]=0;
       phival=0;
    }
    else{
-      thetaval=acos ( z/r ); //0-> pi
+      theta[0]=acos ( z/r ); //0-> pi
       phival=atan2(y,x); //-pi -> pi
    }
-   thetaval=cos(thetaval); // make cos(theta) out of it.
+   theta[0]=cos(theta[0]); // make cos(theta) out of it.
 
-   if (m==0){
-      value = p_polynomial_value(1, l, theta );
-      return value[0]*K_lm*Number(1.,0.);
-   }
-   value= p_polynomial_value(1, l, theta);
-   return value[0]*K_lm* Number(cos(m*phival),sin(m*phival));
+   //value = p_polynomial_value(1, l, theta );
+   // value is not normalised!
+   if (m<0)
+      value = pm_polynomial_value ( 1, l, -m, theta);
+   else
+      // this is against the convention in QM: for m>0 && m%2==1
+      // it should have the negative of it; I don't care at this point.
+      value = pm_polynomial_value ( 1, l, m, theta);
+
+   Real val=value[l];
+
+   delete [] value;
+   //l=2
+   //if( abs(value-(3*theta^2.-1.)/2.)>1e-5)
+   //   cout<<"differenc  "<<value<<"  "<<(3*theta^2.-1.)/2.<<std::endl;
+   if (m==0)
+      return val*K_lm*Number(1.,0.);
+   return val*K_lm* Number(cos(m*phival),sin(m*phival));
 }
 
 Number evalSphWave(int l, int m, Point qp, Real k){

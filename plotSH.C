@@ -27,16 +27,15 @@ void PlotSphericals (EquationSystems& es, int l_max){
    Number tot_proj=0, this_proj;
    int m;
    libmesh_assert_greater(l_max,0);
-   // make some nice output:
-   out<<"====================================";
-   out<<std::endl;
-   for( int l=0; l<=l_max; l++){
-      for(m=-l; m<=l; m++){
+   //for( int l=0; l<=l_max; l++){
+      //for(m=-l; m<=l; m++){
          std::ostringstream output;
+         int l=2;
+         m=0;
          output<<"-"<<l<<"_"<<m<"_.cube";
          cube_sphere(es, output.str(), l, m);
-      }
-   }
+      //}
+   //}
 }
 
 void cube_sphere(EquationSystems& es, std::string output, int l, int m){

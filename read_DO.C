@@ -166,17 +166,18 @@ double solHar2(double x,double y,double z, unsigned int l, unsigned int mpl){
    int m=(int)(mpl-l); // m=m+l-l.     //12.5663706144=4*pi
    double K_lm=sqrt((2*l+1)*factorial(l-abs(m))/(12.5663706144*factorial(l+abs(m))));
    double* value;
+   value=new double[l+1];
    double r=sqrt(x*x+y*y+z*z),
             thetaval=0,
             phival=0;
-   double* theta=&thetaval;
+   double theta[1];
 
    if( r<1e-12){
-      thetaval=0;
+      theta[0]=0;
       phival=0;
    }
    else{
-      thetaval=acos ( z/r ); //0-> pi
+      theta[1]=acos ( z/r ); //0-> pi
       phival=atan2(y,x); //-pi -> pi
    }
    // I am not interested in spherical Harmonics but solid Harmonics:
@@ -184,23 +185,24 @@ double solHar2(double x,double y,double z, unsigned int l, unsigned int mpl){
    if (l!=0){
       K_lm=K_lm*pow(r,l);
    }
-   thetaval=cos(thetaval); // make cos(theta) out of it.
-   //std::cout<<"theta and phi: "<<*theta<<"  "<<phival;
-   //std::cout<<"  "<<x<<"  "<<y<<"  "<<z<<std::endl;
-   //std::cout<<"        K:     "<<K_lm<<std::endl;
-   //p_polynomial_value(# evaluation_points ,l-number, vector of evaluation_points);
-   if (mpl==l){ // m=0
-      value = p_polynomial_value(1, l, theta );
-      return (*value)*K_lm;
-   }
-   K_lm*=1.41421356237; //*sqrt(2)
-   if (mpl>l){
-      value= p_polynomial_value(1, l, theta);
-      return (*value)*K_lm*cos(m*phival);
-   }
-   //if mpl<l
-   value =p_polynomial_value(1,l, theta);
-   return (*value)*K_lm*sin(-m*phival);
+   theta[0]=cos(theta[0]); // make cos(theta) out of it.
+
+   //evaluate associated legendre polynomial;
+   // it is defined only for m>=0 here, therefore need to distinguish
+   // three cases (following the convention in QM)
+   if (m<0)
+      value = pm_polynomial_value ( 1, l, -m, theta);
+   else
+      value = pm_polynomial_value ( 1, l, m, theta);
+   double val=value[l];
+   delete [] value;
+
+   if (m%2==1 && m>0)
+      // negative sign due to convention in QM
+      // for m<0 this doesn't come up.
+      val=-val;
+
+   return val*K_lm*sin(-m*phival);
 }
 
 double solHar(double x,double y,double z, unsigned int l, unsigned int m){
