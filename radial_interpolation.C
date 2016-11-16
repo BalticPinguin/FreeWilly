@@ -144,7 +144,7 @@ void RBFInterpolation<KDDim>::interpolate_field_data (const std::vector<std::str
 template <unsigned int KDDim>
 void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
                                                        const std::vector<size_t> & src_indices,
-                                                       const std::vector<Real>   & /*src_dist_sqr*/,
+                                                       const std::vector<Real>   & src_dist_sqr,
                                                        std::vector<Number>::iterator & out_it) const
 {
    // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
@@ -159,11 +159,16 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    Real* xd= new Real[n_src*KDDim];
    Real* fd= new Real[n_src*KDDim];
    Real max_fd=0;
+   Real maxDist=0;
    Real min_fd=_src_vals[src_indices[0]].real();
    // convert (input) vector to pointer-notation for rbf-functions:
    for (unsigned int i=0; i<n_src; i++){
       for (unsigned int j=0; j<KDDim; j++){
           xd[j+KDDim*i]=_src_pts[src_indices[i]](j)-pt(j);
+      }
+      for (unsigned int j=0; j<n_src; j++){
+         if(maxDist<(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm())
+            maxDist=(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm();
       }
       fd[i]=_src_vals[src_indices[i]].real();
       if(fd[i]>max_fd)
@@ -181,7 +186,8 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
      }
    }
  
-   Real r0=_power;
+   //Real r0=_power;
+   Real r0=1.3*maxDist;  // I hope this is a reasonable number...
    Real inner_range=1.2; // about half of the typical binding length...
    //Real outer_range=4.;  // 'far away' from any nucleus.
          
@@ -233,6 +239,7 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    //}
    else{
       // intermediate case: don't change parameters.
+
       try{
        w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
       }
@@ -240,9 +247,20 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       catch (int exc){
          // in the case of SVD-failure, use the weighted mean.
          libmesh_assert (exc == 1);
+         libmesh_warning("rbf");
          Real fi;
          const unsigned int four=4;
-         // just compute the mean...
+         if (src_dist_sqr[0]>r0){
+            // point is outside of the mesh
+            for (unsigned int v=0; v<n_fv; v++, ++out_it){
+               _vals[v] = fd[0]/(pt-_geom[closest]).norm()*
+                        (_src_pts[src_indices[0]]-_geom[closest]).norm();
+               *out_it = _vals[v];
+            }
+            return ;
+         }
+
+         // if point is inside the mesh: compute the mean...
          for(unsigned int i=0; i<std::min(n_src, four); i++){
             fi+=fd[i];
          }
