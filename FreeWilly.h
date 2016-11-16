@@ -124,5 +124,6 @@ libMesh::Number calculate_overlap(libMesh::EquationSystems& eq_sys,
                                   IntegralType int_type);
 
 void ProjectSphericals (libMesh::EquationSystems&, int ,int);
+void PlotSphericals (libMesh::EquationSystems& es, int l_max);
 
 #endif //define FREEWILLY_H

@@ -14,10 +14,9 @@ target	   := ./FrWll-$(METHOD)
 # File management.  This is where the source, header, and object files are
 # defined
 
-this_files	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C read_DO.C normalisation.C Cube_IO.C SlepcConfig.C
+this_files	:= FreeWilly.C assembles.C Mesh.C radial_interpolation.C NN_interpolation.C read_DO.C normalisation.C Cube_IO.C SlepcConfig.C plotSH.C
 fsu_files       := fsu_soft/r8lib.C fsu_soft/rbf_interp_nd.C fsu_soft/legendre_polynomial.C fsu_soft/sphere_lebedev_rule.C fsu_soft/sphere_design_rule.C grids/geodesic.C fsu_soft/fn_prb.C fsu_soft/besselj.C
 grd_files       := grids/Wom_gen.C grids/Wom_ev.C grids/Wom_md.C grids/Wom_me.C grids/Wom_mn.C 
-#   bas_pars_library/build/libbas_pars.a
 srcfiles        := $(this_files) $(fsu_files) $(grd_files) bas_pars_library/build/libbas_pars.a
 
 objects		:= $(patsubst %.C, %.$(obj-suffix), $(srcfiles))
