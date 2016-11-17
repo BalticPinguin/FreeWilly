@@ -126,8 +126,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
-   RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
-   //NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
+   //RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
+   NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -261,10 +261,10 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       for (unsigned int qp=0; qp<max_qp; qp++){
          if(quadrature){
             out<<"quadrature:  ";
-            out<<std::setw(18)<<q_point[qp](0)<<"  ";
-            out<<std::setw(18)<<q_point[qp](1)<<"  ";
-            out<<std::setw(18)<<q_point[qp](2)<<"  ";
-            out<<std::setw(18)<<potval[qp].real()<<"  "<<std::endl;
+            out<<std::setw(20)<<q_point[qp](0);
+            out<<std::setw(20)<<q_point[qp](1);
+            out<<std::setw(20)<<q_point[qp](2);
+            out<<std::setw(20)<<potval[qp].real()<<std::endl;
          }
          //out<<1/(q_point[qp].norm())<<std::endl;
          pot=potval[qp];
@@ -341,8 +341,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
-   RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
-   //NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
+   //RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
+   NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);

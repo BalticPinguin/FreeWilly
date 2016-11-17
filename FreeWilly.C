@@ -381,9 +381,9 @@ int main (int argc, char** argv){
          eigenvector_output_name<< "phi-"<<i <<".cube";
          cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE");
       }
-      eigenvector_output_name.str(std::string());
-      eigenvector_output_name<< "phi-"<<i <<".line";
-      line_out(equation_systems, eigenvector_output_name.str(), "EigenSE");
+      //eigenvector_output_name.str(std::string());
+      //eigenvector_output_name<< "phi-"<<i <<".line";
+      //line_out(equation_systems, eigenvector_output_name.str(), "EigenSE");
    }
    if (nconv==0){
       // that one can look at the mesh and some properties...
@@ -413,7 +413,6 @@ int main (int argc, char** argv){
    out<<" exact: "<<dyson.get_norm()<<std::endl;
 
    // this will become an option for the input later.
-   //bool spherical_analysis=true;
    if (spherical_analysis>=0){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
@@ -422,8 +421,8 @@ int main (int argc, char** argv){
       }
       eigpair = eigen_system.get_eigenpair(0);
       equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
-      PlotSphericals (equation_systems, 10);
    }
+   PlotSphericals (equation_systems, 10);
 
    // All done.
    return 0;

@@ -178,7 +178,6 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       minDist=maxDist/threshold;
       // discart the closest-lying points to make large r0 achievable
       // without running into numerical issues.
-      out<<"-->1"<<std::endl;
       for (unsigned int i=0; i<n_src; i++){
          noDrop=true;
          for (unsigned int j=0; j<i; j++){
@@ -202,7 +201,6 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       minDist=nearest/threshold;
       // discart the closest-lying points to make large r0 achievable
       // without running into numerical issues.
-      out<<"-->2"<<std::endl;
       for (unsigned int i=0; i<n_src; i++){
          noDrop=true;
          for (unsigned int j=0; j<src_ind.size(); j++){
@@ -221,7 +219,6 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    }
    else{ // this seems to be almost never reached...
       // don't throw away point: just use a reasonable r0
-      out<<"-->3"<<std::endl;
       r0=(minDist+nearest)/2.; // I hope this is a reasonable number...
       src_ind=src_indices;
    }
@@ -238,13 +235,6 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    }
    // Now set up the arrays for the interpolation library
    //r0=maxDist;
-
-   //out<<r0<<"  ";
-   //out<<pt.norm()<<"  ";
-   //out<<minDist<<"  ";
-   //out<<maxDist<<"  ";
-   //out<<nearest<<"  ";
-   //out<<n_src<<"  "<<std::endl;
 
    // xd= point values 
    Real* xd= new Real[n_src*KDDim];
@@ -297,10 +287,7 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
             fd[i]+=(Real)_geom[closest].id()/r;
          else
             fd[i]+=(Real)_geom[closest].id()*1e+7;
-         out<< _src_pts[src_ind[i]]<<"  "<<fd[i]<<"  ";
       }
-      out<<std::endl;
-      out<<"   "<<pt<<std::endl;
       //r0*=0.3;
 
       //poor mans error catching, since I have no idea how to catch it 
