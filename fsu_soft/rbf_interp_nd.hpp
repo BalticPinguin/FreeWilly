@@ -13,6 +13,7 @@ void phi1 ( int n, double r[], double r0, double v[] );
 void phi2 ( int n, double r[], double r0, double v[] );
 void phi3 ( int n, double r[], double r0, double v[] );
 void phi4 ( int n, double r[], double r0, double v[] );
+void phi5 ( int n, double r[], double r0, double v[] );
 double *r8mat_solve_svd ( int m, int n, double a[], double b[] );
 double *rbf_interp_nd ( int m, int nd, double xd[], double r0, 
   void phi ( int n, double r[], double r0, double v[] ), double w[], 
