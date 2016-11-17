@@ -256,13 +256,15 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       // the numeric integration.
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
       unsigned int max_qp = cfe->n_quadrature_points();
+      out.setf(std::ios::fixed, std::ios::floatfield);
+      out<<std::setprecision(10);
       for (unsigned int qp=0; qp<max_qp; qp++){
          if(quadrature){
-            out<<"quadrature: ";
-            out<<std::setprecision(10)<<q_point[qp](0)<<" \t ";
-            out<<std::setprecision(10)<<q_point[qp](1)<<" \t ";
-            out<<std::setprecision(10)<<q_point[qp](2)<<" \t ";
-            out<<std::setprecision(10)<<potval[qp].real()<<"  "<<std::endl;
+            out<<"quadrature:  ";
+            out<<std::setw(18)<<q_point[qp](0)<<"  ";
+            out<<std::setw(18)<<q_point[qp](1)<<"  ";
+            out<<std::setw(18)<<q_point[qp](2)<<"  ";
+            out<<std::setw(18)<<potval[qp].real()<<"  "<<std::endl;
          }
          //out<<1/(q_point[qp].norm())<<std::endl;
          pot=potval[qp];

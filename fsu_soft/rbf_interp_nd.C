@@ -1681,6 +1681,59 @@ void phi4 ( int n, double r[], double r0, double v[] )
   }
   return;
 }
+
+void phi5 ( int n, double r[], double r0, double v[] )
+
+//****************************************************************************80
+//
+//  Purpose:
+//
+//    PHI5 evaluates a hat functio
+//
+//  Licensing:
+//
+//    This code is distributed under the GNU LGPL license.
+//
+//  Modified:
+//
+//    30 June 2012
+//
+//  Author:
+//
+//    John Burkardt
+//
+//  Reference:
+//
+//    William Press, Brian Flannery, Saul Teukolsky, William Vetterling,
+//    Numerical Recipes in FORTRAN: The Art of Scientific Computing,
+//    Third Edition,
+//    Cambridge University Press, 2007,
+//    ISBN13: 978-0-521-88068-8,
+//    LC: QA297.N866.
+//
+//  Parameters:
+//
+//    Input, int N, the number of points.
+//
+//    Input, double R[N], the radial separation.
+//    0 < R.
+//
+//    Input, double R0, a scale factor.
+//
+//    Output, double V[N], the value of the radial basis function.
+//
+{
+  int i;
+
+  for ( i = 0; i < n; i++ )
+  {
+    if( abs(r[i])<r0)
+      v[i]=(r0-abs(r[i]))/r0;
+    else
+      v[i]=0;
+  }
+  return;
+}
 //****************************************************************************80
 
 double *r8mat_solve_svd ( int m, int n, double a[], double b[] )
@@ -1771,7 +1824,10 @@ double *r8mat_solve_svd ( int m, int n, double a[], double b[] )
     cerr << "  LINPACK routine DSVDC returned a nonzero\n";
     cerr << "  value of the error flag, INFO = " << info << "\n";
     //exit ( 1 );
-    throw 1;
+    x = new double[1];
+    x[0]=42;
+    //throw 1;
+    return x;
   }
 
   s = new double [ m * n ];
@@ -2026,12 +2082,12 @@ double *rbf_weight ( int m, int nd, double xd[], double r0,
 //
 //  Solve for the weights.
 //
-  try{
+  //try{
      w = r8mat_solve_svd ( nd, nd, a, fd );
-  }
-  catch(...){
-      throw 1;
-  }
+  //}
+  //catch(...){
+  //    *w=42;
+  //}
 
 
   delete [] a;

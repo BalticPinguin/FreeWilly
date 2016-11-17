@@ -144,33 +144,119 @@ void RBFInterpolation<KDDim>::interpolate_field_data (const std::vector<std::str
 template <unsigned int KDDim>
 void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
                                                        const std::vector<size_t> & src_indices,
-                                                       const std::vector<Real>   & /*src_dist_sqr*/,
+                                                       const std::vector<Real>   & src_dist_sqr,
                                                        std::vector<Number>::iterator & out_it) const
 {
    // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
    libmesh_assert_equal_to (this->n_field_variables(),1);
-   // Compute the interpolation weights & interpolated value
-   //const unsigned int n_fv = this->n_field_variables();
    const unsigned int n_fv = 1;
    _vals.resize(n_fv); /**/ std::fill (_vals.begin(), _vals.end(), Number(0.));
   
+   // First check some numerical things:
+   // get the max. and min. distances between interpolation points
+   unsigned int n_src=src_indices.size();
+   Real maxDist=0;
+   Real minDist=10000;
+   Real nearest=(pt-_src_pts[src_indices[0]]).norm();
+   for (unsigned int i=0; i<n_src; i++){
+      for (unsigned int j=0; j<i; j++){
+         if(maxDist<(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm())
+            maxDist=(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm();
+         if(minDist>(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm())
+            minDist=(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm();
+      }
+   }
+    // make sure the problem is not too badly posed
+
+   std::vector<size_t> src_ind;
+   Real r0;
+   if (nearest*2.>=maxDist){
+      // if the point lies definitely outside of the point set
+      Real threshold=4.;
+      int drops=0;
+      bool noDrop;
+      minDist=maxDist/threshold;
+      // discart the closest-lying points to make large r0 achievable
+      // without running into numerical issues.
+      out<<"-->1"<<std::endl;
+      for (unsigned int i=0; i<n_src; i++){
+         noDrop=true;
+         for (unsigned int j=0; j<i; j++){
+            if((_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm()*threshold<maxDist){
+               drops++;
+               break;
+               noDrop=false;
+            }
+         }
+         if (noDrop)
+            src_ind.push_back(src_indices[i]);
+      }
+      n_src-=drops;
+      r0=maxDist*1.5; // I hope this is a reasonable number...
+   }
+   else if (nearest>2.0*minDist){
+      // this is by far the most often case...
+      Real threshold=2.0;
+      int drops=0;
+      bool noDrop;
+      minDist=nearest/threshold;
+      // discart the closest-lying points to make large r0 achievable
+      // without running into numerical issues.
+      out<<"-->2"<<std::endl;
+      for (unsigned int i=0; i<n_src; i++){
+         noDrop=true;
+         for (unsigned int j=0; j<src_ind.size(); j++){
+            if((_src_pts[src_indices[i]]-_src_pts[src_ind[j]]).norm()<=minDist){
+               drops++;
+               noDrop=false;
+               break;
+            }
+         }
+         if (noDrop)
+            src_ind.push_back(src_indices[i]);
+      }
+      n_src-=drops;
+      //r0=(minDist+1.5*nearest)/2.5; // I hope this is a reasonable number...
+      r0=1.5*nearest; // I hope this is a reasonable number...
+   }
+   else{ // this seems to be almost never reached...
+      // don't throw away point: just use a reasonable r0
+      out<<"-->3"<<std::endl;
+      r0=(minDist+nearest)/2.; // I hope this is a reasonable number...
+      src_ind=src_indices;
+   }
+
+   minDist=10000;
+   maxDist=0;
+   for (unsigned int i=0; i<n_src; i++){
+      for (unsigned int j=0; j<i; j++){
+         if(maxDist<(_src_pts[src_ind[i]]-_src_pts[src_ind[j]]).norm())
+            maxDist=(_src_pts[src_ind[i]]-_src_pts[src_ind[j]]).norm();
+         if(minDist>(_src_pts[src_ind[i]]-_src_pts[src_ind[j]]).norm())
+            minDist=(_src_pts[src_ind[i]]-_src_pts[src_ind[j]]).norm();
+      }
+   }
+   // Now set up the arrays for the interpolation library
+   //r0=maxDist;
+
+   //out<<r0<<"  ";
+   //out<<pt.norm()<<"  ";
+   //out<<minDist<<"  ";
+   //out<<maxDist<<"  ";
+   //out<<nearest<<"  ";
+   //out<<n_src<<"  "<<std::endl;
+
    // xd= point values 
-   const unsigned int n_src=src_indices.size();
    Real* xd= new Real[n_src*KDDim];
    Real* fd= new Real[n_src*KDDim];
    Real max_fd=0;
-   Real maxDist=0;
-   Real min_fd=_src_vals[src_indices[0]].real();
+   Real min_fd=_src_vals[src_ind[0]].real();
    // convert (input) vector to pointer-notation for rbf-functions:
    for (unsigned int i=0; i<n_src; i++){
       for (unsigned int j=0; j<KDDim; j++){
-          xd[j+KDDim*i]=_src_pts[src_indices[i]](j)-pt(j);
+          xd[j+KDDim*i]=_src_pts[src_ind[i]](j)-pt(j);
       }
-      for (unsigned int j=0; j<n_src; j++){
-         if(maxDist<(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm())
-            maxDist=(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm();
-      }
-      fd[i]=_src_vals[src_indices[i]].real();
+      fd[i]=_src_vals[src_ind[i]].real();
       if(fd[i]>max_fd)
          max_fd=fd[i];
       if(fd[i]<min_fd)
@@ -186,10 +272,8 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
      }
    }
  
-   //Real r0=_power;
-   Real r0=1.3*maxDist;  // I hope this is a reasonable number...
-   Real inner_range=1.2; // about half of the typical binding length...
-   //Real outer_range=4.;  // 'far away' from any nucleus.
+   
+   Real inner_range=1.3; // about half of the typical binding length...
          
    Real *w;
    /*
@@ -201,19 +285,50 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    }
    unsigned int ni = 1;
    Real* fi;
+   const unsigned int four=4;
+   // Compute the interpolation weights & interpolated value
+   //const unsigned int n_fv = this->n_field_variables();
 
    if (minnorm<inner_range){
+      // in inner range: interpolate to difference to the unscreened Coulomb potential:
+      // this makes the error much smaller.
       for (unsigned int i=0; i<n_src; i++){
-         Real r=(_src_pts[src_indices[i]]-_geom[closest]).norm();
+         Real r=(_src_pts[src_ind[i]]-_geom[closest]).norm();
          if (r>1e-7)
             fd[i]+=(Real)_geom[closest].id()/r;
          else
             fd[i]+=(Real)_geom[closest].id()*1e+7;
+         out<< _src_pts[src_ind[i]]<<"  "<<fd[i]<<"  ";
       }
+      out<<std::endl;
+      out<<"   "<<pt<<std::endl;
       //r0*=0.3;
-   
-      w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
-      fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
+
+      //poor mans error catching, since I have no idea how to catch it 
+      //really.
+      //try{
+         //w = rbf_weight (KDDim, n_src, xd, r0, phi2, fd );
+         w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
+         //w = rbf_weight (KDDim, n_src, xd, r0, phi5, fd );
+      //}
+      //catch (...){
+      if (w[0]==42){
+         fi=new Real;
+         fi[0]=0;
+         for(unsigned int i=0; i<std::min(n_src, four); i++){
+            fi[0]+=fd[i];
+         }
+         fi[0]/=std::min(n_src, four);
+
+         //just in case soemthing went wrong...
+         if(fi[0]>=max_fd*n_src || fi[0]<=min_fd*n_src)
+            fi[0]=(max_fd+min_fd)/2;
+      }
+      else{
+         //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi2, w, ni, xi );
+         fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
+         //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi5, w, ni, xi );
+      }
       Real r=(pt-_geom[closest]).norm();
       for (unsigned int v=0; v<n_fv; v++){
          if (r>1e-7)
@@ -222,39 +337,26 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
             fi[v]-=(Real)_geom[closest].id()*1e+7;
       }
    }
-   //else if (minnorm > outer_range){
-   //   //r0=0.7;
-   //   // if the distance to the closest source point is too large: interpolate as
-   //   // simple Coulomb-pot. of nearest atom.
-   //   if (src_dist_sqr[0]>1.5){
-   //      for (unsigned int v=0; v<n_fv; v++, ++out_it){
-   //         _vals[v] = fd[0]/(pt-_geom[closest]).norm()*
-   //                    (_src_pts[src_indices[0]]-_geom[closest]).norm();
-   //         *out_it = _vals[v];
-   //      }
-   //      return ;
-   //   }
-   //   w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
-   //   fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
-   //}
    else{
       // intermediate case: don't change parameters.
 
-      try{
-       w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
-      }
-      // catch the error-case and compute the mean of NN instead...
-      catch (int exc){
+       //w = rbf_weight (KDDim, n_src, xd, r0, phi2, fd );
+       w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
+       //w = rbf_weight (KDDim, n_src, xd, r0, phi5, fd );
+      // catch the error-case and compute it with an other scheme:
+      if (w[0]==42){
          // in the case of SVD-failure, use the weighted mean.
-         libmesh_assert (exc == 1);
-         libmesh_warning("rbf")
+         //libmesh_assert (exc == 1);
+         //libmesh_warning("SVD failde in rbf.");
          Real fi;
-         const unsigned int four=4;
-         if (src_dist_sqr[0]>r0){
-            // point is outside of the mesh
+         if (src_dist_sqr[0]>2.0*maxDist){
+            // point is outside of the mesh (distance to nearest point
+            // is larger than maximum distance between points).
+
+            // In this case, I do some rough estimate of a Coulomb potential.
             for (unsigned int v=0; v<n_fv; v++, ++out_it){
                _vals[v] = fd[0]/(pt-_geom[closest]).norm()*
-                        (_src_pts[src_indices[0]]-_geom[closest]).norm();
+                        (_src_pts[src_ind[0]]-_geom[closest]).norm();
                *out_it = _vals[v];
             }
             return ;
@@ -264,15 +366,19 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
          for(unsigned int i=0; i<std::min(n_src, four); i++){
             fi+=fd[i];
          }
+        fi/=std::min(n_src, four);
 
          //just in case soemthing went wrong...
-         if(fi>=max_fd*n_src || fi<=min_fd*n_src)
+         if(fi>=max_fd || fi<=min_fd){
             fi=(max_fd+min_fd)/2;
-         _vals[0]=fi/n_src;
+         }
+         _vals[0]=fi;
          *out_it=_vals[0];
          return ;
       }
-      fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
+      //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi2, w, ni, xi );
+      fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
+      //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi5, w, ni, xi );
 
       // if the interpolation failed: just take average of extremal points.
       // Usually it only failes in the outer part of the mesh where both are 
@@ -283,8 +389,10 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
             fi[v]=(max_fd+min_fd)/2;
          }
    }
-   //w = rbf_weight (KDDim, n_src, xd, r0, phi1, fd );
-   //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi1, w, ni, xi );
+   ////w = rbf_weight (KDDim, n_src, xd, r0, phi2, fd );
+   //w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
+   ////fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi2, w, ni, xi );
+   //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
 
    delete xi;
    delete w;
