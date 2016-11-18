@@ -259,12 +259,22 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       out.setf(std::ios::fixed, std::ios::floatfield);
       out<<std::setprecision(10);
       for (unsigned int qp=0; qp<max_qp; qp++){
+	 bool away=true;
          if(quadrature){
-            out<<"quadrature:  ";
+	    for(int i=0; i<mol_geom.size(); i++){
+                // 0.01 as threshold does work...
+		if ((q_point[qp]-mol_geom[i]).norm()<0.001){
+		   away=false;
+                   break;
+                }
+            }
+            if(away){
+            out<<"quadrature:";
             out<<std::setw(20)<<q_point[qp](0);
             out<<std::setw(20)<<q_point[qp](1);
             out<<std::setw(20)<<q_point[qp](2);
             out<<std::setw(20)<<potval[qp].real()<<std::endl;
+            }
          }
          //out<<1/(q_point[qp].norm())<<std::endl;
          pot=potval[qp];

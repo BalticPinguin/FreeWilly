@@ -422,7 +422,7 @@ int main (int argc, char** argv){
       eigpair = eigen_system.get_eigenpair(0);
       equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
    }
-   PlotSphericals (equation_systems, 10);
+   //PlotSphericals (equation_systems, 10);
 
    // All done.
    return 0;

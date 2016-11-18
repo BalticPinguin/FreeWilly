@@ -203,6 +203,9 @@ void add_sphere_convex_hull_to_mesh(MeshBase& mesh, libMesh::Real r_max, std::st
          x[2]=new double[num_pts];
          design_points(rule, num_pts, x);
          point.resize(num_pts);
+
+         out<<"order: "<<num_pts<<"  ";
+         out<<pts_circle<<std::endl;
          for(int i=0; i<num_pts; i++){
             point[i]=Point(x[0][i],x[1][i],x[2][i]);
          }

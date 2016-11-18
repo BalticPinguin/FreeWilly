@@ -41,16 +41,16 @@ for i in range(num_atoms):
    atoms_y.append( data[3] ) #line 7+i, 3. row
    atoms_z.append( data[4] ) #line 7+i, 4. row
    # Display the orbital ##################################
-   atom_i = mlab.points3d(atoms_x[i], atoms_y[i], atoms_z[i],
-                  scale_factor=2,
-                  resolution=20,
-                  color=(1./float(data[0]), float(data[0])/92, 1.-1./float(data[0])), ## make color dependent on atom-type.
-                  scale_mode='none')
+   #atom_i = mlab.points3d(atoms_x[i], atoms_y[i], atoms_z[i],
+   #               scale_factor=2,
+   #               resolution=20,
+   #               color=(1./float(data[0]), float(data[0])/92, 1.-1./float(data[0])), ## make color dependent on atom-type.
+   #               scale_mode='none')
 
 # The bounds between the atoms, we use the scalar information to give
 # color  --> this is too easy at this point; understand and change later.
-mlab.plot3d(atoms_x, atoms_y, atoms_z, atoms_z,
-            tube_radius=0.4, colormap='Reds')
+#mlab.plot3d(atoms_x, atoms_y, atoms_z, atoms_z,
+#            tube_radius=0.4, colormap='Reds')
 
 stri = ''.join(file(sys.argv[1]).readlines()[6+num_atoms:])
 data = np.fromstring(stri, sep=' ')
@@ -62,8 +62,9 @@ x,y,z=np.mgrid[start_point[0]:start_point[0]+dx[0]*NX+dy[0]*NY+dz[0]*NZ:NX*1j,
 source = mlab.pipeline.scalar_field(x,y,z, data)
 min = data.min()
 max = data.max()
-vol = mlab.pipeline.volume(source, vmin=min + 0.65 * (max - min),
-                                   vmax=min + 0.9 * (max - min))
+#vol = mlab.pipeline.volume(source, vmin=min + 0.65 * (max - min),
+#                                   vmax=min + 0.9 * (max - min))
+vol = mlab.pipeline.iso_surface(source)
 
 #mlab.view(132, 54, 45, [21, 20, 21.5])
 
