@@ -47,14 +47,14 @@ public:
      //es.parameters.get<std::string>("DO_file");
      const char* filename=DO_file.c_str();
      int namelength=strlen(filename);
-     getDyson(filename, namelength, do_j, l, alpha, energy, normDO);
+     getDyson(filename, namelength, this->do_j, this->l, this->alpha, energy, normDO);
    }
    
    ~DOrbit()
    {}
 
    libMesh::Real evalDO(libMesh::Point q_point){
-      return eval_DO(do_j, l, alpha, geometry, q_point);
+      return eval_DO(this->do_j, this->l, this->alpha, this->geometry, q_point);
    }
 
    libMesh::Real get_norm()
@@ -69,7 +69,7 @@ private:
    std::vector<std::vector<double> > do_j;
    std::vector<unsigned int> l;
    std::vector<double> alpha;
-   libMesh::Real energy=0, normDO=0;
+   libMesh::Real energy, normDO;
 };
 
 #endif //READ_DO_H

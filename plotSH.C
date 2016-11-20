@@ -30,7 +30,7 @@ void PlotSphericals (EquationSystems& es, int l_max){
    for( int l=0; l<=l_max; l++){
       for(m=-l; m<=l; m++){
          std::ostringstream output;
-         output<<"-"<<l<<"_"<<m<"_.cube";
+         output<<"-"<<l<<"_"<<m<<"_.cube";
          cube_sphere(es, output.str(), l, m);
       }
    }
@@ -39,13 +39,11 @@ void PlotSphericals (EquationSystems& es, int l_max){
 void cube_sphere(EquationSystems& es, std::string output, int l, int m){
    //CondensedEigenSystem & system = es.get_system<CondensedEigenSystem> ("EigenSE"); // --> how to generalise??
    System & system = es.get_system<System> ("EigenSE");
-   const MeshBase & mesh = es.get_mesh();
    const DofMap & dof_map = system.get_dof_map();
    
    const FEType & fe_type = dof_map.variable_type(0);
    UniquePtr<FEBase> fe    (FEBase::build(3, fe_type));
    UniquePtr<FEBase> inf_fe(FEBase::build_InfFE(3, fe_type));
-   FEBase * cfe = libmesh_nullptr;
    QGauss qrule (3, fe_type.default_quadrature_order());
    std::vector<dof_id_type> dof_indices;
    // Tell the finite element object to use our quadrature rule.
