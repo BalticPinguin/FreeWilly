@@ -1823,11 +1823,7 @@ double *r8mat_solve_svd ( int m, int n, double a[], double b[] )
     cerr << "  The SVD could not be calculated.\n";
     cerr << "  LINPACK routine DSVDC returned a nonzero\n";
     cerr << "  value of the error flag, INFO = " << info << "\n";
-    //exit ( 1 );
-    x = new double[1];
-    x[0]=42;
-    //throw 1;
-    return x;
+    throw 1;
   }
 
   s = new double [ m * n ];
@@ -2082,12 +2078,12 @@ double *rbf_weight ( int m, int nd, double xd[], double r0,
 //
 //  Solve for the weights.
 //
-  //try{
+  try{
      w = r8mat_solve_svd ( nd, nd, a, fd );
-  //}
-  //catch(...){
-  //    *w=42;
-  //}
+  }
+  catch(...){
+    throw 1;
+  }
 
 
   delete [] a;

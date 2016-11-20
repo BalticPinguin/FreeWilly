@@ -292,14 +292,14 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       //r0*=0.3;
 
       //poor mans error catching, since I have no idea how to catch it 
-      //really.
-      //try{
+      bool error=false;
+      try{
          //w = rbf_weight (KDDim, n_src, xd, r0, phi2, fd );
          w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
          //w = rbf_weight (KDDim, n_src, xd, r0, phi5, fd );
-      //}
-      //catch (...){
-      if (w[0]==42){
+      }
+      catch (...){
+         error=true;
          fi=new Real;
          fi[0]=0;
          for(unsigned int i=0; i<std::min(n_src, four); i++){
@@ -311,7 +311,7 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
          if(fi[0]>=max_fd*n_src || fi[0]<=min_fd*n_src)
             fi[0]=(max_fd+min_fd)/2;
       }
-      else{
+      if (!error){
          //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi2, w, ni, xi );
          fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
          //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi5, w, ni, xi );
@@ -328,13 +328,13 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       // intermediate case: don't change parameters.
 
        //w = rbf_weight (KDDim, n_src, xd, r0, phi2, fd );
+       try{
        w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
        //w = rbf_weight (KDDim, n_src, xd, r0, phi5, fd );
+       }
       // catch the error-case and compute it with an other scheme:
-      if (w[0]==42){
+      catch(...){
          // in the case of SVD-failure, use the weighted mean.
-         //libmesh_assert (exc == 1);
-         //libmesh_warning("SVD failde in rbf.");
          Real fi;
          if (src_dist_sqr[0]>2.0*maxDist){
             // point is outside of the mesh (distance to nearest point

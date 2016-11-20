@@ -316,12 +316,9 @@ Real normalise(EquationSystems& equation_systems, bool infel){
    out<<"norm of phi: ";
    out<< sqrt(norm_phi) <<std::endl;
 
-   out<<"norm of DO:   ";
-   out<< sqrt(norm_DO(equation_systems, true))<<std::endl;
-
    Real overlap=0;
    //compute <DO| mu |phi>
-   overlap = overlap_DO(equation_systems, "EigenSE", 0, LENGTH);
+   overlap = overlap_DO(equation_systems, "EigenSE", 0, LENGTH, infel);
    
    // abs needed for type conversion.
    return overlap; ///std::abs((norm_phi*conj(norm_phi)));
@@ -337,7 +334,6 @@ Number Y_lm(Real x, Real y, Real z, int l, int m){
    Real* value;
    value=new Real[l+1];
    double r=sqrt(x*x+y*y+z*z),
-            thetaval=0,
             phival=0;
    double theta[1];
 
@@ -346,10 +342,9 @@ Number Y_lm(Real x, Real y, Real z, int l, int m){
       phival=0;
    }
    else{
-      theta[0]=acos ( z/r ); //0-> pi
+      theta[0]=z/r;
       phival=atan2(y,x); //-pi -> pi
    }
-   theta[0]=cos(theta[0]); // make cos(theta) out of it.
 
    //value = p_polynomial_value(1, l, theta );
    // value is not normalised!

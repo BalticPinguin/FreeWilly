@@ -404,7 +404,7 @@ int main (int argc, char** argv){
          out<<" for the solution nr "<<i<<":"<<std::endl;
          eigpair = eigen_system.get_eigenpair(i);
          equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
-         intensity=normalise(equation_systems, infel);
+         intensity=normalise(equation_systems, true);
          out<<"intensity:  "<<intensity<<std::endl;
       }
    }
@@ -417,7 +417,7 @@ int main (int argc, char** argv){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
          equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
-         ProjectSphericals (equation_systems, 5, i);
+         ProjectSphericals (equation_systems, spherical_analysis, i);
       }
       eigpair = eigen_system.get_eigenpair(0);
       equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
