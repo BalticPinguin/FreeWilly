@@ -126,8 +126,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
-   //RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
-   NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
+   RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -263,7 +263,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
          if(quadrature){
 	    for(int i=0; i<mol_geom.size(); i++){
                 // 0.01 as threshold does work...
-		if ((q_point[qp]-mol_geom[i]).norm()<0.001){
+		if ((q_point[qp]-mol_geom[i]).norm()<0.0005){
 		   away=false;
                    break;
                 }
@@ -297,7 +297,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                Se(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
                temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
                      weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
-                     ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-phi[j][qp]*dphi[i][qp]));
+                     ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-dphi[i][qp]*phi[j][qp]));
+               //H(j,i) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
                H(i,j) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
             }
          }
@@ -315,8 +316,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
        * in constrain_element_matrix().
        */
       std::vector<dof_id_type> dof_indices2=dof_indices;
-      dof_map.constrain_element_matrix(Se, dof_indices, false);
       dof_map.constrain_element_matrix(H, dof_indices2, false);
+      dof_map.constrain_element_matrix(Se, dof_indices, false);
 
       // Finally, simply add the element contribution to the
       // overall matrix.
@@ -351,8 +352,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
-   //RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
-   NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
+   RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
+   //NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -484,6 +485,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    return;
 }
 
+Number evalSphWave(int l, int m, Point qp, Real k);
+
 void assemble_DO(EquationSystems & es, const std::string & system_name){
    // Get a constant reference to the mesh object.
    const MeshBase& mesh = es.get_mesh();
@@ -511,6 +514,8 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    QGauss qrule (dim, fe_type.default_quadrature_order());
    //QGauss qrule (dim, SIXTH);
    //QGauss qrule (dim, TWENTIETH);
+
+   //Real k=es.parameters.get<Real>("current frequency")*2*3.1415926;
       
    // Tell the finite element object to use our quadrature rule.
    fe->attach_quadrature_rule (&qrule);
@@ -538,7 +543,7 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    MeshBase::const_element_iterator       el  = mesh.active_local_elements_begin();
    const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
       
-   double do_val;
+   Number do_val;
       
    for ( ; el != end_el; ++el){
       // Store a pointer to the element we are currently
@@ -585,6 +590,9 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
       for (unsigned int qp=0; qp<max_qp; qp++){
          // get the value of DO at q_point[qp]
          do_val=dyson.evalDO(q_point[qp]);
+
+         // 
+         //do_val=evalSphWave(1, 0, q_point[qp], k);
          
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();

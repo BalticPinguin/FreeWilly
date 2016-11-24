@@ -279,6 +279,7 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    // Compute the interpolation weights & interpolated value
    //const unsigned int n_fv = this->n_field_variables();
 
+   bool error=false;
    if (minnorm<inner_range){
       // in inner range: interpolate to difference to the unscreened Coulomb potential:
       // this makes the error much smaller.
@@ -292,7 +293,6 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       //r0*=0.3;
 
       //poor mans error catching, since I have no idea how to catch it 
-      bool error=false;
       try{
          //w = rbf_weight (KDDim, n_src, xd, r0, phi2, fd );
          w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
@@ -335,6 +335,7 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       // catch the error-case and compute it with an other scheme:
       catch(...){
          // in the case of SVD-failure, use the weighted mean.
+         error=true;
          Real fi;
          if (src_dist_sqr[0]>2.0*maxDist){
             // point is outside of the mesh (distance to nearest point
@@ -382,7 +383,8 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
 
    delete xi;
-   delete w;
+   if (!error)
+      delete w;
    
       
    for (unsigned int v=0; v<n_fv; v++, ++out_it)

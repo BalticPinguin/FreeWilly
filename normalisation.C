@@ -369,9 +369,6 @@ Number Y_lm(Real x, Real y, Real z, int l, int m){
 Number evalSphWave(int l, int m, Point qp, Real k){
    int error;
    Number wave;
-   if(l>2){
-      //out<<"how often do I come here?"<<std::endl;
-   }
    Real* R = new Real[l+1];
 
    Real kr=qp.norm()*k;
@@ -392,13 +389,7 @@ Number evalSphWave(int l, int m, Point qp, Real k){
    return wave;
 }
 
-Number projection(EquationSystems& es, const std::string sys, int l, int quant_m, bool only_infinite=true){
-   // this should be checked somehow as well:
-   //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
-   //libmesh_assert_not_equal_to(es1.get_dof_map().variable_type(var1),
-   //                            es2.get_dof_map().variable_type(var2));
-   //CondensedEigenSystem& es1=equation_systems.get_system<CondensedEigenSystem> (sys1);
-   //LinearImplicitSystem & es2 = equation_systems.get_system<LinearImplicitSystem> (sys2);
+Number normSphWave(EquationSystems& es, const std::string sys, int l, int quant_m, bool only_infinite=true){
    System & es1 = es.get_system<System> (sys);
 
    Number overlap=0;
@@ -408,9 +399,6 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
    Real k = es.parameters.get<Real>("current frequency")*2.*pi;
 
    // Localize the potentially parallel vectors
-   UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
-   local_v1->init((*es1.solution).size(), true, SERIAL);
-   (*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
 
    const FEType & fe_type = es1.get_dof_map().variable_type(0);
    std::vector<dof_id_type> dof_indices;
@@ -424,7 +412,7 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
        const unsigned int dim = elem->dim();
 
       // skip infinite elements if inf
-      if (only_infinite && !elem->infinite())
+      if (only_infinite && elem->infinite())
          continue;
 
       //QGauss qrule (dim, FIFTH);
@@ -443,29 +431,14 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
 
       cfe->reinit(elem);
 
-      es1.get_dof_map().dof_indices (elem, dof_indices, 0);
-
       //const unsigned int n_qp = qrule.n_points(); --> fails for infinite elements.
       unsigned int n_qp = cfe->n_quadrature_points();
-      const unsigned int n_sf = cast_int<unsigned int>(dof_indices.size());
 
       // Begin the loop over the Quadrature points.
       for (unsigned int qp=0; qp<n_qp; qp++){
-         Number u_h = 0.;
          Number spherical_qp=evalSphWave(l, quant_m, q_point[qp], k);
                
-         Point mapped_qp = FEInterface::inverse_map(dim, fe_type, elem, q_point[qp], TOLERANCE, true); 
-         FEComputeData fe_data(es, mapped_qp);
-         FEInterface::compute_data(dim, fe_type, elem, fe_data);
-
-         for (unsigned int i=0; i != n_sf; ++i){
-            //Use FEComputeData because with infinite elements the value at q_point[i][qp]
-            // is not just phi[i][qp].
-            u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
-         }
-         overlap+= JxW[qp] * std::conj(u_h) * spherical_qp;
-         //norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
-         //norm2 += JxW[qp] * TensorTools::norm_sq(spherical_qp);
+         overlap+= JxW[qp] * std::conj(spherical_qp) * spherical_qp;
       }
    }
 
@@ -479,7 +452,7 @@ Number projection(EquationSystems& es, const std::string sys, int l, int quant_m
    return overlap;
 }
 
-Number normSphWave(EquationSystems& es, const std::string sys, int l, int quant_m, bool only_infinite=true){
+Number projection(EquationSystems& es, const std::string sys, int l, int quant_m, bool only_infinite=true){
    // this should be checked somehow as well:
    //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
    //libmesh_assert_not_equal_to(es1.get_dof_map().variable_type(var1),
@@ -489,6 +462,10 @@ Number normSphWave(EquationSystems& es, const std::string sys, int l, int quant_
    System & es1 = es.get_system<System> (sys);
 
    Number overlap=0;
+   Number infinite_el=0;
+   Number finite_el=0;
+   Number normSphere=0;
+
    //Number norm=0;
    //Number norm2=0;
     
@@ -550,17 +527,31 @@ Number normSphWave(EquationSystems& es, const std::string sys, int l, int quant_
             // is not just phi[i][qp].
             u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
          }
-         overlap+= JxW[qp] * std::conj(spherical_qp) * spherical_qp;
+	 if (elem->infinite())
+	    infinite_el+=JxW[qp] * std::conj(u_h) * spherical_qp;
+         else{
+	    finite_el+=JxW[qp]* std::conj(u_h) * spherical_qp;
+            normSphere+=JxW[qp] * std::conj(spherical_qp) * spherical_qp;
+         }
+         overlap+= JxW[qp] * std::conj(u_h) * spherical_qp;
          //norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
          //norm2 += JxW[qp] * TensorTools::norm_sq(spherical_qp);
       }
    }
 
    es1.comm().sum(overlap);
+   es1.comm().sum(finite_el);
+   es1.comm().sum(infinite_el);
    //es1.comm().sum(norm);
    //es1.comm().sum(norm2);
-   
-   //out<<"norm is:"<<norm<<"  "<<norm2<<std::endl;
+   if(abs(normSphere)!=0)   
+      out<<"            "<<overlap/normSphere<<"  "<<finite_el/normSphere<<std::endl;
+   else{
+      if(abs(finite_el)!=0)
+         out<<"            (0.00000,7.00000000)    (7.000000000,0.0000)"<<std::endl;
+      else
+         out<<"            (0.00000,0.00000000)    (0.000000000,0.0000)"<<std::endl;
+   }
    
    // abs is needed here to avoid compiler errors.
    return overlap;

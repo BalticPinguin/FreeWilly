@@ -99,9 +99,12 @@ int main (int argc, char** argv){
    DOrbit dyson(molec_file);
    Real Energy= E-dyson.get_energy();
 
-   // make sure the box contains at least two waves:
-   if(r<= 2.*pi*sqrt(2/Energy))
-      r= 2.*pi*sqrt(2/Energy);
+   // make sure the box contains at least four waves:
+
+   //if(r<= 4.*pi*sqrt(2/Energy) && !infel)
+   //   r= 4.*pi*sqrt(2/Energy);
+
+   //r=1./sqrt(2.*Energy);
 
    // make sure that the distance between two spheres is 
    // at least ~ 1/(4*lambda)
@@ -409,7 +412,7 @@ int main (int argc, char** argv){
       }
    }
    out<<"norm of DO: ";
-   out<< sqrt(norm_DO(equation_systems, false))<<std::endl;
+   out<< sqrt(norm_DO(equation_systems, true))<<std::endl;
    out<<" exact: "<<dyson.get_norm()<<std::endl;
 
    // this will become an option for the input later.
@@ -419,8 +422,8 @@ int main (int argc, char** argv){
          equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
          ProjectSphericals (equation_systems, spherical_analysis, i);
       }
-      eigpair = eigen_system.get_eigenpair(0);
-      equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
+    //  eigpair = eigen_system.get_eigenpair(0);
+    //  equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
    }
    //PlotSphericals (equation_systems, 10);
 
