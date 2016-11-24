@@ -89,9 +89,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    Real r = 2.*es.parameters.get<Real>("radius");
    Real lambda = 1./es.parameters.get<Real>("current frequency");
 
-   Real dx=lambda/6.;
-   Real dy=lambda/6.;
-   Real dz=lambda/6.;
+   Real dx=std::min(lambda/6.,0.1);
+   Real dy=std::min(lambda/6.,0.1);
+   Real dz=std::min(lambda/6.,0.1);
    unsigned int nx=(2*r+(max(0)-min(0)))/dx;
    unsigned int ny=(2*r+(max(1)-min(1)))/dy;
    unsigned int nz=(2*r+(max(2)-min(2)))/dz;
