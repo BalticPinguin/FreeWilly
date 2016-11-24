@@ -1,9 +1,10 @@
 #    This is a sample input-file for InSpecTOR.
 
 nev = 15        # any integer
+width=0.018375  # spectral width to be scanned for EVs (1 eV)
 pot = FooBar    # a string used later for the name of output-files
 #spect =sm      # This option is no more possible.
-Energy =0.05    # photon energy!
+Energy =0.05    # photon energy (1eV = 0.0367493 )
 infinite =true  # whether infinite elements should be allowed
 print_quadrature = false # whether quadrature points should be printed or not
 pictorious = false # if DO and ESP should be computed explicitly

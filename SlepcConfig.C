@@ -16,6 +16,9 @@ void SlepcSolverConfiguration::configure_solver()
       libmesh_assert(ierr == 0);
       //STCreate(_slepc_solver.comm().get(), &st);
 
+      if( _upper!=_lower)
+         ierr = EPSSetInterval(_slepc_solver.eps(), _upper, _lower);
+      libmesh_assert(ierr == 0);
       // Set it to the desired type of spectral transformation.
       // The value of the respective shift is chosen to be the target
       // specified via \p set_position_of_spectrum().

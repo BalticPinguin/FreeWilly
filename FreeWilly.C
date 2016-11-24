@@ -59,7 +59,6 @@ int main (int argc, char** argv){
 
    // Get the number of eigen values to be computed from argv[2]
    //const unsigned int nev = std::atoi(argv[2]);
-   const unsigned int nev = cl("nev",10);
 
    // Skip this 2D example if libMesh was compiled as 1D-only.
    libmesh_example_requires(3 <= LIBMESH_DIM, "2D support");
@@ -79,6 +78,7 @@ int main (int argc, char** argv){
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
    Real E = cl("Energy",0.0);
+   Real width = cl("width",-1);
    Real VolConst= cl("maxVol", 1./(2*E*E*E));
    Real L=cl("bending", 2.);
    Real r_0=cl("r_0",12.);
@@ -91,6 +91,8 @@ int main (int argc, char** argv){
    bool pictorious = cl("pictorious", false);
    int spherical_analysis= cl("spherical_analysis", -1);
    bool cubes = cl("cubes", false);
+   
+   const unsigned int nev = cl("nev",10);
 
    // it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
@@ -211,8 +213,12 @@ int main (int argc, char** argv){
    // i.e. the number of requested eigenpairs \p nev and the number
    // of basis vectors \p ncv used in the solution algorithm. Note that
    // ncv >= nev must hold and ncv >= 2*nev is recommended.
-   equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
-   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
+   if (!width>0){
+      equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
+      equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
+   }
+   else
+      equation_systems.parameters.set<unsigned int>("basis vectors") = 50+4;
    
    // chose among the solver options.  
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
@@ -300,6 +306,9 @@ int main (int argc, char** argv){
   
    // set the spectral transformation:
    ConfigSolver.SetST(SINVERT);
+   
+   if (width>0)
+      ConfigSolver.SetInterval(Energy-width,Energy+width); 
    //ConfigSolver.SetST(CAYLEY);
    //ConfigSolver.SetST(SHIFT); // this is default
    solver ->set_solver_configuration(ConfigSolver);

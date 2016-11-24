@@ -31,6 +31,9 @@ public:
    ~SlepcSolverConfiguration() {}
 
    virtual void configure_solver() override;
+   
+   void SetInterval(libMesh::Real lower, libMesh::Real upper)
+   { _upper=upper; _lower=lower;} 
 
    void SetST(SpectralTransform st)
    { _st=st;}
@@ -40,6 +43,7 @@ private:
    libMesh::SlepcEigenSolver<libMesh::Number>& _slepc_solver;
    SpectralTransform _st;
    //ST st;
+   libMesh::Real _upper=0,_lower=0;
 
 };
 
