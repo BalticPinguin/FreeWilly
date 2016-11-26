@@ -169,60 +169,61 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
     // make sure the problem is not too badly posed
 
    std::vector<size_t> src_ind;
-   Real r0;
-   if (nearest*2.>=maxDist){
-      // if the point lies definitely outside of the point set
-      Real threshold=4.;
-      int drops=0;
-      bool noDrop;
-      minDist=maxDist/threshold;
-      // discart the closest-lying points to make large r0 achievable
-      // without running into numerical issues.
-      for (unsigned int i=0; i<n_src; i++){
-         noDrop=true;
-         for (unsigned int j=0; j<i; j++){
-            if((_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm()*threshold<maxDist){
-               drops++;
-               break;
-               noDrop=false;
-            }
-         }
-         if (noDrop)
-            src_ind.push_back(src_indices[i]);
-      }
-      n_src-=drops;
-      r0=maxDist*1.5; // I hope this is a reasonable number...
-   }
-   else if (nearest>2.0*minDist){
-      // this is by far the most often case...
-      Real threshold=2.0;
-      int drops=0;
-      bool noDrop;
-      minDist=nearest/threshold;
-      // discart the closest-lying points to make large r0 achievable
-      // without running into numerical issues.
-      for (unsigned int i=0; i<n_src; i++){
-         noDrop=true;
-         for (unsigned int j=0; j<src_ind.size(); j++){
-            if((_src_pts[src_indices[i]]-_src_pts[src_ind[j]]).norm()<=minDist){
-               drops++;
-               noDrop=false;
-               break;
-            }
-         }
-         if (noDrop)
-            src_ind.push_back(src_indices[i]);
-      }
-      n_src-=drops;
-      //r0=(minDist+1.5*nearest)/2.5; // I hope this is a reasonable number...
-      r0=1.5*nearest; // I hope this is a reasonable number...
-   }
-   else{ // this seems to be almost never reached...
-      // don't throw away point: just use a reasonable r0
-      //r0=(minDist+nearest)/2.; // I hope this is a reasonable number...
-      r0=nearest; // I hope this is a reasonable number...
-      src_ind=src_indices;
-   }
+   Real r0=_power;
+ //  if (nearest*2.>=maxDist){
+ //     // if the point lies definitely outside of the point set
+ //     Real threshold=4.;
+ //     int drops=0;
+ //     bool noDrop;
+ //     minDist=maxDist/threshold;
+ //     // discart the closest-lying points to make large r0 achievable
+ //     // without running into numerical issues.
+ //     for (unsigned int i=0; i<n_src; i++){
+ //        noDrop=true;
+ //        for (unsigned int j=0; j<i; j++){
+ //           if((_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm()*threshold<maxDist){
+ //              drops++;
+ //              break;
+ //              noDrop=false;
+ //           }
+ //        }
+ //        if (noDrop)
+ //           src_ind.push_back(src_indices[i]);
+ //     }
+ //     n_src-=drops;
+ //     r0=maxDist*1.5; // I hope this is a reasonable number...
+ //  }
+ //  else if (nearest>2.0*minDist){
+ //     // this is by far the most often case...
+ //     Real threshold=2.0;
+ //     int drops=0;
+ //     bool noDrop;
+ //     minDist=nearest/threshold;
+ //     // discart the closest-lying points to make large r0 achievable
+ //     // without running into numerical issues.
+ //     for (unsigned int i=0; i<n_src; i++){
+ //        noDrop=true;
+ //        for (unsigned int j=0; j<src_ind.size(); j++){
+ //           if((_src_pts[src_indices[i]]-_src_pts[src_ind[j]]).norm()<=minDist){
+ //              drops++;
+ //              noDrop=false;
+ //              break;
+ //           }
+ //        }
+ //        if (noDrop)
+ //           src_ind.push_back(src_indices[i]);
+ //     }
+ //     n_src-=drops;
+ //     //r0=(minDist+1.5*nearest)/2.5; // I hope this is a reasonable number...
+ //     r0=1.5*nearest; // I hope this is a reasonable number...
+ //  }
+ //  else{ // this seems to be almost never reached...
+ //     // don't throw away point: just use a reasonable r0
+ //     //r0=(minDist+nearest)/2.; // I hope this is a reasonable number...
+ //     r0=nearest; // I hope this is a reasonable number...
+ //     src_ind=src_indices;
+ //  }
+   src_ind=src_indices;
 
    minDist=10000;
    maxDist=0;

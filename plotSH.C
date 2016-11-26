@@ -20,7 +20,8 @@
 
 using namespace libMesh;
 
-Number evalSphWave(int l, int m, Point qp, Real k);
+//Number evalSphWave(int l, int m, Point qp, Real k);
+std::vector<Number> evalSphWave(int l_max, Point qp, Real k);
 void cube_sphere(EquationSystems& es, std::string output, int l, int m);
 
 void PlotSphericals (EquationSystems& es, int l_max){
@@ -135,7 +136,7 @@ void cube_sphere(EquationSystems& es, std::string output, int l, int m){
 
    unsigned int ix, iy, iz;
    unsigned int num_line=0;
-   Number soln;
+   std::vector<Number> soln;
    Real k = es.parameters.get<Real>("current frequency")*2.*pi;
    for (ix=0;ix<nx;ix++) {
       for (iy=0;iy<ny;iy++) {
@@ -145,11 +146,11 @@ void cube_sphere(EquationSystems& es, std::string output, int l, int m){
             Point q_point(start(0)+(Real)ix*dx,
                           start(1)+(Real)iy*dy,
                           start(2)+(Real)iz*dz);
-            soln=evalSphWave(l,  m, q_point, k);
+            soln=evalSphWave(l, q_point, k);
 
-            re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::real(soln);
-            im_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::imag(soln);
-            abs_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::abs(soln);
+            re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::real(soln[2*l+m]);
+            im_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::imag(soln[2*l+m]);
+            abs_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::abs(soln[2*l+m]);
          }
       }
    }
