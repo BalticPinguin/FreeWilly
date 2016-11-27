@@ -32,8 +32,8 @@ public:
 
    virtual void configure_solver() override;
    
-   void SetInterval(libMesh::Real lower, libMesh::Real upper)
-   { _upper=upper; _lower=lower;} 
+   //void SetInterval(libMesh::Real lower, libMesh::Real upper)
+   //{ _upper=upper; _lower=lower;} 
 
    void SetST(SpectralTransform st)
    { _st=st;}

@@ -78,7 +78,7 @@ int main (int argc, char** argv){
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
    Real E = cl("Energy",0.0);
-   Real width = cl("width",-1);
+   //Real width = cl("width",-1);  // this option is only valid for symmetric eigenproblems...
    Real VolConst= cl("maxVol", 1./(2*E*E*E));
    Real L=cl("bending", 2.);
    Real r_0=cl("r_0",12.);
@@ -91,7 +91,6 @@ int main (int argc, char** argv){
    bool pictorious = cl("pictorious", false);
    int spherical_analysis= cl("spherical_analysis", -1);
    bool cubes = cl("cubes", false);
-   
    const unsigned int nev = cl("nev",10);
 
    // it is pot file, not pot whale!
@@ -213,12 +212,8 @@ int main (int argc, char** argv){
    // i.e. the number of requested eigenpairs \p nev and the number
    // of basis vectors \p ncv used in the solution algorithm. Note that
    // ncv >= nev must hold and ncv >= 2*nev is recommended.
-   if (!width>0){
-      equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
-      equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
-   }
-   else
-      equation_systems.parameters.set<unsigned int>("basis vectors") = 50+4;
+   equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
+   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
    
    // chose among the solver options.  
    eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
@@ -303,12 +298,12 @@ int main (int argc, char** argv){
                  libmesh_cast_ptr<SlepcEigenSolver<Number>* >( &(*eigen_system.eigen_solver) );
 
    SlepcSolverConfiguration ConfigSolver( *solver);
+   
+  // if (width>0)
+  //    ConfigSolver.SetInterval(Energy-width,Energy+width); 
   
    // set the spectral transformation:
    ConfigSolver.SetST(SINVERT);
-   
-   if (width>0)
-      ConfigSolver.SetInterval(Energy-width,Energy+width); 
    //ConfigSolver.SetST(CAYLEY);
    //ConfigSolver.SetST(SHIFT); // this is default
    solver ->set_solver_configuration(ConfigSolver);
@@ -397,6 +392,16 @@ int main (int argc, char** argv){
       //eigenvector_output_name<< "phi-"<<i <<".line";
       //line_out(equation_systems, eigenvector_output_name.str(), "EigenSE");
    }
+
+   // this will become an option for the input later.
+   if (spherical_analysis>=0){
+      for(unsigned int i=0; i<nconv; i++){
+         eigpair = eigen_system.get_eigenpair(i);
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
+         ProjectSphericals (equation_systems, spherical_analysis, i);
+      }
+   }
+
    if (nconv==0){
       // that one can look at the mesh and some properties...
       #ifdef LIBMESH_HAVE_EXODUS_API
@@ -423,17 +428,6 @@ int main (int argc, char** argv){
    out<<"norm of DO: ";
    out<< sqrt(norm_DO(equation_systems, true))<<std::endl;
    out<<" exact: "<<dyson.get_norm()<<std::endl;
-
-   // this will become an option for the input later.
-   if (spherical_analysis>=0){
-      for(unsigned int i=0; i<nconv; i++){
-         eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
-         ProjectSphericals (equation_systems, spherical_analysis, i);
-      }
-    //  eigpair = eigen_system.get_eigenpair(0);
-    //  equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
-   }
    //PlotSphericals (equation_systems, 10);
 
    // All done.
