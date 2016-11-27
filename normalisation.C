@@ -34,12 +34,12 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
    System & es2 = eq_sys.get_system<System> (sys2);
 
    // Localize the potentially parallel vectors
-   UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
-   local_v1->init((*es1.solution).size(), true, SERIAL);
-   (*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
-   UniquePtr<NumericVector<Number> > local_v2 = NumericVector<Number>::build(es2.comm());
-   local_v2->init((*es2.solution).size(), true, SERIAL);
-   (*es2.solution).localize (*local_v2, es2.get_dof_map().get_send_list());
+   //UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
+   //local_v1->init((*es1.solution).size(), true, SERIAL);
+   //(*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
+   //UniquePtr<NumericVector<Number> > local_v2 = NumericVector<Number>::build(es2.comm());
+   //local_v2->init((*es2.solution).size(), true, SERIAL);
+   //(*es2.solution).localize (*local_v2, es2.get_dof_map().get_send_list());
 
    const FEType & fe_type = es2.get_dof_map().variable_type(var2);
    // Allow space for dims 0-3, even if we don't use them all
@@ -103,8 +103,8 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
          for (unsigned int i=0; i != n_sf; ++i){
             //Use FEComputeData because with infinite elements the value at q_point[i][qp]
             // is not just phi[i][qp].
-            u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
-            v_h += fe_data.shape[i] * (*local_v2)(dof_indices[i]);
+            u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+            v_h += fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
             
          }
          //out<<"later: "<<q_point[qp];
@@ -156,9 +156,9 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
    System & es1 = eq_sys.get_system<System> (sys1);
 
    // Localize the potentially parallel vectors
-   UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
-   local_v1->init((*es1.solution).size(), true, SERIAL);
-   (*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
+   //UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
+   //local_v1->init((*es1.solution).size(), true, SERIAL);
+   //(*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
 
    // get the dyson orbital:
    DOrbit dyson (eq_sys.parameters.get<std::string>("DO_file"));
@@ -212,7 +212,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
          for (unsigned int i=0; i != n_sf; ++i){
             //Use FEComputeData because with infinite elements the value at q_point[i][qp]
             // is not just phi[i][qp].
-            u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
+            u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
             
          }
          //norm += JxW[qp] * TensorTools::norm_sq(u_h);
@@ -233,17 +233,17 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
       {
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
-              overlap_z*conj(overlap_z)*
-              eq_sys.parameters.get<Real>("current frequency")*
-              eq_sys.parameters.get<Real>("current frequency");
+              overlap_z*conj(overlap_z);
+              //eq_sys.parameters.get<Real>("current frequency")*
+              //eq_sys.parameters.get<Real>("current frequency");
      }
    else if (int_type==VELOCITY)
       {
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
-              overlap_z*conj(overlap_z)/
-              (eq_sys.parameters.get<Real>("current frequency")*
-               eq_sys.parameters.get<Real>("current frequency"));
+              overlap_z*conj(overlap_z) ;
+              //(eq_sys.parameters.get<Real>("current frequency")*
+               //eq_sys.parameters.get<Real>("current frequency"));
      }
    else
       overlap*=conj(overlap);
@@ -329,12 +329,11 @@ std::vector<Number> Y_lm(Real x, Real y, Real z, int l_max){
    //http://www.ppsloan.org/publications/StupidSH36.pdf
    //12.5663706144=4*pi
    std::vector<Number> solution;
-   solution.resize(l_max*(l_max+2)+1);
+   solution.resize((l_max+1)*(l_max+1));
    Real K_lm;
    
-   Real** value;
-   value= new Real*[l_max];
-   for(int m=0; m<l_max; m++)
+   Real** value= new Real*[l_max+1];
+   for(int m=0; m<=l_max; m++)
       value[m]=new Real[l_max+1];
 
    double r=sqrt(x*x+y*y+z*z),
@@ -379,7 +378,10 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
    Number wave;
    Real* R = new Real[l_max+1];
    std::vector<Number> solution;
-   solution.resize(l_max*(l_max+2)+1);
+   solution.resize((l_max+1)*(l_max+1));
+   
+   std::vector<Number> angular;
+   angular.resize((l_max+1)*(l_max+1));
 
    Real kr=qp.norm()*k;
    rjbesl(kr, 0 ,l_max+1, R, error);
@@ -392,12 +394,13 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
          err<<"   qp.norm*k > x_max "<<std::endl;
    }
 
-   std::vector<Number> angular=Y_lm(qp(0), qp(1), qp(2), l_max);
+   angular=Y_lm(qp(0), qp(1), qp(2), l_max);
 
+   int j=0;
    for(int l=0; l<=l_max; l++){
       for(int m=-l; m<=l; m++){
-         solution[k]=R[l]*angular[k];
-         k++;
+         solution[j]=R[l]*angular[j];
+         j++;
       }
    }
    delete [] R;
@@ -414,20 +417,21 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
    //LinearImplicitSystem & es2 = equation_systems.get_system<LinearImplicitSystem> (sys2);
    System & es1 = es.get_system<System> (sys);
 
+   std::vector<Number> spherical_qp;
    std::vector<Number> overlap;
    std::vector<Number> normSphere;
-   overlap.resize(l_max*(l_max+2)+1);
-   normSphere.resize(l_max*(l_max+2)+1);
+   overlap.resize((l_max+1)*(l_max+1));
+   normSphere.resize((l_max+1)*(l_max+1));
 
-   //Number norm=0;
+   Number norm=0;
    //Number norm2=0;
     
    Real k = es.parameters.get<Real>("current frequency")*2.*pi;
 
    // Localize the potentially parallel vectors
-   UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
-   local_v1->init((*es1.solution).size(), true, SERIAL);
-   (*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
+   //UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
+   //local_v1->init((*es1.solution).size(), true, SERIAL);
+   //(*es1.solution).localize (*local_v1, es1.get_dof_map().get_send_list());
 
    const FEType & fe_type = es1.get_dof_map().variable_type(0);
    std::vector<dof_id_type> dof_indices;
@@ -469,7 +473,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
       // Begin the loop over the Quadrature points.
       for (unsigned int qp=0; qp<n_qp; qp++){
          Number u_h = 0.;
-         std::vector<Number> spherical_qp=evalSphWave(l_max, q_point[qp], k);
+         spherical_qp=evalSphWave(l_max, q_point[qp], k);
          
          Point mapped_qp = FEInterface::inverse_map(dim, fe_type, elem, q_point[qp], TOLERANCE, true); 
          FEComputeData fe_data(es, mapped_qp);
@@ -478,24 +482,23 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
          for (unsigned int i=0; i != n_sf; ++i){
             //Use FEComputeData because with infinite elements the value at q_point[i][qp]
             // is not just phi[i][qp].
-            u_h += fe_data.shape[i] * (*local_v1)(dof_indices[i]);
+            u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
          }
          int j=0;
          for(int l=0; l<=l_max; l++){
             for(int m=-l; m<=l; m++){
                overlap[j]+= JxW[qp] * std::conj(u_h) * spherical_qp[j];
-               normSphere[j]+=JxW[qp] * std::conj(spherical_qp[k]) * spherical_qp[j];
+               normSphere[j]+=JxW[qp] * std::conj(spherical_qp[j]) * spherical_qp[j];
                j++;
             }
          }
-         //norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
-         //norm2 += JxW[qp] * TensorTools::norm_sq(spherical_qp);
+         norm += JxW[qp] * TensorTools::norm_sq(u_h);
       }
    }
    int j=0;
    for(int l=0; l<=l_max; l++){
       for(int m=-l; m<=l; m++){
-         overlap[j]=overlap[j]/sqrt(normSphere[j]);
+         overlap[j]=overlap[j]/(sqrt(normSphere[j])*sqrt(norm));
          es1.comm().sum(overlap[j]);
          j++;
       }
@@ -521,7 +524,7 @@ void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
          out<<"|     l = "<<l<<"       ";
          out<<"        m = "<<m<<"       ";
          k++;
-         out<<"  \t"<<abs(this_proj)<<" ";
+         out<<"  \t"<<this_proj<<" ";
          out<<"\t|"<<std::endl;
       }
       out<<std::endl;
