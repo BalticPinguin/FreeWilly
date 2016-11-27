@@ -233,17 +233,17 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
       {
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
-              overlap_z*conj(overlap_z)*
-              eq_sys.parameters.get<Real>("current frequency")*
-              eq_sys.parameters.get<Real>("current frequency");
+              overlap_z*conj(overlap_z);
+              //eq_sys.parameters.get<Real>("current frequency")*
+              //eq_sys.parameters.get<Real>("current frequency");
      }
    else if (int_type==VELOCITY)
       {
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
-              overlap_z*conj(overlap_z)/
-              (eq_sys.parameters.get<Real>("current frequency")*
-               eq_sys.parameters.get<Real>("current frequency"));
+              overlap_z*conj(overlap_z) ;
+              //(eq_sys.parameters.get<Real>("current frequency")*
+               //eq_sys.parameters.get<Real>("current frequency"));
      }
    else
       overlap*=conj(overlap);
@@ -379,7 +379,7 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
    Number wave;
    Real* R = new Real[l_max+1];
    std::vector<Number> solution;
-   solution.resize(l_max*(l_max+2)+1);
+   solution.resize((l_max+1)*(l_max+1));
 
    Real kr=qp.norm()*k;
    rjbesl(kr, 0 ,l_max+1, R, error);
@@ -394,10 +394,11 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
 
    std::vector<Number> angular=Y_lm(qp(0), qp(1), qp(2), l_max);
 
+   int j=0;
    for(int l=0; l<=l_max; l++){
       for(int m=-l; m<=l; m++){
-         solution[k]=R[l]*angular[k];
-         k++;
+         solution[j]=R[l]*angular[j];
+         j++;
       }
    }
    delete [] R;
@@ -414,12 +415,13 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
    //LinearImplicitSystem & es2 = equation_systems.get_system<LinearImplicitSystem> (sys2);
    System & es1 = es.get_system<System> (sys);
 
+   std::vector<Number> spherical_qp;
    std::vector<Number> overlap;
    std::vector<Number> normSphere;
-   overlap.resize(l_max*(l_max+2)+1);
-   normSphere.resize(l_max*(l_max+2)+1);
+   overlap.resize((l_max+1)*(l_max+1));
+   normSphere.resize((l_max+1)*(l_max+1));
 
-   //Number norm=0;
+   Number norm=0;
    //Number norm2=0;
     
    Real k = es.parameters.get<Real>("current frequency")*2.*pi;
@@ -469,7 +471,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
       // Begin the loop over the Quadrature points.
       for (unsigned int qp=0; qp<n_qp; qp++){
          Number u_h = 0.;
-         std::vector<Number> spherical_qp=evalSphWave(l_max, q_point[qp], k);
+         spherical_qp=evalSphWave(l_max, q_point[qp], k);
          
          Point mapped_qp = FEInterface::inverse_map(dim, fe_type, elem, q_point[qp], TOLERANCE, true); 
          FEComputeData fe_data(es, mapped_qp);
@@ -484,22 +486,22 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
          for(int l=0; l<=l_max; l++){
             for(int m=-l; m<=l; m++){
                overlap[j]+= JxW[qp] * std::conj(u_h) * spherical_qp[j];
-               normSphere[j]+=JxW[qp] * std::conj(spherical_qp[k]) * spherical_qp[j];
+               normSphere[j]+=JxW[qp] * std::conj(spherical_qp[j]) * spherical_qp[j];
                j++;
             }
          }
-         //norm+=JxW[qp]*std::conj(spherical_qp)*spherical_qp;
-         //norm2 += JxW[qp] * TensorTools::norm_sq(spherical_qp);
+         norm += JxW[qp] * TensorTools::norm_sq(u_h);
       }
    }
    int j=0;
    for(int l=0; l<=l_max; l++){
       for(int m=-l; m<=l; m++){
-         overlap[j]=overlap[j]/sqrt(normSphere[j]);
+         overlap[j]=overlap[j]/(sqrt(normSphere[j])*sqrt(norm));
          es1.comm().sum(overlap[j]);
          j++;
       }
    }
+   out<<std::endl;
    return overlap;
 }
 
@@ -521,7 +523,7 @@ void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
          out<<"|     l = "<<l<<"       ";
          out<<"        m = "<<m<<"       ";
          k++;
-         out<<"  \t"<<abs(this_proj)<<" ";
+         out<<"  \t"<<this_proj<<" ";
          out<<"\t|"<<std::endl;
       }
       out<<std::endl;
