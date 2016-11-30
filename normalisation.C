@@ -379,7 +379,6 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
    Real* R = new Real[l_max+1];
    std::vector<Number> solution;
    solution.resize((l_max+1)*(l_max+1));
-   
    std::vector<Number> angular;
    angular.resize((l_max+1)*(l_max+1));
 
@@ -503,6 +502,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
          j++;
       }
    }
+   out<<std::endl;
    return overlap;
 }
 
