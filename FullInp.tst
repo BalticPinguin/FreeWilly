@@ -2,7 +2,6 @@
 
 nev = 15        # any integer
 pot = FooBar    # a string used later for the name of output-files
-#spect =sm      # This option is no more possible.
 Energy =0.05    # photon energy (1eV = 0.0367493 )
 infinite =true  # whether infinite elements should be allowed
 print_quadrature = false # whether quadrature points should be printed or not
@@ -10,6 +9,8 @@ pictorious = false # if DO and ESP should be computed explicitly
 spherical_analysis= -1 # if a projection onto spherical waves should be performed 
                        # number gives maximum l to be used
 cubes=true      # whether or not to make cube files
+guessed l=1     # set l and m for the Spherical Harmonic used as initial guess.
+guessed m=1     # can be any integers
 
 cap=false # switches complex absorbing boundaries on and off.
 gamma=2   # parameter to scale the cap.
@@ -24,6 +25,8 @@ bending= 20.
 circles= 5
 r_0= 0.5    # number of neighbours considered in the interpolation. Default: 12
 maxiter=700 #default-value.
+transform=cayley # cayley, sinv ; else: spectral shift is used.
+solver=lapack   # lapack, arnoldi,lanczos ; else: Krylov-Schur is used.
 
 refine = false  # flag: mesh refinement allowed or not?
 

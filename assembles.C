@@ -485,7 +485,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    return;
 }
 
-Number evalSphWave(int l, int m, Point qp, Real k);
+std::vector<Number> evalSphWave(int l_max, Point qp, Real k);
 
 void assemble_DO(EquationSystems & es, const std::string & system_name){
    // Get a constant reference to the mesh object.
@@ -600,6 +600,133 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
          //out<<"  "<<do_val<<std::endl;
          for (unsigned int i=0; i<n_sf; i++){
             f(i)+=JxW[qp]*weight[qp]*phi[i][qp]*do_val;
+            for (unsigned int j=0; j<n_sf; j++){
+               M(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
+            }
+         }
+      }
+      dof_map.constrain_element_matrix_and_vector (M, f, dof_indices);
+
+      eigen_system.matrix->add_matrix (M, dof_indices);
+      eigen_system.rhs->add_vector (f, dof_indices);
+
+   } // end of element loop
+         
+   /**
+   * All done!
+   */
+   return;
+}
+
+void assemble_Spherical(EquationSystems & es, const std::string & system_name){
+   // Get a constant reference to the mesh object.
+   const MeshBase& mesh = es.get_mesh();
+   // The dimension that we are running.
+   const unsigned int dim = mesh.mesh_dimension();
+   
+   // Get a reference to our system.
+   LinearImplicitSystem & eigen_system = es.get_system<LinearImplicitSystem> (system_name);
+
+   // Get a constant reference to the Finite Element type
+   // for the first (and only) variable in the system.
+   FEType fe_type = eigen_system.get_dof_map().variable_type(0);
+
+   // Build a Finite Element object of the specified type.  Since the
+   // \p FEBase::build() member dynamically creates memory we will
+   // store the object as an \p UniquePtr<FEBase>.  This can be thought
+   // of as a pointer that will clean up after itself.
+   UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));  // here, try AutoPtr instead...
+   UniquePtr<FEBase> inf_fe (FEBase::build_InfFE(dim, fe_type));
+   
+   // A  Gauss quadrature rule for numerical integration.
+   // Use the default quadrature order.
+   QGauss qrule (dim, fe_type.default_quadrature_order());
+   //QGauss qrule (dim, SIXTH);
+   //QGauss qrule (dim, TWENTIETH);
+
+   Real k=es.parameters.get<Real>("current frequency")*2*3.1415926;
+   Real l=es.parameters.get<int>("L_guess");
+   Real m=es.parameters.get<int>("M_guess");
+      
+   // Tell the finite element object to use our quadrature rule.
+   fe->attach_quadrature_rule (&qrule);
+   inf_fe->attach_quadrature_rule (&qrule);
+      
+   // A reference to the \p DofMap object for this system.  The \p DofMap
+   // object handles the index translation from node and element numbers
+   // to degree of freedom numbers.
+   const DofMap& dof_map = eigen_system.get_dof_map();
+      
+   // The element mass matrix and Hamiltonian
+   DenseMatrix<Number> M;
+   DenseVector<Number> f;
+   // This vector will hold the degree of freedom indices for
+   // the element.  These define where in the global system
+   // the element degrees of freedom get mapped.
+   std::vector<dof_id_type> dof_indices;
+      
+   // Now we will loop over all the elements in the mesh that
+   // live on the local processor. We will compute the element
+   // matrix and right-hand-side contribution.  In case users
+   // later modify this program to include refinement, we will
+   // be safe and will only consider the active elements;
+   // hence we use a variant of the \p active_elem_iterator.
+   MeshBase::const_element_iterator       el  = mesh.active_local_elements_begin();
+   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+      
+   std::vector<Number> Value;
+   int index=l*l+l+1+m; // this is the index of vector Value to evaluate.
+      
+   for ( ; el != end_el; ++el){
+      // Store a pointer to the element we are currently
+      // working on.  This allows for nicer syntax later.
+      const Elem* elem = *el;
+
+      // Get the degree of freedom indices for the
+      // current element.  These define where in the global
+      // matrix and right-hand-side this element will
+      // contribute to.
+      dof_map.dof_indices (elem, dof_indices);
+
+      // unifyging finite and infinite elements
+      FEBase * cfe = libmesh_nullptr;
+
+      if (elem->infinite()){
+         cfe = inf_fe.get();
+      }
+      else{
+        cfe = fe.get();
+      }
+     
+      // The element Jacobian * quadrature weight at each integration point.
+      const std::vector<Real>& JxW = cfe->get_JxW();
+
+      // The element shape functions evaluated at the quadrature points.
+      const std::vector<std::vector<Real> >& phi = cfe->get_phi();
+      const std::vector<Point>& q_point = cfe->get_xyz();
+      // get extra data needed for infinite elements
+      const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
+   
+      // Compute the element-specific data for the current
+      // element.  This involves computing the location of the
+      // quadrature points (q_point) and the shape functions
+      // (phi, dphi) for the current element.
+      cfe->reinit (elem);
+      M.resize (dof_indices.size(), dof_indices.size());
+      f.resize (dof_indices.size());
+
+      // Now loop over the quadrature points.  This handles
+      // the numeric integration.
+      //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
+      unsigned int max_qp = cfe->n_quadrature_points();
+      for (unsigned int qp=0; qp<max_qp; qp++){
+         // get the value of DO at q_point[qp]
+         Value=evalSphWave(l, q_point[qp], k);
+         
+         // Now, get number of shape functions:
+         unsigned int n_sf = cfe->n_shape_functions();
+         for (unsigned int i=0; i<n_sf; i++){
+            f(i)+=JxW[qp]*weight[qp]*phi[i][qp]*Value[index];
             for (unsigned int j=0; j<n_sf; j++){
                M(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
             }

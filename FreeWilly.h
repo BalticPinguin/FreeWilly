@@ -68,6 +68,7 @@ void get_dirichlet_dofs(libMesh::EquationSystems& , const std::string& , std::se
 void assemble_InfSE(libMesh::EquationSystems & es, const std::string & system_name);
 void assemble_ESP(libMesh::EquationSystems & es, const std::string & system_name);
 void assemble_DO(libMesh::EquationSystems & es, const std::string & system_name);
+void assemble_Spherical(libMesh::EquationSystems & es, const std::string & system_name);
 
 // self-written output formats:
 void cube_io(libMesh::EquationSystems& es, std::vector<libMesh::Node> geom, 

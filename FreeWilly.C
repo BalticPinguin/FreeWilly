@@ -74,6 +74,8 @@ int main (int argc, char** argv){
    // \p molec_file contains all informations on the molecule
    std::string molec_file=cl("mol_file", "invalid_file"); 
    std::string angular_creator=cl("angular", "invalid"); 
+   std::string transform=cl("transform", "none"); 
+   std::string solver=cl("solver", "none"); 
    Real r=cl("radius", 20.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
@@ -92,6 +94,9 @@ int main (int argc, char** argv){
    int spherical_analysis= cl("spherical_analysis", -1);
    bool cubes = cl("cubes", false);
    const unsigned int nev = cl("nev",10);
+
+   int lguess=cl("guessed l", -1);
+   int mguess=cl("guessed m", lguess);
 
    // it is pot file, not pot whale!
    std::string pot_file=cl("mesh_file", "none");
@@ -216,10 +221,14 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
    
    // chose among the solver options.  
-   eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
-   //eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
-   //eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
-   //eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
+   if(solver=="lapack")
+      eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
+   else if(solver=="arnoldi")
+      eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
+   else if(solver=="lanczos")
+      eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
+   else
+      eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
    
    // Set the solver tolerance and the maximum number of iterations.
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
@@ -265,11 +274,24 @@ int main (int argc, char** argv){
       // In Do.solve(): set energy-offset and dyson norm
       DO.solve(); 
       ESP.solve();
+      if (infel && lguess<0)
+         // set the ESP as initial guess for solution vector.
+         // does not work for finite element due to different boundary conditions.
+         eigen_system.eigen_solver->set_initial_space(*DO.solution);
+   }
+   if (lguess>=0){
+      LinearImplicitSystem & guess = equation_systems.add_system<LinearImplicitSystem> ("DO");
+      equation_systems.parameters.set<int>("L_guess")=lguess;
+      equation_systems.parameters.set<int>("M_guess")=mguess;
+      guess.add_variable("initGuess", fe_type);
+      guess.attach_assemble_function (assemble_Spherical);
+      guess.init();
+      guess.solve();
 
       if (infel) 
          // set the ESP as initial guess for solution vector.
          // does not work for finite element due to different boundary conditions.
-         eigen_system.eigen_solver->set_initial_space(*ESP.solution);
+         eigen_system.eigen_solver->set_initial_space(*guess.solution);
    }
 
    // Prints information about the system to the screen.
@@ -303,9 +325,12 @@ int main (int argc, char** argv){
   //    ConfigSolver.SetInterval(Energy-width,Energy+width); 
   
    // set the spectral transformation:
-   ConfigSolver.SetST(SINVERT);
-   //ConfigSolver.SetST(CAYLEY);
-   //ConfigSolver.SetST(SHIFT); // this is default
+   if (transform== "cayley") 
+	ConfigSolver.SetST(CAYLEY);
+   else if (transform== "sinv")
+	ConfigSolver.SetST(SINVERT);
+   else
+	ConfigSolver.SetST(SHIFT); // this is default
    solver ->set_solver_configuration(ConfigSolver);
 
    //now, do refinement loop, if refinement is allowd:

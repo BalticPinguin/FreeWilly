@@ -49,47 +49,60 @@ All quantities specified are in atomic units here.
 FreeWilly is called with all options concerning ... being set in an input file as a first argument.
 Here, the following options are available:
 
- _______________________________________________________________________________________________________________
-|OPTION NAME  =  DEFAULT       POSSIBLE VALUES         EXPLANATION                                              |
- --------------------------------------------------------------------------------------------------------------
-| nev         |    15     |        integers > 0     |  number of eigenvalues (and eigenvectors) requested.      |
-|             |           |                         |     The number of actually computed EVs may differ.       |
-| pot         |     -     |       string            |     ....                                                  |
-| spect       |    ?      |     sm lm sr lr si li   |  Position of the spectrum to search for: smallest/largest |
-|             |           |                         |   value each by magnitude, real and imaginary part        |
-| Energy      |     -     |      any real number    |  photon energy in atomic units.                           |
-| infinite    |    false  |      true , false       |  Switch between infinite elements and Dirichlet boundaries|
-|             |           |                         |                                                           |
- ------------- ----------- ------------------------- ----------------------------------------------------------- 
-| cap         |    false  |      true, false        |  turns complex absorbing boundaries on/off. NOT TESTED    |
-| gamma       |     -     |       Real              |  the parameter governing the steapness of CAP             |
-|             |           |                         |                                                           |
-|             |           |  fibonacci, spiral,     |                                                           |
-|             |           |  archimedes, lebedev,   |  Algorithm used to obtain the spherical point distribution|
-| angular     |     -     |   womMD, fliME, womMN,  |                                                           | 
-|             |           |    womEV,  Sdesign      |                                                           |
-| scheme      |     -     |        son, tm          |                                                           |
-| p           |     ?     |     any real number     |                                                           |
-|             |           |                         |     ONLY VALID FOR scheme=tm                              |
- ------------- ----------- ------------------------- ----------------------------------------------------------- 
-| radius      |     ?     |Any positive real number |   max. radius of the spheres around the nuclei            |
-| order       |     1     |      1, 2               |  order p of the FEM                                       |
-| maxVol      |           |                         |   maximum volume of the                                   |
-|             |           |                         |      finite elements                                      |
-| bending     |     ?     | any positive real number| ....                                                      |
-| circles     |           |                         |                                                           |
-| num_NN      |    12     |                         |      number of neighbours considered in the interpolation.|
-| maxiter     |   700     |                         |                                                           |
-|             |           |                         |                                                           |
-| refine      | false     |                         |     mesh refinement allowed or not?                       |
- ------------- ----------- ------------------------- ----------------------------------------------------------- 
-| mesh_file   | -         |                         |                                                           |
-| mol_file    | -         |                         |                                                           |
- _______________________________________________________________________________________________________________
+ _________________________________________________________________________________________________________________
+|OPTION NAME=          DEFAULT       POSSIBLE VALUES         EXPLANATION                                              |
+ --------------------------------------------------------------------------------------------------------------------
+| nev               |    15     |        integers > 0     |  number of eigenvalues (and eigenvectors) requested.      |
+|                   |           |                         |     The number of actually computed EVs may differ.       |
+| pot               |     -     |       string            |  has no meaning for computation, but is used to setup     |
+|                   |           |                         |     name for the output-files.                            |
+| Energy            |     -     |      any real number    |  photon energy in atomic units.                           |
+| infinite          |    false  |      true , false       |  Switch between infinite elements and Dirichlet boundaries|
+|                   |           |                         |                                                           |
+ -------------------- ----------- ------------------------- ----------------------------------------------------------- 
+|print_quadrature   |   false   |      true , false       |  whether quadrature points should be printed or not       |
+|pictorious         |   false   |      true , false       |  if DO and ESP should be computed explicitly              |
+|spherical_analysis |    -1     |      (positive) integer |  if positive, states the maximum quantum number l for     |
+|                   |           |                         |     which <solution | Spher. Wave> should be computed     |
+|cubes              |   false   |      true , false       |  whether cube files should be produced or not.            |
+|guessed l          |    -1     |    (positive) integer   | quantum numbers l, m for the spherical wave used as       |
+|guessed m          | guessed l |      integer            |     initial guess. If l<0: use dyson orbital instead      |
+ ------------------- ----------- ------------------------- ----------------------------------------------------------- 
+| cap               |    false  |      true, false        |  turns complex absorbing boundaries on/off. NOT TESTED    |
+| gamma             |     -     |       Real              |  the parameter governing the steapness of CAP             |
+|                   |           |                         |                                                           |
+|                   |           |  fibonacci, spiral,     |                                                           |
+|                   |           |  archimedes, lebedev,   |  Algorithm used to obtain the spherical point distribution|
+| angular           |     -     |   womMD, fliME, womMN,  |                                                           | 
+|                   |           |    womEV,  Sdesign      |                                                           |
+| scheme            |     -     |        son, tm          |                                                           |
+| p                 |     ?     |     any real number     |                                                           |
+|                   |           |                         |     ONLY VALID FOR scheme=tm                              |
+ ------------------- ----------- ------------------------- ----------------------------------------------------------- 
+| radius            |     ?     |Any positive real number |   max. radius of the spheres around the nuclei            |
+| order             |     1     |      1, 2               |  order p of the FEM                                       |
+| maxVol            |           |                         |   maximum volume of the                                   |
+|                   |           |                         |      finite elements                                      |
+| bending           |     ?     | any positive real number| parameter (in thesis called l) determining the radial 
+|                   |           |                         |     distribution of spheres                               |
+| circles           |           |                         | number of spheres placed around the atoms                 |
+| r_0               |    12     | any positive real number| parameter for the RBF-interpolation for electr. pot.      |
+|                   |           |                         |     You should provide a good grid; this procedure is bad |
+| maxiter           |   700     | any positive integer    | maximum number of iterations used                         |
+|                   |           |                         |                                                           |
+| refine            | false     |         false           |     mesh refinement is possible only without infinite el. |
+| transform         |    -      |   cayley, sinv; any     | which spectral transf. should be applied                  |
+|                   |           |                         |     if not given or with typo: use shift                  |
+| solver            |    -      |lapack, arnoldi,lanczos  | which algorithm for solving should be used                |
+|                   |           |                         |     if not given or with typo: use Krylov-Schur           |
+ ------------------- ----------- ------------------------- ----------------------------------------------------------- 
+| mesh_file         | -         | name of file            | file containing the ESP.                                  |
+| mol_file          | -         | name of file            | File containing the DO, geometry and basis set            |
+ _____________________________________________________________________________________________________________________
 
 Further options:
 ------------------------------------------
-|  --n-threads            | #threads
+|  --n-threads            | #threads -> no parallelisation possible at the moment.
 |  --disable-mpi          |
 |  --disable-petsc        |
 |  --handle-mpi-errors    |  (default/ other options)
