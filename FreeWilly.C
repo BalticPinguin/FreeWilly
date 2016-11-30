@@ -363,13 +363,17 @@ int main (int argc, char** argv){
       cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "DO");
    }
 
-   // Write the eigen vector to file.
-   nconv=std::min(nconv, nev);
    std::pair<Real,Real> eigpair;
    for(unsigned int i=0; i<nconv; i++){
       eigpair = eigen_system.get_eigenpair(i);
-      
       std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
+   }
+   nconv=std::min(nconv, nev);
+   // Write the eigen vector to file.
+   for(unsigned int i=0; i<nconv; i++){
+      eigpair = eigen_system.get_eigenpair(i);
+      
+      //std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
       #ifdef LIBMESH_HAVE_EXODUS_API
          eigenvector_output_name.str(std::string());
          if (infel)
