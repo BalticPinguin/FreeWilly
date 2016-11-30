@@ -502,7 +502,6 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
          j++;
       }
    }
-   out<<std::endl;
    return overlap;
 }
 

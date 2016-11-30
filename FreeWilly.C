@@ -75,12 +75,11 @@ int main (int argc, char** argv){
    std::string molec_file=cl("mol_file", "invalid_file"); 
    std::string angular_creator=cl("angular", "invalid"); 
    std::string transform=cl("transform", "none"); 
-   std::string solver=cl("solver", "none"); 
+   std::string solv=cl("solver", "none"); 
    Real r=cl("radius", 20.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
    Real E = cl("Energy",0.0);
-   //Real width = cl("width",-1);  // this option is only valid for symmetric eigenproblems...
    Real VolConst= cl("maxVol", 1./(2*E*E*E));
    Real L=cl("bending", 2.);
    Real r_0=cl("r_0",12.);
@@ -221,11 +220,11 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
    
    // chose among the solver options.  
-   if(solver=="lapack")
+   if(solv=="lapack")
       eigen_system.eigen_solver->set_eigensolver_type(LAPACK);  // this seems to be quite good.
-   else if(solver=="arnoldi")
+   else if(solv=="arnoldi")
       eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
-   else if(solver=="lanczos")
+   else if(solv=="lanczos")
       eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
    else
       eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
@@ -320,9 +319,6 @@ int main (int argc, char** argv){
                  libmesh_cast_ptr<SlepcEigenSolver<Number>* >( &(*eigen_system.eigen_solver) );
 
    SlepcSolverConfiguration ConfigSolver( *solver);
-   
-  // if (width>0)
-  //    ConfigSolver.SetInterval(Energy-width,Energy+width); 
   
    // set the spectral transformation:
    if (transform== "cayley") 
