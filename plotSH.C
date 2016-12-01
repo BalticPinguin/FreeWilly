@@ -25,7 +25,7 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k);
 void cube_sphere(EquationSystems& es, std::string output, int l, int m);
 
 void PlotSphericals (EquationSystems& es, int l_max){
-   Number tot_proj=0, this_proj;
+   Number this_proj;
    int m;
    libmesh_assert_greater(l_max,0);
    for( int l=0; l<=l_max; l++){

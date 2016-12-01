@@ -157,7 +157,7 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
    unsigned int n_src=src_indices.size();
    Real maxDist=0;
    Real minDist=10000;
-   Real nearest=(pt-_src_pts[src_indices[0]]).norm();
+   //Real nearest=(pt-_src_pts[src_indices[0]]).norm();
    for (unsigned int i=0; i<n_src; i++){
       for (unsigned int j=0; j<i; j++){
          if(maxDist<(_src_pts[src_indices[i]]-_src_pts[src_indices[j]]).norm())
@@ -337,7 +337,7 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       catch(...){
          // in the case of SVD-failure, use the weighted mean.
          error=true;
-         Real fi;
+         Real fi=0;
          if (src_dist_sqr[0]>2.0*maxDist){
             // point is outside of the mesh (distance to nearest point
             // is larger than maximum distance between points).

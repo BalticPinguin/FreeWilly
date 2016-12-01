@@ -2470,7 +2470,7 @@ double r8_atan ( double y, double x )
   double abs_x;
   double abs_y;
   const double r8_pi = 3.141592653589793;
-  double theta;
+  double theta=0;
   double theta_0;
 //
 //  Special cases:
@@ -6172,7 +6172,7 @@ double r8_pythag ( double a, double b )
 {
   double a_abs;
   double b_abs;
-  double result;
+  double result=0.0;
 
   a_abs = fabs ( a );
   b_abs = fabs ( b );
@@ -7832,13 +7832,9 @@ void r8_to_dhms ( double r, int &d, int &h, int &m, int &s )
 //    minutes and seconds.
 //
 {
-  int sign;
+  int sign=1;
 
-  if ( 0.0 <= r )
-  {
-    sign = 1;
-  }
-  else if ( r < 0.0 )
+  if ( r < 0.0 )
   {
     sign = -1;
     r = -r;
@@ -8909,7 +8905,7 @@ int r82poly2_type ( double a, double b, double c, double d, double e, double f )
   double delta;
   double j;
   double k;
-  int type;
+  int type=10;
 //
 //  Handle the degenerate case.
 //
@@ -8926,10 +8922,10 @@ int r82poly2_type ( double a, double b, double c, double d, double e, double f )
         type = 12;
       }
     }
-    else
-    {
-      type = 10;
-    }
+    //else
+    //{
+    //  type = 10;
+    //}
     return type;
   }
 

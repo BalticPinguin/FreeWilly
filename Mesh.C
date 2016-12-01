@@ -62,7 +62,7 @@ void tetrahedralise_sphere(UnstructuredMesh& mesh, std::vector<Node> geometry, s
 
 std::pair<int, Real> chose_scheme(int circle, int N, Real L, Real p, Real r_max, std::string scheme){
    Real scale;
-   int pts_circle;
+   int pts_circle=0;
    if (scheme=="son"){
       scale=L*circle/(N-circle+L*N/r_max);
       pts_circle=(int)(12.5/ (1.- (circle-1.)/circle*(N-circle+ L*N/r_max)/(N-circle+1.+L*N/r_max) )
