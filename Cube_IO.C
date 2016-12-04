@@ -30,6 +30,7 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    
    UniquePtr<NumericVector<Number> > solution_vect = 
         NumericVector<Number>::build(es.comm());
+   const std::string & formulation = es.parameters.get<std::string>("formulation");
 
    solution_vect->init((*system.solution).size(), true, SERIAL);
    (*system.solution).localize(* solution_vect);
@@ -89,9 +90,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    Real r = 2.*es.parameters.get<Real>("radius");
    Real lambda = 1./es.parameters.get<Real>("current frequency");
 
-   Real dx=std::min(lambda/6.,0.1);
-   Real dy=std::min(lambda/6.,0.1);
-   Real dz=std::min(lambda/6.,0.1);
+   Real dx=std::min(lambda/6.,0.02);
+   Real dy=std::min(lambda/6.,0.02);
+   Real dz=std::min(lambda/6.,0.02);
    unsigned int nx=(2*r+(max(0)-min(0)))/dx;
    unsigned int ny=(2*r+(max(1)-min(1)))/dy;
    unsigned int nz=(2*r+(max(2)-min(2)))/dz;
@@ -181,10 +182,25 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                   cfe = inf_fe.get();
                else
                   cfe = fe.get();
+	       const std::vector<Point>& point = cfe->get_xyz();
+	       const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
                cfe->reinit(elem);
+
+	       unsigned int max_qp = cfe->n_quadrature_points();
+	       int qp_ind;
+	       for (unsigned int qp=0; qp<max_qp; qp++){
+		  if(point[qp]==q_point){
+		     qp_ind=qp;
+		     break;
+		  }
+	       }
+
                unsigned int n_sf= cfe->n_shape_functions();
                for (unsigned int i=0; i<n_sf; i++){
-                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i];
+		  if(formulation=="symmetric")
+		     soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+		  else
+		     soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
                }
                re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::real(soln);
                im_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::imag(soln);
@@ -216,6 +232,7 @@ void  solution_write(EquationSystems& equation_systems, std::string filename, st
 
    UniquePtr<NumericVector<Number> > solution_vect = 
         NumericVector<Number>::build(equation_systems.comm());
+   const std::string & formulation = equation_systems.parameters.get<std::string>("formulation");
 
    solution_vect->init((*system.solution).size(), true, SERIAL);
    (*system.solution).localize(* solution_vect);
@@ -245,6 +262,7 @@ void  solution_write(EquationSystems& equation_systems, std::string filename, st
       else
           cfe = fe.get();
       const std::vector<Point>& q_point = cfe->get_xyz();
+      const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
       cfe->reinit(elem);
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
@@ -263,7 +281,10 @@ void  solution_write(EquationSystems& equation_systems, std::string filename, st
 
          //print solution value at that point.
          for (unsigned int i=0; i<n_sf; i++){
-            soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+	    if(formulation=="symmetric")
+		soln+=sqrt(weight[qp]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+            else
+		soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
             //out<<std::endl<<"    "<<(*solution_vect)(dof_indices[i]);
             //out<<"    "<<data.shape[i]<<std::endl;
          }
@@ -281,6 +302,7 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
    
    UniquePtr<NumericVector<Number> > solution_vect = 
         NumericVector<Number>::build(es.comm());
+   const std::string & formulation = es.parameters.get<std::string>("formulation");
 
    solution_vect->init((*system.solution).size(), true, SERIAL);
    (*system.solution).localize(* solution_vect);
@@ -335,10 +357,25 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
             cfe = inf_fe.get();
          else
             cfe = fe.get();
+	 const std::vector<Point>& point = cfe->get_xyz();
+	 const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
          cfe->reinit(elem);
+
+	 unsigned int max_qp = cfe->n_quadrature_points();
+	 int qp_ind;
+	 for (unsigned int qp=0; qp<max_qp; qp++){
+	    if(point[qp]==q_point){
+	       qp_ind=qp;
+	       break;
+	    }
+	 }
+
          unsigned int n_sf= cfe->n_shape_functions();
          for (unsigned int i=0; i<n_sf; i++){
-            soln+=(*solution_vect)(dof_indices[i])*data.shape[i];
+	    if(formulation=="symmetric")
+       	       soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+            else
+       	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
          }
          re_out<<" "<<std::setw(12)<<q_point(0);
          im_out<<" "<<std::setw(12)<<q_point(0);
@@ -373,10 +410,24 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
             cfe = inf_fe.get();
          else
             cfe = fe.get();
+	 const std::vector<Point>& point = cfe->get_xyz();
+	 const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
          cfe->reinit(elem);
+
+	 unsigned int max_qp = cfe->n_quadrature_points();
+	 int qp_ind;
+	 for (unsigned int qp=0; qp<max_qp; qp++){
+	    if(point[qp]==q_point){
+	       qp_ind=qp;
+	       break;
+	    }
+	 }
          unsigned int n_sf= cfe->n_shape_functions();
          for (unsigned int i=0; i<n_sf; i++){
-            soln+=(*solution_vect)(dof_indices[i])*data.shape[i];
+	    if(formulation=="symmetric")
+		soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+            else
+       	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
          }
          re_out<<" "<<std::setw(12)<<q_point(0);
          im_out<<" "<<std::setw(12)<<q_point(0);
@@ -388,4 +439,3 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
       }
    }
 }
-

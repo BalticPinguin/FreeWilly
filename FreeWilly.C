@@ -76,6 +76,7 @@ int main (int argc, char** argv){
    std::string angular_creator=cl("angular", "invalid"); 
    std::string transform=cl("transform", "none"); 
    std::string solv=cl("solver", "none"); 
+   std::string formulation=cl("formulation","original");
    Real r=cl("radius", 20.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
@@ -204,13 +205,16 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<std::string>("potential")=pot_file;
    equation_systems.parameters.set<std::string>("DO_file")=molec_file;
    equation_systems.parameters.set<bool>("quadrat_print") = quadrature_print;
+   equation_systems.parameters.set<std::string>("formulation")=formulation;
 
    // Declare the system variables.
    // Adds the variables to the different equation systems.
    eigen_system.add_variable("phi", fe_type);
- 
-   eigen_system.set_eigenproblem_type(GHEP);
-   //eigen_system.set_eigenproblem_type(GNHEP);
+
+   if(formulation=="symmetric")
+      eigen_system.set_eigenproblem_type(GHEP);
+   else
+      eigen_system.set_eigenproblem_type(GNHEP);
    
    // Set necessary parametrs used in EigenSystem::solve(),
    // i.e. the number of requested eigenpairs \p nev and the number
@@ -226,6 +230,7 @@ int main (int argc, char** argv){
       eigen_system.eigen_solver->set_eigensolver_type(ARNOLDI);
    else if(solv=="lanczos")
       eigen_system.eigen_solver->set_eigensolver_type(LANCZOS);
+   //TODO Check why power does not work. Reason, why davidson etc. are not implemented?
    else
       eigen_system.eigen_solver->set_eigensolver_type(KRYLOVSCHUR); // this is default
    
@@ -279,7 +284,7 @@ int main (int argc, char** argv){
          eigen_system.eigen_solver->set_initial_space(*DO.solution);
    }
    if (lguess>=0){
-      LinearImplicitSystem & guess = equation_systems.add_system<LinearImplicitSystem> ("DO");
+      LinearImplicitSystem & guess = equation_systems.add_system<LinearImplicitSystem> ("SolGuess");
       equation_systems.parameters.set<int>("L_guess")=lguess;
       equation_systems.parameters.set<int>("M_guess")=mguess;
       guess.add_variable("initGuess", fe_type);
@@ -374,7 +379,7 @@ int main (int argc, char** argv){
    unsigned int nconv = eigen_system.get_n_converged();
 
    std::cout << "Number of converged eigenpairs: " << nconv << "\n" << std::endl;
-   
+ 
    std::ostringstream eigenvector_output_name;
    if (pictorious && cubes){
       eigenvector_output_name<< "esp.cube";

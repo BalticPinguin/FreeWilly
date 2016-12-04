@@ -115,6 +115,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    //const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & potfile = es.parameters.get<std::string>("potential");
+   const std::string & formulation = es.parameters.get<std::string>("formulation");
    bool cap=es.parameters.get<bool >("cap");
    Real radius=es.parameters.get<Real>("radius");
    Real gamma =es.parameters.get<Real>("gamma");
@@ -230,11 +231,12 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       const std::vector<std::vector<Real> >& phi = cfe->get_phi();
       const std::vector<std::vector<RealGradient> >& dphi = cfe->get_dphi();
       const std::vector<Point>& q_point = cfe->get_xyz();
-      std::vector<Number> potval;  //initialisation just for dummy reasons
       // get extra data needed for infinite elements
       const std::vector<RealGradient>& dphase = cfe->get_dphase();
       const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
       const std::vector<RealGradient>& dweight = cfe->get_Sobolev_dweight();
+      
+      std::vector<Number> potval;  //initialisation just for dummy reasons
    
       // Compute the element-specific data for the current
       // element.  This involves computing the location of the
@@ -293,13 +295,33 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
          // loop over them:
          for (unsigned int i=0; i<n_sf; i++){
             for (unsigned int j=0; j<n_sf; j++){
-               // this is changed here due the Petrov-Galerkin scheme. and works with finite and infinite elements.
-               Se(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
-               temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
-                     weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
-                     ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-dphi[i][qp]*phi[j][qp]));
-               //H(j,i) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
-               H(i,j) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
+               if (formulation=="original"){
+                  Se(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
+                  temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
+                        weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
+                        ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-dphi[i][qp]*phi[j][qp]));
+                  H(i,j) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
+               }
+               else if (formulation=="squared"){
+                  Se(i,j) += JxW[qp]*weight[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
+                  temp= 2.*dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
+                        weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
+                        ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-dphi[i][qp]*phi[j][qp]));
+                  H(i,j) += JxW[qp]*weight[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
+               }
+               else if (formulation=="symmetric"){
+                  Se(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
+                  temp= (weight[qp]*phi[i][qp]*phi[j][qp]+
+                        co0_5*dweight[qp]*(phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp] +
+                                       ik*dphase[qp]*( phi[i][qp]*phi[j][qp]-phi[i][qp]*phi[j][qp] ))+
+                        weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
+                        ik*(phi[i][qp]*dphase[qp]*dphi[j][qp]-dphase[qp]*dphi[i][qp]*phi[j][qp])));
+                  H(i,j) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
+               }
+               else{
+                  std::cerr<<"Formulation not known.";
+                  assert(false);
+               }
             }
          }
       }
@@ -325,7 +347,18 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       matrix_B.add_matrix (Se, dof_indices2);
 
    } // end of element loop
-         
+   matrix_A.close();
+   matrix_B.close();
+
+   // Aout and Bout need to be initialised differently
+   // std::ostream Aout;
+   // Aout<<"sparsity_A";
+   // std::ostream Bout;
+   // Bout<<"sparsity_B";
+
+   //matrix_A.print(out,true);
+   //matrix_B.print(out,true);
+      
    /**
    * All done!
    */

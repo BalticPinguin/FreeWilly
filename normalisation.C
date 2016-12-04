@@ -40,6 +40,7 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
    //UniquePtr<NumericVector<Number> > local_v2 = NumericVector<Number>::build(es2.comm());
    //local_v2->init((*es2.solution).size(), true, SERIAL);
    //(*es2.solution).localize (*local_v2, es2.get_dof_map().get_send_list());
+   const std::string & formulation = eq_sys.parameters.get<std::string>("formulation");
 
    const FEType & fe_type = es2.get_dof_map().variable_type(var2);
    // Allow space for dims 0-3, even if we don't use them all
@@ -82,6 +83,7 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
          cfe = fe.get();
       const std::vector<Real> &  JxW     = cfe->get_JxW();
       const std::vector<Point> & q_point = cfe->get_xyz();
+      const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
 
       cfe->reinit(elem);
 
@@ -103,9 +105,14 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
          for (unsigned int i=0; i != n_sf; ++i){
             //Use FEComputeData because with infinite elements the value at q_point[i][qp]
             // is not just phi[i][qp].
-            u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
-            v_h += fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
-            
+	    if(formulation=="symmetric"){
+       	       u_h += sqrt(weight[qp])* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+	       v_h += sqrt(weight[qp])* fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
+	    }
+            else{
+       	       u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+	       v_h += fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
+	    }
          }
          //out<<"later: "<<q_point[qp];
          //out<<"  "<<u_h<<std::endl;
@@ -162,6 +169,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
 
    // get the dyson orbital:
    DOrbit dyson (eq_sys.parameters.get<std::string>("DO_file"));
+   const std::string & formulation = eq_sys.parameters.get<std::string>("formulation");
 
    const FEType & fe_type = es1.get_dof_map().variable_type(var1);
    std::vector<dof_id_type> dof_indices;
@@ -191,6 +199,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
          cfe = fe.get();
       const std::vector<Real> &  JxW     = cfe->get_JxW();
       const std::vector<Point> & q_point = cfe->get_xyz();
+      const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
 
       cfe->reinit(elem);
 
@@ -212,7 +221,10 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
          for (unsigned int i=0; i != n_sf; ++i){
             //Use FEComputeData because with infinite elements the value at q_point[i][qp]
             // is not just phi[i][qp].
-            u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+	    if(formulation=="symmetric")
+		u_h += sqrt(weight[qp])* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+            else
+		u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
             
          }
          //norm += JxW[qp] * TensorTools::norm_sq(u_h);
@@ -379,6 +391,7 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
    Real* R = new Real[l_max+1];
    std::vector<Number> solution;
    solution.resize((l_max+1)*(l_max+1));
+   
    std::vector<Number> angular;
    angular.resize((l_max+1)*(l_max+1));
 
@@ -426,6 +439,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
    //Number norm2=0;
     
    Real k = es.parameters.get<Real>("current frequency")*2.*pi;
+   const std::string & formulation = es.parameters.get<std::string>("formulation");
 
    // Localize the potentially parallel vectors
    //UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
@@ -460,6 +474,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
          cfe = fe.get();
       const std::vector<Real> &  JxW     = cfe->get_JxW();
       const std::vector<Point> & q_point = cfe->get_xyz();
+      const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
 
       cfe->reinit(elem);
 
@@ -481,7 +496,10 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
          for (unsigned int i=0; i != n_sf; ++i){
             //Use FEComputeData because with infinite elements the value at q_point[i][qp]
             // is not just phi[i][qp].
-            u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+	    if(formulation=="symmetric")
+		u_h += sqrt(weight[qp])* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+            else
+		u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
          }
          int j=0;
          for(int l=0; l<=l_max; l++){
