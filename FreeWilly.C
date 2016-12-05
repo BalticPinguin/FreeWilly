@@ -76,7 +76,7 @@ int main (int argc, char** argv){
    std::string angular_creator=cl("angular", "invalid"); 
    std::string transform=cl("transform", "none"); 
    std::string solv=cl("solver", "none"); 
-   std::string formulation=cl("formulation","original");
+   std::string formulation=cl("formulation","symmetric");
    Real r=cl("radius", 20.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
