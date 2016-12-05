@@ -160,7 +160,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    fe->attach_quadrature_rule (&qrule);
    inf_fe->attach_quadrature_rule (&qrule);
       
-   Number co0_5= 0.5;
+   Number power= 0.5;
    //libMesh::Number k=omega; //divided by c which is 1 in atomic units.
    // -->ik = -i*k 
    Number ik=sqrt(-(Number)1.)*es.parameters.get<Number>("momentum");
@@ -300,23 +300,24 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                   temp= dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
                         weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
                         ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-dphi[i][qp]*phi[j][qp]));
-                  H(i,j) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
+                  H(i,j) += JxW[qp]*(0.5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
                }
                else if (formulation=="squared"){
                   Se(i,j) += JxW[qp]*weight[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
                   temp= 2.*dweight[qp]*phi[i][qp]*(dphi[j][qp]-ik*dphase[qp]*phi[j][qp])+
                         weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
                         ik*dphase[qp]*(phi[i][qp]*dphi[j][qp]-dphi[i][qp]*phi[j][qp]));
-                  H(i,j) += JxW[qp]*weight[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
+                  H(i,j) += JxW[qp]*weight[qp]*(0.5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
                }
                else if (formulation=="symmetric"){
                   Se(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
-                  temp= (weight[qp]*phi[i][qp]*phi[j][qp]+
-                        co0_5*dweight[qp]*(phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp] +
-                                       ik*dphase[qp]*( phi[i][qp]*phi[j][qp]-phi[i][qp]*phi[j][qp] ))+
-                        weight[qp]*(dphi[j][qp]*dphi[i][qp]-ik*ik*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp]+
-                        ik*(phi[i][qp]*dphase[qp]*dphi[j][qp]-dphase[qp]*dphi[i][qp]*phi[j][qp])));
-                  H(i,j) += JxW[qp]*(co0_5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
+                  temp= power*power*dweight[qp]*dweight[qp]/weight[qp]*phi[i][qp]*phi[j][qp]+
+                        power*dweight[qp]*(phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp] +
+                                       ik*dphase[qp]*(phi[i][qp]*phi[j][qp]-phi[i][qp]*phi[j][qp]))+
+                        weight[qp]*(dphi[j][qp]*dphi[i][qp]
+                                    +ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp]))+
+                        ik*ik*weight[qp]*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp];
+                  H(i,j) += JxW[qp]*(0.5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
                }
                else{
                   std::cerr<<"Formulation not known.";
