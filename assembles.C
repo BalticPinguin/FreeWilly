@@ -160,7 +160,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    fe->attach_quadrature_rule (&qrule);
    inf_fe->attach_quadrature_rule (&qrule);
       
-   Number power= 0.5;
    //libMesh::Number k=omega; //divided by c which is 1 in atomic units.
    // -->ik = -i*k 
    Number ik=sqrt(-(Number)1.)*es.parameters.get<Number>("momentum");
@@ -293,6 +292,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
          // Now, get number of shape functions that are nonzero at this point::
          unsigned int n_sf = cfe->n_shape_functions();
          // loop over them:
+         Number factor= 0.25*dweight[qp]*dweight[qp]/weight[qp]-ik*ik*dphase[qp]*dphase[qp]*weight[qp];
+
          for (unsigned int i=0; i<n_sf; i++){
             for (unsigned int j=0; j<n_sf; j++){
                if (formulation=="original"){
@@ -311,12 +312,10 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                }
                else if (formulation=="symmetric"){
                   Se(i,j) += JxW[qp]*weight[qp]*phi[i][qp]*phi[j][qp];
-                  temp= power*power*dweight[qp]*dweight[qp]/weight[qp]*phi[i][qp]*phi[j][qp]+
-                        power*dweight[qp]*(phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp] +
-                                       ik*dphase[qp]*(phi[i][qp]*phi[j][qp]-phi[i][qp]*phi[j][qp]))+
+                  temp= phi[i][qp]*phi[j][qp]*factor+
+                        0.5*dweight[qp]*(phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp]) +
                         weight[qp]*(dphi[j][qp]*dphi[i][qp]
-                                    +ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp]))+
-                        ik*ik*weight[qp]*dphase[qp]*dphase[qp]*phi[i][qp]*phi[j][qp];
+                                    +ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp]));
                   H(i,j) += JxW[qp]*(0.5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
                }
                else{

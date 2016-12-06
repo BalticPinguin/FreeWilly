@@ -200,7 +200,6 @@ int main (int argc, char** argv){
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
 
    // set the parameters of the calculation now as (globally available) paramers:
-   equation_systems.parameters.set<std::string >("origin_mesh")=cl("mesh_geom", "sphere");
    equation_systems.parameters.set<bool >("cap")=cap;
    equation_systems.parameters.set<std::string>("potential")=pot_file;
    equation_systems.parameters.set<std::string>("DO_file")=molec_file;

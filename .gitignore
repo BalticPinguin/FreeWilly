@@ -1,7 +1,13 @@
-# compiled files
+# libraries:#
 *.o
+FrWll*
 
-# exodus-files
-*.e 
+# exodus-files: #
+*.e
 
-#
+# figures
+*.png
+*.jpg
+
+#errors:
+traceout*

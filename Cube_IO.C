@@ -187,7 +187,7 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                cfe->reinit(elem);
 
 	       unsigned int max_qp = cfe->n_quadrature_points();
-	       int qp_ind;
+	       unsigned int qp_ind;
 	       for (unsigned int qp=0; qp<max_qp; qp++){
 		  if(point[qp]==q_point){
 		     qp_ind=qp;
