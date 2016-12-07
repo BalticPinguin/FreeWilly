@@ -199,6 +199,8 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                for (unsigned int i=0; i<n_sf; i++){
 		  if(formulation=="symmetric")
 		     soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+                  else if(formulation=="root")
+                     soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
 		  else
 		     soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
                }
@@ -283,6 +285,8 @@ void  solution_write(EquationSystems& equation_systems, std::string filename, st
          for (unsigned int i=0; i<n_sf; i++){
 	    if(formulation=="symmetric")
 		soln+=sqrt(weight[qp]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+	    else if(formulation=="root")
+		soln+=sqrt(sqrt(weight[qp])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
             else
 		soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
             //out<<std::endl<<"    "<<(*solution_vect)(dof_indices[i]);
@@ -374,6 +378,8 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
          for (unsigned int i=0; i<n_sf; i++){
 	    if(formulation=="symmetric")
        	       soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+	    else if(formulation=="root")
+		soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
             else
        	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
          }
@@ -426,6 +432,8 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
          for (unsigned int i=0; i<n_sf; i++){
 	    if(formulation=="symmetric")
 		soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+	    else if(formulation=="root")
+		soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
             else
        	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
          }

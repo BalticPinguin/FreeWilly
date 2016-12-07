@@ -109,6 +109,10 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
        	       u_h += sqrt(weight[qp])* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
 	       v_h += sqrt(weight[qp])* fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
 	    }
+	    else if(formulation=="root"){
+       	       u_h += sqrt(sqrt(weight[qp]))* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+	       v_h += sqrt(sqrt(weight[qp]))* fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
+            }
             else{
        	       u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
 	       v_h += fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
@@ -223,6 +227,9 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
             // is not just phi[i][qp].
 	    if(formulation=="symmetric")
 		u_h += sqrt(weight[qp])* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+	    else if(formulation=="root"){
+       	       u_h += sqrt(sqrt(weight[qp]))* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+            }
             else
 		u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
             
@@ -498,6 +505,9 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
             // is not just phi[i][qp].
 	    if(formulation=="symmetric")
 		u_h += sqrt(weight[qp])* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+	    else if(formulation=="root"){
+       	       u_h += sqrt(sqrt(weight[qp]))* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+            }
             else
 		u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
          }

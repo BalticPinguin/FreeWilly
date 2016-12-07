@@ -1,6 +1,6 @@
 #    This is a sample input-file for InSpecTOR.
 
-formulation=symmetric #original,squared, symmetric
+formulation=symmetric #original,squared, symmetric, root
 nev = 15        # any integer
 pot = FooBar    # a string used later for the name of output-files
 Energy =0.05    # photon energy (1eV = 0.0367493 )

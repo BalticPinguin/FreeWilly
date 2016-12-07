@@ -318,6 +318,15 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                                     +ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp]));
                   H(i,j) += JxW[qp]*(0.5*temp + pot*weight[qp]*phi[i][qp]*phi[j][qp]);
                }
+               else if (formulation=="root"){
+                  Se(i,j) += JxW[qp]*sqrt(weight[qp])*phi[i][qp]*phi[j][qp];
+                  temp= (dweight[qp]*dweight[qp]*phi[i][qp]*phi[j][qp]*0.25/weight[qp] +
+                         dweight[qp]*(phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp]))/(4*weight[qp])+
+                        dphi[i][qp]*dphi[j][qp]+
+                        ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp]-
+                                      ik*dphase[qp]*phi[i][qp]*phi[j][qp]);
+                  H(i,j) += JxW[qp]*sqrt(weight[qp])*(0.5*temp + pot*phi[i][qp]*phi[j][qp]);
+               }
                else{
                   std::cerr<<"Formulation not known.";
                   assert(false);

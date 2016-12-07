@@ -210,7 +210,7 @@ int main (int argc, char** argv){
    // Adds the variables to the different equation systems.
    eigen_system.add_variable("phi", fe_type);
 
-   if(formulation=="symmetric")
+   if(formulation=="symmetric" || formulation=="root")
       eigen_system.set_eigenproblem_type(GHEP);
    else
       eigen_system.set_eigenproblem_type(GNHEP);
