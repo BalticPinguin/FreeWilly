@@ -31,6 +31,7 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    UniquePtr<NumericVector<Number> > solution_vect = 
         NumericVector<Number>::build(es.comm());
    const std::string & formulation = es.parameters.get<std::string>("formulation");
+   Real power=es.parameters.get<Real> ("power");
 
    solution_vect->init((*system.solution).size(), true, SERIAL);
    (*system.solution).localize(* solution_vect);
@@ -201,6 +202,8 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
 		     soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
                   else if(formulation=="root")
                      soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+                  else if(formulation=="power")
+                     soln+=pow(weight[qp_ind],power) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
 		  else
 		     soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
                }
@@ -307,6 +310,7 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
    UniquePtr<NumericVector<Number> > solution_vect = 
         NumericVector<Number>::build(es.comm());
    const std::string & formulation = es.parameters.get<std::string>("formulation");
+   Real power=es.parameters.get<Real> ("power");
 
    solution_vect->init((*system.solution).size(), true, SERIAL);
    (*system.solution).localize(* solution_vect);
@@ -380,6 +384,8 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
        	       soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
 	    else if(formulation=="root")
 		soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+	    else if(formulation=="power")
+		soln+=pow(weight[qp_ind],power) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
             else
        	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
          }
@@ -434,6 +440,8 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
 		soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
 	    else if(formulation=="root")
 		soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+	    else if(formulation=="power")
+		soln+=pow(weight[qp_ind],power) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
             else
        	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
          }

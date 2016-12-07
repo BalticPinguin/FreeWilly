@@ -122,6 +122,9 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    Real r_0=es.parameters.get<Real>("r_0");
    std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
    bool quadrature = es.parameters.get<bool>("quadrat_print");
+   Real power=es.parameters.get<Real> ("power");
+   assert(power>0.);
+   assert(power<1.);
 
    struct ESP esp;
    Read(esp, potfile);
@@ -326,6 +329,21 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                         ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp]-
                                       ik*dphase[qp]*phi[i][qp]*phi[j][qp]);
                   H(i,j) += JxW[qp]*sqrt(weight[qp])*(0.5*temp + pot*phi[i][qp]*phi[j][qp]);
+               }
+               else if (formulation=="power"){
+                  Se(i,j) += JxW[qp]*pow(weight[qp],2.*power)*phi[i][qp]*phi[j][qp];
+                //  temp= power*power*dweight[qp]*dweight[qp]*phi[i][qp]*phi[j][qp]*pow(weight[qp],2*power-2)+
+                //        power*dweight[qp]*pow(dweight[qp],2*power-1)*(phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp])+
+                //        pow(dweight[qp],2*power)*dphi[i][qp]*dphi[j][qp]+
+                //        pow(dweight[qp],2*power)*ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp])-
+                //        pow(dweight[qp],2*power)*ik*dphase[qp]*ik*dphase[qp]*phi[i][qp]*phi[j][qp];
+                //  H(i,j) += JxW[qp]*(0.5*temp + pow(dweight[qp],2*power)*pot*phi[i][qp]*phi[j][qp]);
+                  temp= (power*dweight[qp]*phi[i][qp]*phi[j][qp]/weight[qp]+
+                         phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp])*dweight[qp]*power/weight[qp]+
+                        dphi[i][qp]*dphi[j][qp]+
+                        ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp]-
+                                       ik*dphase[qp]*phi[i][qp]*phi[j][qp]);
+                  H(i,j) += JxW[qp]*pow(weight[qp],2.*power)*(0.5*temp + pot*phi[i][qp]*phi[j][qp]);
                }
                else{
                   std::cerr<<"Formulation not known.";

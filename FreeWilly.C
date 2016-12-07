@@ -76,7 +76,8 @@ int main (int argc, char** argv){
    std::string angular_creator=cl("angular", "invalid"); 
    std::string transform=cl("transform", "none"); 
    std::string solv=cl("solver", "none"); 
-   std::string formulation=cl("formulation","symmetric");
+   std::string formulation=cl("formulation","root");
+   Real power=cl("power",0.99);
    Real r=cl("radius", 20.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
@@ -205,12 +206,13 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<std::string>("DO_file")=molec_file;
    equation_systems.parameters.set<bool>("quadrat_print") = quadrature_print;
    equation_systems.parameters.set<std::string>("formulation")=formulation;
+   equation_systems.parameters.set<Real> ("power")=power;
 
    // Declare the system variables.
    // Adds the variables to the different equation systems.
    eigen_system.add_variable("phi", fe_type);
 
-   if(formulation=="symmetric" || formulation=="root")
+   if(formulation=="symmetric" || formulation=="root" || formulation=="power")
       eigen_system.set_eigenproblem_type(GHEP);
    else
       eigen_system.set_eigenproblem_type(GNHEP);
@@ -451,7 +453,7 @@ int main (int argc, char** argv){
          eigpair = eigen_system.get_eigenpair(i);
          equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
          intensity=normalise(equation_systems, true);
-         out<<"intensity:  "<<intensity<<std::endl;
+         out<<"intensity:  "<< std::scientific<<intensity<<std::endl;
       }
    }
    out<<"norm of DO: ";

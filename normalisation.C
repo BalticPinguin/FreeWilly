@@ -41,6 +41,7 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
    //local_v2->init((*es2.solution).size(), true, SERIAL);
    //(*es2.solution).localize (*local_v2, es2.get_dof_map().get_send_list());
    const std::string & formulation = eq_sys.parameters.get<std::string>("formulation");
+   Real power=eq_sys.parameters.get<Real> ("power");
 
    const FEType & fe_type = es2.get_dof_map().variable_type(var2);
    // Allow space for dims 0-3, even if we don't use them all
@@ -113,6 +114,10 @@ Number calculate_overlap(EquationSystems& eq_sys, const std::string sys1, int va
        	       u_h += sqrt(sqrt(weight[qp]))* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
 	       v_h += sqrt(sqrt(weight[qp]))* fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
             }
+	    else if(formulation=="power"){
+       	       u_h += pow(weight[qp],power)* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
+	       v_h += pow(weight[qp],power)* fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
+            }
             else{
        	       u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
 	       v_h += fe_data.shape[i] * (*es2.solution)(dof_indices[i]);
@@ -174,6 +179,7 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
    // get the dyson orbital:
    DOrbit dyson (eq_sys.parameters.get<std::string>("DO_file"));
    const std::string & formulation = eq_sys.parameters.get<std::string>("formulation");
+   Real power=eq_sys.parameters.get<Real> ("power");
 
    const FEType & fe_type = es1.get_dof_map().variable_type(var1);
    std::vector<dof_id_type> dof_indices;
@@ -227,9 +233,10 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
             // is not just phi[i][qp].
 	    if(formulation=="symmetric")
 		u_h += sqrt(weight[qp])* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
-	    else if(formulation=="root"){
+	    else if(formulation=="root")
        	       u_h += sqrt(sqrt(weight[qp]))* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
-            }
+	    else if(formulation=="power")
+       	       u_h += pow(weight[qp],power)* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
             else
 		u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
             
@@ -447,6 +454,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
     
    Real k = es.parameters.get<Real>("current frequency")*2.*pi;
    const std::string & formulation = es.parameters.get<std::string>("formulation");
+   Real power=es.parameters.get<Real> ("power");
 
    // Localize the potentially parallel vectors
    //UniquePtr<NumericVector<Number> > local_v1 = NumericVector<Number>::build(es1.comm());
@@ -505,9 +513,10 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
             // is not just phi[i][qp].
 	    if(formulation=="symmetric")
 		u_h += sqrt(weight[qp])* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
-	    else if(formulation=="root"){
+	    else if(formulation=="root")
        	       u_h += sqrt(sqrt(weight[qp]))* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
-            }
+	    else if(formulation=="power")
+		u_h += pow(weight[qp],power)* fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
             else
 		u_h += fe_data.shape[i] * (*es1.solution)(dof_indices[i]);
          }
