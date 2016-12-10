@@ -449,17 +449,19 @@ int main (int argc, char** argv){
    else{
       Real intensity;
       for(unsigned int i=0; i<nconv; i++){
-         out<<" for the solution nr "<<i<<":"<<std::endl;
+         //out<<" for the solution nr "<<i<<":"<<std::endl;
          eigpair = eigen_system.get_eigenpair(i);
          equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
          intensity=normalise(equation_systems, true);
-         out<<"intensity:  "<< std::scientific<<intensity<<std::endl;
+         out<<"solution: "i<<"  ";
+         out<<eigpair.first+equation_systems.parameters.get<Real>("E_do")<<"  ";
+         out<<std::scientific<<intensity<<std::endl;
       }
    }
-   out<<"norm of DO: ";
-   out<< sqrt(norm_DO(equation_systems, true))<<std::endl;
-   out<<" exact: "<<dyson.get_norm()<<std::endl;
-   //PlotSphericals (equation_systems, 10);
+   //out<<"norm of DO: ";
+   //out<< sqrt(norm_DO(equation_systems, true))<<std::endl;
+   //out<<" exact: "<<dyson.get_norm()<<std::endl;
+   PlotSphericals (equation_systems, 10);
 
    // All done.
    return 0;

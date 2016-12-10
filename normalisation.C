@@ -338,9 +338,9 @@ Number norm_DO(EquationSystems& eq_sys, bool infinite){
 
 Real normalise(EquationSystems& equation_systems, bool infel){
    //normalise eigen_system:
-   Number norm_phi=calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP);
-   out<<"norm of phi: ";
-   out<< sqrt(norm_phi) <<std::endl;
+   //Number norm_phi=calculate_overlap(equation_systems, "EigenSE", 0, "EigenSE", 0, OVERLAP);
+   //out<<"norm of phi: ";
+   //out<< sqrt(norm_phi) <<std::endl;
 
    Real overlap=0;
    //compute <DO| mu |phi>
