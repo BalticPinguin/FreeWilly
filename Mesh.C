@@ -89,6 +89,10 @@ std::pair<int, Real> chose_scheme(int circle, int N, Real L, Real p, Real r_max,
       scale=pow(L,circle)*r_max/pow(L,N);
       pts_circle = std::min((int)(12.5*L*L/((1-L)*(1-L))), 300);
    }
+   else if (scheme == "const_son"){
+      scale=L*circle/(N-circle+L*N/r_max);
+      pts_circle = std::min((int)(12.5*L*L/((1-L)*(1-L))), 300);
+   }
    else if (scheme == "const_tm"){
       scale=L*circle/( pow((Real)N/circle,p)* (L*N/r_max-1.)+1. );
       pts_circle = std::min((int)(12.5*L*L/((1-L)*(1-L))), 300);

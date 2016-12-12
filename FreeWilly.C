@@ -106,10 +106,13 @@ int main (int argc, char** argv){
    DOrbit dyson(molec_file);
    Real Energy= E-dyson.get_energy();
 
+   // negative energies don't make sense here.
+   assert(Energy>0);
+
    // make sure the box contains at least four waves:
 
-   //if(r<= 4.*pi*sqrt(2/Energy) && !infel)
-   //   r= 4.*pi*sqrt(2/Energy);
+   if(r<= 4.*pi*sqrt(2/Energy) && !infel)
+      r= 4.*pi*sqrt(2/Energy);
 
    //r=1./sqrt(2.*Energy);
 
@@ -453,7 +456,7 @@ int main (int argc, char** argv){
          eigpair = eigen_system.get_eigenpair(i);
          equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
          intensity=normalise(equation_systems, true);
-         out<<"solution: "i<<"  ";
+         out<<"solution: "<<i<<"  ";
          out<<eigpair.first+equation_systems.parameters.get<Real>("E_do")<<"  ";
          out<<std::scientific<<intensity<<std::endl;
       }

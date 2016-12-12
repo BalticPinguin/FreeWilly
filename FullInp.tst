@@ -20,7 +20,7 @@ gamma=2   # parameter to scale the cap.
 angular=fibonacci # fibonacci, spiral, archimedes, lebedev, womEV, womMD, fliME, womMN, Sdesign #, geodesic4, geodesic6
 order = 1
 radius= 20.
-scheme= son      # son, tm, const, quadr, const_tm, sqrt_tm, tm_300
+scheme= son      # son, tm, const, quadr, const_tm, sqrt_tm, tm_300, const_son
 p=1.0            # if scheme==tm, this option is evaluated.
 maxVol= 800.
 bending= 20.
