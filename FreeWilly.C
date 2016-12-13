@@ -79,6 +79,7 @@ int main (int argc, char** argv){
    std::string formulation=cl("formulation","root");
    Real power=cl("power",0.99);
    Real r=cl("radius", 20.);
+   Real offset=cl("offset", 1.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
    Real E = cl("Energy",0.0);
@@ -215,7 +216,10 @@ int main (int argc, char** argv){
    // Adds the variables to the different equation systems.
    eigen_system.add_variable("phi", fe_type);
 
-   if(formulation=="symmetric" || formulation=="root" || formulation=="power")
+
+   if (cap) // CAP always result in non-hermitian hamiltonian
+      eigen_system.set_eigenproblem_type(GNHEP);
+   else if(formulation=="symmetric" || formulation=="root" || formulation=="power")
       eigen_system.set_eigenproblem_type(GHEP);
    else
       eigen_system.set_eigenproblem_type(GNHEP);
@@ -242,6 +246,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
    equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = maxiter;
    equation_systems.parameters.set<Real> ("radius") = r;
+   equation_systems.parameters.set<Real> ("offset") = offset;
    equation_systems.parameters.set<Real> ("r_0") = r_0;
    equation_systems.parameters.set<Real> ("gamma") = gamma;
    equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = dyson.geometry;
@@ -464,7 +469,7 @@ int main (int argc, char** argv){
    //out<<"norm of DO: ";
    //out<< sqrt(norm_DO(equation_systems, true))<<std::endl;
    //out<<" exact: "<<dyson.get_norm()<<std::endl;
-   PlotSphericals (equation_systems, 10);
+   //PlotSphericals (equation_systems, 10);
 
    // All done.
    return 0;

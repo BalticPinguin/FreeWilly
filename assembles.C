@@ -118,6 +118,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    const std::string & formulation = es.parameters.get<std::string>("formulation");
    bool cap=es.parameters.get<bool >("cap");
    Real radius=es.parameters.get<Real>("radius");
+   Real offset=es.parameters.get<Real>("offset");
    Real gamma =es.parameters.get<Real>("gamma");
    Real r_0=es.parameters.get<Real>("r_0");
    std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
@@ -288,8 +289,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                if ((q_point[qp]-mol_geom[site]).norm()<mindist)
                   mindist=(q_point[qp]-mol_geom[site]).norm();
             }
-            if (mindist>=radius)
-               pot=potval[qp]+Number(0,gamma*mindist*mindist);
+            if (mindist>=radius-offset)
+               pot=potval[qp]+Number(0,gamma*(mindist-radius+offset)*(mindist-radius+offset));
          }
 
          // Now, get number of shape functions that are nonzero at this point::
