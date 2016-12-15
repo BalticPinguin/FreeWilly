@@ -91,9 +91,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    Real r = 2.*es.parameters.get<Real>("radius");
    Real lambda = 1./es.parameters.get<Real>("current frequency");
 
-   Real dx=std::min(lambda/6.,0.02);
-   Real dy=std::min(lambda/6.,0.02);
-   Real dz=std::min(lambda/6.,0.02);
+   Real dx=std::min(lambda/6.,0.1);
+   Real dy=std::min(lambda/6.,0.1);
+   Real dz=std::min(lambda/6.,0.1);
    unsigned int nx=(2*r+(max(0)-min(0)))/dx;
    unsigned int ny=(2*r+(max(1)-min(1)))/dy;
    unsigned int nz=(2*r+(max(2)-min(2)))/dz;
@@ -151,6 +151,8 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
       abs_out<<" "<<std::setw(12)<<std::setprecision(6)<<geom[i](2)<<"\n";
    }
 
+   Real interpolated_dist = 0.;
+
    unsigned int ix, iy, iz;
    PointLocatorTree pt_lctr(mesh);
    //pt_lctr.enable_out_of_mesh_mode();
@@ -183,29 +185,41 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                   cfe = inf_fe.get();
                else
                   cfe = fe.get();
-	       const std::vector<Point>& point = cfe->get_xyz();
-	       const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
+	       //const std::vector<Point>& point = cfe->get_xyz();
                cfe->reinit(elem);
-
-	       unsigned int max_qp = cfe->n_quadrature_points();
-	       unsigned int qp_ind;
-	       for (unsigned int qp=0; qp<max_qp; qp++){
-		  if(point[qp]==q_point){
-		     qp_ind=qp;
-		     break;
-		  }
-	       }
 
                unsigned int n_sf= cfe->n_shape_functions();
                for (unsigned int i=0; i<n_sf; i++){
-		  if(formulation=="symmetric")
-		     soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
-                  else if(formulation=="root")
-                     soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
-                  else if(formulation=="power")
-                     soln+=pow(weight[qp_ind],power) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
-		  else
-		     soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+                  // I need to model the damping function myself since the sobolev-weight is available only
+                  // at quadrature points...
+                  if(elem->infinite()){
+                     Point origin=elem->origin();
+                     UniquePtr<const Elem> base_el (elem->build_side_ptr(0));
+
+                     const Order    base_mapping_order     (base_el->default_order());
+                     const ElemType base_mapping_elem_type (base_el->type());
+
+                     const unsigned int n_base_nodes = base_el->n_nodes();
+                     interpolated_dist=0;
+                     for (unsigned int n=0; n<n_base_nodes; n++)
+                           interpolated_dist += Point(base_el->point(n) - origin).norm()
+                              * FE<2,LAGRANGE>::shape (base_mapping_elem_type, base_mapping_order, n, q_point);
+
+                     if(formulation=="symmetric")
+                        // multiply with sqrt(D(r))
+                        soln+=(*solution_vect)(dof_indices[i])*data.shape[i]/interpolated_dist; 
+                     else if(formulation=="root")
+                        // multiply with sqrt(D(r))
+                        soln+= (*solution_vect)(dof_indices[i])*data.shape[i]/sqrt(interpolated_dist); 
+                     else if(formulation=="power")
+                        // hoping the order is same in shape and dof_indices.
+                        soln+= (*solution_vect)(dof_indices[i])*data.shape[i]/pow(interpolated_dist,power*2.);
+                     else
+                        // in original formulation: undamped solution.
+                        soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+                  }
+                  else
+                     soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
                }
                re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::real(soln);
                im_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::imag(soln);
@@ -238,6 +252,7 @@ void  solution_write(EquationSystems& equation_systems, std::string filename, st
    UniquePtr<NumericVector<Number> > solution_vect = 
         NumericVector<Number>::build(equation_systems.comm());
    const std::string & formulation = equation_systems.parameters.get<std::string>("formulation");
+   Real power=equation_systems.parameters.get<Real> ("power");
 
    solution_vect->init((*system.solution).size(), true, SERIAL);
    (*system.solution).localize(* solution_vect);
@@ -287,13 +302,13 @@ void  solution_write(EquationSystems& equation_systems, std::string filename, st
          //print solution value at that point.
          for (unsigned int i=0; i<n_sf; i++){
 	    if(formulation=="symmetric")
-		soln+=sqrt(weight[qp]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+       	       soln+=sqrt(weight[qp]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
 	    else if(formulation=="root")
 		soln+=sqrt(sqrt(weight[qp])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+	    else if(formulation=="power")
+		soln+=pow(weight[qp],power) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
             else
-		soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
-            //out<<std::endl<<"    "<<(*solution_vect)(dof_indices[i]);
-            //out<<"    "<<data.shape[i]<<std::endl;
+       	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
          }
          out<<std::real(soln)<<"  "<<std::imag(soln)<<std::endl;
       }
@@ -339,6 +354,7 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
 
    PointLocatorTree pt_lctr(mesh);
    unsigned int num_line=0;
+   Real interpolated_dist = 0.;
    Real N = 600.;
    Point q_point;
    for (int pts=1;pts<=N;pts++) {
@@ -365,29 +381,40 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
             cfe = inf_fe.get();
          else
             cfe = fe.get();
-	 const std::vector<Point>& point = cfe->get_xyz();
-	 const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
+	 //const std::vector<Point>& point = cfe->get_xyz();
+	 //const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
          cfe->reinit(elem);
-
-	 unsigned int max_qp = cfe->n_quadrature_points();
-	 int qp_ind;
-	 for (unsigned int qp=0; qp<max_qp; qp++){
-	    if(point[qp]==q_point){
-	       qp_ind=qp;
-	       break;
-	    }
-	 }
 
          unsigned int n_sf= cfe->n_shape_functions();
          for (unsigned int i=0; i<n_sf; i++){
-	    if(formulation=="symmetric")
-       	       soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
-	    else if(formulation=="root")
-		soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
-	    else if(formulation=="power")
-		soln+=pow(weight[qp_ind],power) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+            if(elem->infinite()){
+               Point origin=elem->origin();
+               UniquePtr<const Elem> base_el (elem->build_side_ptr(0));
+
+               const Order    base_mapping_order     (base_el->default_order());
+               const ElemType base_mapping_elem_type (base_el->type());
+
+               const unsigned int n_base_nodes = base_el->n_nodes();
+               interpolated_dist=0;
+               for (unsigned int n=0; n<n_base_nodes; n++)
+                     interpolated_dist += Point(base_el->point(n) - origin).norm()
+                        * FE<2,LAGRANGE>::shape (base_mapping_elem_type, base_mapping_order, n, q_point);
+
+               if(formulation=="symmetric")
+                  // multiply with sqrt(D(r))
+                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]/interpolated_dist; 
+               else if(formulation=="root")
+                  // multiply with sqrt(D(r))
+                  soln+= (*solution_vect)(dof_indices[i])*data.shape[i]/sqrt(interpolated_dist); 
+               else if(formulation=="power")
+                  // hoping the order is same in shape and dof_indices.
+                  soln+= (*solution_vect)(dof_indices[i])*data.shape[i]/pow(interpolated_dist,power*2.);
+               else
+                  // in original formulation: undamped solution.
+                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+            }
             else
-       	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+               soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
          }
          re_out<<" "<<std::setw(12)<<q_point(0);
          im_out<<" "<<std::setw(12)<<q_point(0);
@@ -422,28 +449,40 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
             cfe = inf_fe.get();
          else
             cfe = fe.get();
-	 const std::vector<Point>& point = cfe->get_xyz();
-	 const std::vector<Real>& weight = cfe->get_Sobolev_weight(); // in publication called D
+	 //const std::vector<Point>& point = cfe->get_xyz();
          cfe->reinit(elem);
 
-	 unsigned int max_qp = cfe->n_quadrature_points();
-	 int qp_ind;
-	 for (unsigned int qp=0; qp<max_qp; qp++){
-	    if(point[qp]==q_point){
-	       qp_ind=qp;
-	       break;
-	    }
-	 }
          unsigned int n_sf= cfe->n_shape_functions();
          for (unsigned int i=0; i<n_sf; i++){
-	    if(formulation=="symmetric")
-		soln+=sqrt(weight[qp_ind]) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
-	    else if(formulation=="root")
-		soln+=sqrt(sqrt(weight[qp_ind])) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
-	    else if(formulation=="power")
-		soln+=pow(weight[qp_ind],power) * (*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+            if(elem->infinite()){
+               Point origin=elem->origin();
+               UniquePtr<const Elem> base_el (elem->build_side_ptr(0));
+
+               const Order    base_mapping_order     (base_el->default_order());
+               const ElemType base_mapping_elem_type (base_el->type());
+
+               const unsigned int n_base_nodes = base_el->n_nodes();
+               interpolated_dist=0;
+               for (unsigned int n=0; n<n_base_nodes; n++)
+                     interpolated_dist += Point(base_el->point(n) - origin).norm()
+                        * FE<2,LAGRANGE>::shape (base_mapping_elem_type, base_mapping_order, n, q_point);
+
+               if(formulation=="symmetric")
+                  // multiply with sqrt(D(r))
+                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]/interpolated_dist; 
+               else if(formulation=="root")
+                  // multiply with sqrt(D(r))
+                  soln+= (*solution_vect)(dof_indices[i])*data.shape[i]/sqrt(interpolated_dist); 
+               else if(formulation=="power")
+                  // hoping the order is same in shape and dof_indices.
+                  soln+= (*solution_vect)(dof_indices[i])*data.shape[i]/pow(interpolated_dist,power*2.);
+               else
+                  // in original formulation: undamped solution.
+                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+            }
             else
-       	       soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+               soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
+
          }
          re_out<<" "<<std::setw(12)<<q_point(0);
          im_out<<" "<<std::setw(12)<<q_point(0);
