@@ -140,9 +140,31 @@ int main (int argc, char** argv){
    int order=cl("order", 1);
  
    // define the fe_type including infinite eleemnt parameters:
-   //FEType fe_type(FIRST, LAGRANGE, FIRST, JACOBI_20_00, CARTESIAN);
-   FEType fe_type(FIRST, LAGRANGE, FIFTH, JACOBI_20_00, CARTESIAN);
-   //FEType fe_type(FIRST, LAGRANGE, EIGHTTEENTH, JACOBI_20_00, CARTESIAN);
+   FEType fe_type(FIRST, LAGRANGE, SECOND, JACOBI_20_00, CARTESIAN);
+   int radOrder=cl("radorder",2);
+   if (radOrder==1)
+      fe_type.radial_order=FIRST;
+   else if (radOrder==2)
+      fe_type.radial_order=SECOND;
+   else if (radOrder==3)
+      fe_type.radial_order=THIRD;
+   else if (radOrder==4)
+      fe_type.radial_order=FOURTH;
+   else if (radOrder==5)
+      fe_type.radial_order=FIFTH;
+   else if (radOrder==6)
+      fe_type.radial_order=SIXTH;
+   else if (radOrder==7)
+      fe_type.radial_order=SEVENTH;
+   else if (radOrder==8)
+      fe_type.radial_order=EIGHTH;
+   else if (radOrder==9)
+      fe_type.radial_order=NINTH;
+   else if (radOrder==10)
+      fe_type.radial_order=TENTH;
+   else
+      fe_type.radial_order=EIGHTTEENTH;
+
    if (order==2){
       //convert element to second-order mesh.
       // In case of tetrahedra: from Tet4 to Tet10
@@ -451,7 +473,7 @@ int main (int argc, char** argv){
       equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
       if(cubes){
          eigenvector_output_name.str(std::string());
-         eigenvector_output_name<< "phi-"<<i <<".cube";
+         eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".cube";
          cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE");
       }
       //eigenvector_output_name.str(std::string());
