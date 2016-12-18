@@ -76,26 +76,26 @@ int main (int argc, char** argv){
    std::string angular_creator=cl("angular", "invalid"); 
    std::string transform=cl("transform", "none"); 
    std::string solv=cl("solver", "none"); 
-   std::string formulation=cl("formulation","root");
+   int maxiter=cl("maxiter", 700);
+   const unsigned int nev = cl("nev",10);
+   std::string formulation=cl("formulation","power");
    Real power=cl("power",0.99);
    Real r=cl("radius", 20.);
-   Real offset=cl("offset", 1.);
    std::string scheme=cl("scheme", "tm");
    Real p=cl("p", 1.0);
    Real E = cl("Energy",0.0);
    Real VolConst= cl("maxVol", 1./(2*E*E*E));
    Real L=cl("bending", 2.);
-   Real r_0=cl("r_0",12.);
-   Real gamma=cl("gamma",0.0);
    int N=cl("circles", 5);
-   int maxiter=cl("maxiter", 700);
    bool cap = cl("cap", false);
+   Real offset=cl("offset", 1.);
+   Real gamma=cl("gamma",0.0);
    bool refinement=cl("refine", false);
    bool quadrature_print = cl("print_quadrature", false);
    bool pictorious = cl("pictorious", false);
    int spherical_analysis= cl("spherical_analysis", -1);
    bool cubes = cl("cubes", false);
-   const unsigned int nev = cl("nev",10);
+   Real r_0=cl("r_0",12.);
 
    int lguess=cl("guessed l", -1);
    int mguess=cl("guessed m", lguess);
@@ -118,7 +118,7 @@ int main (int argc, char** argv){
    //r=1./sqrt(2.*Energy);
 
    // make sure that the distance between two spheres is 
-   // at least ~ 1/(4*lambda)
+   // at least ~ 1/(4*lambda) //
    if (N<=(int)(sqrt(Energy)*r/17.8))
       N=(int)(r*sqrt(Energy)/17.8);
  
@@ -142,6 +142,7 @@ int main (int argc, char** argv){
    // define the fe_type including infinite eleemnt parameters:
    //FEType fe_type(FIRST, LAGRANGE, FIRST, JACOBI_20_00, CARTESIAN);
    FEType fe_type(FIRST, LAGRANGE, FIFTH, JACOBI_20_00, CARTESIAN);
+   //FEType fe_type(FIRST, LAGRANGE, EIGHTTEENTH, JACOBI_20_00, CARTESIAN);
    if (order==2){
       //convert element to second-order mesh.
       // In case of tetrahedra: from Tet4 to Tet10
@@ -211,6 +212,18 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<bool>("quadrat_print") = quadrature_print;
    equation_systems.parameters.set<std::string>("formulation")=formulation;
    equation_systems.parameters.set<Real> ("power")=power;
+   // Set necessary parametrs used in EigenSystem::solve(),
+   // i.e. the number of requested eigenpairs \p nev and the number
+   // of basis vectors \p ncv used in the solution algorithm. Note that
+   // ncv >= nev must hold and ncv >= 2*nev is recommended.
+   equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
+   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
+
+   equation_systems.parameters.set<Real> ("radius") = r;
+   equation_systems.parameters.set<Real> ("offset") = offset;
+   equation_systems.parameters.set<Real> ("r_0") = r_0;
+   equation_systems.parameters.set<Real> ("gamma") = gamma;
+   equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = dyson.geometry;
 
    // Declare the system variables.
    // Adds the variables to the different equation systems.
@@ -223,13 +236,6 @@ int main (int argc, char** argv){
       eigen_system.set_eigenproblem_type(GHEP);
    else
       eigen_system.set_eigenproblem_type(GNHEP);
-   
-   // Set necessary parametrs used in EigenSystem::solve(),
-   // i.e. the number of requested eigenpairs \p nev and the number
-   // of basis vectors \p ncv used in the solution algorithm. Note that
-   // ncv >= nev must hold and ncv >= 2*nev is recommended.
-   equation_systems.parameters.set<unsigned int>("eigenpairs")    = nev;
-   equation_systems.parameters.set<unsigned int>("basis vectors") = nev*3+4;
    
    // chose among the solver options.  
    if(solv=="lapack")
@@ -245,13 +251,6 @@ int main (int argc, char** argv){
    // Set the solver tolerance and the maximum number of iterations.
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
    equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = maxiter;
-   equation_systems.parameters.set<Real> ("radius") = r;
-   equation_systems.parameters.set<Real> ("offset") = offset;
-   equation_systems.parameters.set<Real> ("r_0") = r_0;
-   equation_systems.parameters.set<Real> ("gamma") = gamma;
-   equation_systems.parameters.set<std::vector<Node>> ("mol_geom") = dyson.geometry;
-   equation_systems.parameters.set<bool> ("cap") = cap;
-
    // E=0.5* k*k   -> k=sqrt(2*E)
    // k= 2*pi*f
    // f=1/lambda   -> lambda=2*pi/k=2*pi/sqrt(2E)=pi*sqrt(2/E)
@@ -260,7 +259,8 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real>("energy")=Energy;
    equation_systems.parameters.set<Number>("momentum")=sqrt((Energy)*2.);
    equation_systems.parameters.set<Real>("E_do")=dyson.get_energy();
-   equation_systems.parameters.set<Real>("current frequency")=sqrt(Energy/2.)/pi;
+   equation_systems.parameters.set<Real>("speed")=137.0359991;
+   equation_systems.parameters.set<Real>("current frequency")=sqrt(Energy/2.)/(pi*137.0359991);
 
    equation_systems.parameters.print();
 
@@ -404,6 +404,33 @@ int main (int argc, char** argv){
       std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
    }
    nconv=std::min(nconv, nev);
+
+   if (nconv==0){
+      // that one can look at the mesh and some properties...
+      #ifdef LIBMESH_HAVE_EXODUS_API
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
+         if (infel)
+            eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
+         else
+            eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<".e" ;
+         ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
+      #endif // #ifdef LIBMESH_HAVE_EXODUS_API
+      //out<<"norm of DO: ";
+      //out<< sqrt(norm_DO(equation_systems))<<std::endl;
+   }
+   else{
+      Real intensity;
+      for(unsigned int i=0; i<nconv; i++){
+         //out<<" for the solution nr "<<i<<":"<<std::endl;
+         eigpair = eigen_system.get_eigenpair(i);
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
+         intensity=normalise(equation_systems, true);
+         out<<"solution: "<<i<<"  ";
+         out<<eigpair.first+equation_systems.parameters.get<Real>("E_do")<<"  ";
+         out<<std::scientific<<intensity<<std::endl;
+      }
+   }
+
    // Write the eigen vector to file.
    for(unsigned int i=0; i<nconv; i++){
       eigpair = eigen_system.get_eigenpair(i);
@@ -421,7 +448,7 @@ int main (int argc, char** argv){
       //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
   
       // frequency=k/2*pi.
-      equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
+      equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
       if(cubes){
          eigenvector_output_name.str(std::string());
          eigenvector_output_name<< "phi-"<<i <<".cube";
@@ -436,34 +463,8 @@ int main (int argc, char** argv){
    if (spherical_analysis>=0){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
+         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
          ProjectSphericals (equation_systems, spherical_analysis, i);
-      }
-   }
-
-   if (nconv==0){
-      // that one can look at the mesh and some properties...
-      #ifdef LIBMESH_HAVE_EXODUS_API
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
-         if (infel)
-            eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
-         else
-            eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<".e" ;
-         ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
-      #endif // #ifdef LIBMESH_HAVE_EXODUS_API
-      //out<<"norm of DO: ";
-      //out<< sqrt(norm_DO(equation_systems))<<std::endl;
-   }
-   else{
-      Real intensity;
-      for(unsigned int i=0; i<nconv; i++){
-         //out<<" for the solution nr "<<i<<":"<<std::endl;
-         eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/pi;
-         intensity=normalise(equation_systems, true);
-         out<<"solution: "<<i<<"  ";
-         out<<eigpair.first+equation_systems.parameters.get<Real>("E_do")<<"  ";
-         out<<std::scientific<<intensity<<std::endl;
       }
    }
    //out<<"norm of DO: ";
