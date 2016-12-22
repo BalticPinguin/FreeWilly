@@ -18,6 +18,7 @@ cap=false # switches complex absorbing boundaries on and off.
 gamma=2   # parameter to scale the cap.
 offset=1  # distance from the edge to the starting of CAP
 
+Qorder=2
 radorder=18
 angular=fibonacci # fibonacci, spiral, archimedes, lebedev, womEV, womMD, fliME, womMN, Sdesign #, geodesic4, geodesic6
 order = 1

@@ -156,23 +156,61 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    
    // A  Gauss quadrature rule for numerical integration.
    // Use the default quadrature order.
-   //QGauss qrule (dim, fe_type.default_quadrature_order());
-   QGauss qrule (dim, SIXTH);
-   //QGauss qrule (dim, TWENTIETH);
-      
-   // Tell the finite element object to use our quadrature rule.
+   int order=es.parameters.get<int> ("Qorder");
+   Order qorder=fe_type.default_quadrature_order();
+   if (order==1)
+      qorder=FIRST;
+   else if (order==2)
+      qorder=SECOND;
+   else if (order==3)
+      qorder=THIRD;
+   else if (order==4)
+      qorder=FOURTH;
+   else if (order==5)
+      qorder=FIFTH;
+   else if (order==6)
+      qorder=SIXTH;
+   else if (order==7)
+      qorder=SEVENTH;
+   else if (order==8)
+      qorder=EIGHTH;
+   else if (order==9)
+      qorder=NINTH;
+   else if (order==10)
+      qorder=TENTH;
+   else if (order==11)
+      qorder=ELEVENTH;
+   else if (order==12)
+      qorder=TWELFTH;
+   else if (order==13)
+      qorder=THIRTEENTH;
+   else if (order==14)
+      qorder=FOURTEENTH;
+   else if (order==15)
+      qorder=FIFTEENTH;
+   else if (order==16)
+      qorder=SIXTEENTH;
+   else if (order==17)
+      qorder=SEVENTEENTH;
+   else if (order==18)
+      qorder=EIGHTTEENTH;
+   else if (order==19)
+      qorder=NINETEENTH;
+   else if (order>=20)
+      qorder=TWENTIETH;
+   QGauss qrule (dim, qorder);
    fe->attach_quadrature_rule (&qrule);
    inf_fe->attach_quadrature_rule (&qrule);
       
+   // Tell the finite element object to use our quadrature rule.
+
    //libMesh::Number k=omega; //divided by c which is 1 in atomic units.
    // -->ik = -i*k 
    Number ik=sqrt(-(Number)1.)*es.parameters.get<Number>("momentum");
    //out<<" i*k= "<<ik<<es.parameters.get<Number>("momentum")<<std::endl;
-   //ik=sqrt(-es.parameters.get<Real>("energy")*(Number)2);
-   //out<<" i*k= "<<ik<<sqrt(-(Number)1.)<<std::endl;
 
    // set parameters for infinite elements:
-   es.parameters.set<Real>("speed")=1.;
+   es.parameters.set<Real>("speed")=137.0359991;
 
    Number temp; 
       
@@ -370,8 +408,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    //matrix_A.print(out,true);
    //matrix_B.print(out,true);
-   matrix_A.print_personal();
-   matrix_B.print_personal();
+   //matrix_A.print_personal();
+   //matrix_B.print_personal();
    //matrix_B.print(out, true);
    /**
    * All done!

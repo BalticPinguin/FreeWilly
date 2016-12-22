@@ -97,6 +97,7 @@ int main (int argc, char** argv){
    bool cubes = cl("cubes", false);
    Real r_0=cl("r_0",12.);
 
+   int Qorder=cl("Qorder",2);
    int lguess=cl("guessed l", -1);
    int mguess=cl("guessed m", lguess);
 
@@ -141,8 +142,8 @@ int main (int argc, char** argv){
  
    // define the fe_type including infinite eleemnt parameters:
    FEType fe_type(FIRST, LAGRANGE, SECOND, JACOBI_20_00, CARTESIAN);
-   if(formulation=="power" && power < 0.3)
-      fe_type.radial_family=LEGENDRE;
+  // if(formulation=="power" && power < 0.3)
+  //    fe_type.radial_family=LEGENDRE;
    int radOrder=cl("radorder",2);
    if (radOrder==1)
       fe_type.radial_order=FIRST;
@@ -230,6 +231,7 @@ int main (int argc, char** argv){
    CondensedEigenSystem & eigen_system = equation_systems.add_system<CondensedEigenSystem> ("EigenSE");
 
    // set the parameters of the calculation now as (globally available) paramers:
+   equation_systems.parameters.set<int> ("Qorder")=Qorder;
    equation_systems.parameters.set<bool >("cap")=cap;
    equation_systems.parameters.set<std::string>("potential")=pot_file;
    equation_systems.parameters.set<std::string>("DO_file")=molec_file;
