@@ -91,12 +91,12 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    Real r = 2.*es.parameters.get<Real>("radius");
    Real lambda = 137.0359991/es.parameters.get<Real>("current frequency");
 
-   //Real dx=std::min(lambda/6.,0.1);
-   //Real dy=std::min(lambda/6.,0.1);
-   //Real dz=std::min(lambda/6.,0.1);
-   Real dx=std::min(lambda/6.,0.3);
-   Real dy=std::min(lambda/6.,0.3);
-   Real dz=std::min(lambda/6.,0.3);
+   Real dx=std::min(lambda/6.,0.1);
+   Real dy=std::min(lambda/6.,0.1);
+   Real dz=std::min(lambda/6.,0.1);
+   //Real dx=std::min(lambda/6.,0.3);
+   //Real dy=std::min(lambda/6.,0.3);
+   //Real dz=std::min(lambda/6.,0.3);
    unsigned int nx=(2*r+(max(0)-min(0)))/dx;
    unsigned int ny=(2*r+(max(1)-min(1)))/dy;
    unsigned int nz=(2*r+(max(2)-min(2)))/dz;
@@ -157,6 +157,7 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    Real interpolated_dist = 0.;
    Real dist = 0.;
 
+
    unsigned int ix, iy, iz;
    PointLocatorTree pt_lctr(mesh);
    //pt_lctr.enable_out_of_mesh_mode();
@@ -194,10 +195,12 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
 
                unsigned int n_sf= cfe->n_shape_functions();
                for (unsigned int i=0; i<n_sf; i++){
-                  // I need to model the damping function myself since the sobolev-weight is available only
-                  // at quadrature points...
+                   //I need to model the damping function myself since the sobolev-weight is available only
+                   //at quadrature points...
                   if(elem->infinite()){
                      Point origin=elem->origin();
+                     Real v=map_point(2);
+
                      UniquePtr<const Elem> base_el (elem->build_side_ptr(0));
 
                      const Order    base_mapping_order     (base_el->default_order());
@@ -212,15 +215,16 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
 
                      if(formulation=="symmetric")
                         // multiply with sqrt(D(r))
-                        soln+=(*solution_vect)(dof_indices[i])*data.shape[i]*interpolated_dist/dist; 
+                        soln+=(*solution_vect)(dof_indices[i])*data.shape[i]*(1.-v)/2.;
                      else if(formulation=="root")
                         // multiply with sqrt(sqrt(D(r)))
                         soln+= (*solution_vect)(dof_indices[i])*data.shape[i]*
-                                      sqrt(interpolated_dist/dist); 
+                              sqrt((1.-v)/2.);
                      else if(formulation=="power")
                         // hoping the order is same in shape and dof_indices.
                         soln+= (*solution_vect)(dof_indices[i])*data.shape[i]*
-                              pow(interpolated_dist/dist, 2.*power);
+                             pow(interpolated_dist/dist, 2.*power);
+                            //  pow((1.-v)/2.,power);
                      else
                         // in original formulation: undamped solution.
                         soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.

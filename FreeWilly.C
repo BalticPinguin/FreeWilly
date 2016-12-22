@@ -112,8 +112,8 @@ int main (int argc, char** argv){
 
    // make sure the box contains at least four waves:
 
-   if(r<= 4.*pi*sqrt(2/Energy) && !infel)
-      r= 4.*pi*sqrt(2/Energy);
+   //if(r<= 4.*pi*sqrt(2/Energy) && !infel)
+   //   r= 4.*pi*sqrt(2/Energy);
 
    //r=1./sqrt(2.*Energy);
 
@@ -141,6 +141,8 @@ int main (int argc, char** argv){
  
    // define the fe_type including infinite eleemnt parameters:
    FEType fe_type(FIRST, LAGRANGE, SECOND, JACOBI_20_00, CARTESIAN);
+   if(formulation=="power" && power < 0.3)
+      fe_type.radial_family=LEGENDRE;
    int radOrder=cl("radorder",2);
    if (radOrder==1)
       fe_type.radial_order=FIRST;
@@ -449,6 +451,7 @@ int main (int argc, char** argv){
          intensity=normalise(equation_systems, true);
          out<<"solution: "<<i<<"  ";
          out<<eigpair.first+equation_systems.parameters.get<Real>("E_do")<<"  ";
+         out<<eigpair.first<<"  ";
          out<<std::scientific<<intensity<<std::endl;
       }
    }

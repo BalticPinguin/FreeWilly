@@ -156,8 +156,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    
    // A  Gauss quadrature rule for numerical integration.
    // Use the default quadrature order.
-   QGauss qrule (dim, fe_type.default_quadrature_order());
-   //QGauss qrule (dim, SIXTH);
+   //QGauss qrule (dim, fe_type.default_quadrature_order());
+   QGauss qrule (dim, SIXTH);
    //QGauss qrule (dim, TWENTIETH);
       
    // Tell the finite element object to use our quadrature rule.
@@ -206,10 +206,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       // working on.  This allows for nicer syntax later.
       const Elem* elem = *el;
 
-      // Get the degree of freedom indices for the
-      // current element.  These define where in the global
-      // matrix and right-hand-side this element will
-      // contribute to.
       dof_map.dof_indices (elem, dof_indices);
 
       // unifyging finite and infinite elements
@@ -333,12 +329,6 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                }
                else if (formulation=="power"){
                   Se(i,j) += JxW[qp]*pow(weight[qp],2.*power)*phi[i][qp]*phi[j][qp];
-                //  temp= power*power*dweight[qp]*dweight[qp]*phi[i][qp]*phi[j][qp]*pow(weight[qp],2*power-2)+
-                //        power*dweight[qp]*pow(dweight[qp],2*power-1)*(phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp])+
-                //        pow(dweight[qp],2*power)*dphi[i][qp]*dphi[j][qp]+
-                //        pow(dweight[qp],2*power)*ik*dphase[qp]*(dphi[i][qp]*phi[j][qp]-phi[i][qp]*dphi[j][qp])-
-                //        pow(dweight[qp],2*power)*ik*dphase[qp]*ik*dphase[qp]*phi[i][qp]*phi[j][qp];
-                //  H(i,j) += JxW[qp]*(0.5*temp + pow(dweight[qp],2*power)*pot*phi[i][qp]*phi[j][qp]);
                   temp= (power*dweight[qp]*phi[i][qp]*phi[j][qp]/weight[qp]+
                          phi[i][qp]*dphi[j][qp]+dphi[i][qp]*phi[j][qp])*dweight[qp]*power/weight[qp]+
                         dphi[i][qp]*dphi[j][qp]+
@@ -378,15 +368,11 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    matrix_A.close();
    matrix_B.close();
 
-   // Aout and Bout need to be initialised differently
-   // std::ostream Aout;
-   // Aout<<"sparsity_A";
-   // std::ostream Bout;
-   // Bout<<"sparsity_B";
-
    //matrix_A.print(out,true);
    //matrix_B.print(out,true);
-      
+   matrix_A.print_personal();
+   matrix_B.print_personal();
+   //matrix_B.print(out, true);
    /**
    * All done!
    */
