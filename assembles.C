@@ -203,15 +203,9 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
    inf_fe->attach_quadrature_rule (&qrule);
       
    // Tell the finite element object to use our quadrature rule.
-
-   //libMesh::Number k=omega; //divided by c which is 1 in atomic units.
-   // -->ik = -i*k 
    Number ik=sqrt(-(Number)1.)*es.parameters.get<Number>("momentum");
-   //out<<" i*k= "<<ik<<es.parameters.get<Number>("momentum")<<std::endl;
 
    // set parameters for infinite elements:
-   es.parameters.set<Real>("speed")=137.0359991;
-
    Number temp; 
       
    // A reference to the \p DofMap object for this system.  The \p DofMap
@@ -600,8 +594,6 @@ void assemble_DO(EquationSystems & es, const std::string & system_name){
    //QGauss qrule (dim, SIXTH);
    //QGauss qrule (dim, TWENTIETH);
 
-   //Real k=es.parameters.get<Real>("current frequency")*2*3.1415926;
-      
    // Tell the finite element object to use our quadrature rule.
    fe->attach_quadrature_rule (&qrule);
    inf_fe->attach_quadrature_rule (&qrule);
@@ -729,7 +721,7 @@ void assemble_Spherical(EquationSystems & es, const std::string & system_name){
    //QGauss qrule (dim, SIXTH);
    //QGauss qrule (dim, TWENTIETH);
 
-   Real k=es.parameters.get<Real>("current frequency")*2*3.1415926;
+   Real k=std::abs(es.parameters.get<Number>("momentum"));
    Real l=es.parameters.get<int>("L_guess");
    Real m=es.parameters.get<int>("M_guess");
       

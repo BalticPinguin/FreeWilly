@@ -278,15 +278,16 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<Real> ("linear solver tolerance") = pow(TOLERANCE, 5./3.);
    equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = maxiter;
    // E=0.5* k*k   -> k=sqrt(2*E)
-   // k= 2*pi*f
-   // f=1/lambda   -> lambda=2*pi/k=2*pi/sqrt(2E)=pi*sqrt(2/E)
-   // f = sqrt(E/2)/pi
+   // k= 2*pi*f/c
+   // f=c/lambda   
+   // f = sqrt(E/2)/(pi*c)
    
    equation_systems.parameters.set<Real>("energy")=Energy;
    equation_systems.parameters.set<Number>("momentum")=sqrt((Energy)*2.);
    equation_systems.parameters.set<Real>("E_do")=dyson.get_energy();
    equation_systems.parameters.set<Real>("speed")=137.0359991;
-   equation_systems.parameters.set<Real>("current frequency")=sqrt(Energy/2.)/(pi*137.0359991);
+   equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
+                              sqrt(Energy*2.);
 
    equation_systems.parameters.print();
 
@@ -434,7 +435,9 @@ int main (int argc, char** argv){
    if (nconv==0){
       // that one can look at the mesh and some properties...
       #ifdef LIBMESH_HAVE_EXODUS_API
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
+         equation_systems.parameters.set<Number>("momentum")=sqrt((eigpair.first)*2.);
+         equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
+                              sqrt(eigpair.first*2.);
          if (infel)
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
          else
@@ -449,7 +452,9 @@ int main (int argc, char** argv){
       for(unsigned int i=0; i<nconv; i++){
          //out<<" for the solution nr "<<i<<":"<<std::endl;
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
+         equation_systems.parameters.set<Number>("momentum")=sqrt((eigpair.first)*2.);
+         equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
+                              sqrt(eigpair.first*2.);
          intensity=normalise(equation_systems, true);
          out<<"solution: "<<i<<"  ";
          out<<eigpair.first+equation_systems.parameters.get<Real>("E_do")<<"  ";
@@ -474,8 +479,10 @@ int main (int argc, char** argv){
       //eigenvector_output_name<< i <<"_err.e";
       //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
   
-      // frequency=k/2*pi.
-      equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
+      equation_systems.parameters.set<Number>("momentum")=sqrt((eigpair.first)*2.);
+      // frequency=2*pi*c*k
+      equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
+                              sqrt(eigpair.first*2.);
       if(cubes){
          eigenvector_output_name.str(std::string());
          eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".cube";
@@ -490,7 +497,9 @@ int main (int argc, char** argv){
    if (spherical_analysis>=0){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Real>("current frequency")=sqrt(eigpair.first/2.)/(pi*137.0359991);
+         equation_systems.parameters.set<Number>("momentum")=sqrt((eigpair.first)*2.);
+         equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
+                              sqrt(eigpair.first*2.);
          ProjectSphericals (equation_systems, spherical_analysis, i);
       }
    }

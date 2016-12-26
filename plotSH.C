@@ -72,7 +72,7 @@ void cube_sphere(EquationSystems& es, std::string output, int l, int m){
    Point mol_center(0,0,0);
 
    Real r = 2.*es.parameters.get<Real>("radius");
-   Real lambda = 1./es.parameters.get<Real>("current frequency");
+   Real lambda = es.parameters.get<Real>("speed")/es.parameters.get<Real>("current frequency");
 
    Real dx=lambda/6.;
    Real dy=lambda/6.;
@@ -137,7 +137,7 @@ void cube_sphere(EquationSystems& es, std::string output, int l, int m){
    unsigned int ix, iy, iz;
    unsigned int num_line=0;
    std::vector<Number> soln;
-   Real k = es.parameters.get<Real>("current frequency")*2.*pi;
+   Real k = std::abs(es.parameters.get<Number>("momentum"));
    for (ix=0;ix<nx;ix++) {
       for (iy=0;iy<ny;iy++) {
          for (iz=0;iz<nz;iz++) {

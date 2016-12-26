@@ -89,7 +89,7 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    mol_center(2)=mol_center(2)/geom.size();
    
    Real r = 2.*es.parameters.get<Real>("radius");
-   Real lambda = 137.0359991/es.parameters.get<Real>("current frequency");
+   Real lambda = es.parameters.get<Real>("speed")/es.parameters.get<Real>("current frequency");
 
    Real dx=std::min(lambda/6.,0.2);
    Real dy=std::min(lambda/6.,0.2);
@@ -399,7 +399,7 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
 
                if(formulation=="symmetric")
                   // multiply with sqrt(D(r))
-                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]*((1.-v)/2.,power);
+                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]*((1.-v)/2.);
                else if(formulation=="root")
                   // multiply with sqrt(D(r))
                   soln+= (*solution_vect)(dof_indices[i])*data.shape[i]*

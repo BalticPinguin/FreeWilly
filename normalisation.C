@@ -260,16 +260,12 @@ Real overlap_DO(EquationSystems& eq_sys, const std::string sys1, int var1, Integ
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
               overlap_z*conj(overlap_z);
-              //eq_sys.parameters.get<Real>("current frequency")*
-              //eq_sys.parameters.get<Real>("current frequency");
      }
    else if (int_type==VELOCITY)
       {
       overlap=overlap_x*conj(overlap_x)+
               overlap_y*conj(overlap_y)+
               overlap_z*conj(overlap_z) ;
-              //(eq_sys.parameters.get<Real>("current frequency")*
-               //eq_sys.parameters.get<Real>("current frequency"));
      }
    else
       overlap*=conj(overlap);
@@ -457,7 +453,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
    Number norm=0;
    //Number norm2=0;
     
-   Real k = es.parameters.get<Real>("current frequency")*2.*pi;
+   Real k = std::abs(es.parameters.get<Number>("momentum"));
    const std::string & formulation = es.parameters.get<std::string>("formulation");
    Real power=es.parameters.get<Real> ("power");
 
