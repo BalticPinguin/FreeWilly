@@ -294,12 +294,13 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
       //r0*=0.3;
 
       //poor mans error catching, since I have no idea how to catch it 
-      try{
+ //     try{
          //w = rbf_weight (KDDim, n_src, xd, r0, phi2, fd );
-         w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
+ //        w = rbf_weight (KDDim, n_src, xd, r0, phi4, fd );
          //w = rbf_weight (KDDim, n_src, xd, r0, phi5, fd );
-      }
-      catch (...){
+ //     }
+ //     catch (...){
+         // for formal reasons...
          error=true;
          fi=new Real;
          fi[0]=0;
@@ -311,12 +312,12 @@ void RBFInterpolation<KDDim>::interpolate (const Point               &  pt ,
          //just in case soemthing went wrong...
          if(fi[0]>=max_fd*n_src || fi[0]<=min_fd*n_src)
             fi[0]=(max_fd+min_fd)/2;
-      }
-      if (!error){
+ //     }
+ //     if (!error){
          //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi2, w, ni, xi );
-         fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
+ //        fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi4, w, ni, xi );
          //fi = rbf_interp_nd ( KDDim, n_src, xd, r0, phi5, w, ni, xi );
-      }
+ //     }
       Real r=(pt-_geom[closest]).norm();
       for (unsigned int v=0; v<n_fv; v++){
          if (r>1e-7)

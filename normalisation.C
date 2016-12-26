@@ -411,6 +411,7 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
 
    Real kr=qp.norm()*k;
    rjbesl(kr, 0 ,l_max+1, R, error);
+   assert(error>=0);
    if (error!=l_max+1){
       err<<"The evaluation of bessel functions returned"<<std::endl;
       err<<"   "<<error<<std::endl;
@@ -425,7 +426,11 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
    int j=0;
    for(int l=0; l<=l_max; l++){
       for(int m=-l; m<=l; m++){
-         solution[j]=R[l]*angular[j];
+         if(error< l)
+           //when the besselfunction did not converge.
+           solution[j]=0;
+         else
+            solution[j]=R[l]*angular[j];
          j++;
       }
    }

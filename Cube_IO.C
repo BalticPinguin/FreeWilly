@@ -91,9 +91,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    Real r = 2.*es.parameters.get<Real>("radius");
    Real lambda = 137.0359991/es.parameters.get<Real>("current frequency");
 
-   Real dx=std::min(lambda/6.,0.1);
-   Real dy=std::min(lambda/6.,0.1);
-   Real dz=std::min(lambda/6.,0.1);
+   Real dx=std::min(lambda/6.,0.2);
+   Real dy=std::min(lambda/6.,0.2);
+   Real dz=std::min(lambda/6.,0.2);
    //Real dx=std::min(lambda/6.,0.3);
    //Real dy=std::min(lambda/6.,0.3);
    //Real dz=std::min(lambda/6.,0.3);
@@ -154,10 +154,6 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
       abs_out<<" "<<std::setw(12)<<std::setprecision(6)<<geom[i](2)<<"\n";
    }
 
-   Real interpolated_dist = 0.;
-   Real dist = 0.;
-
-
    unsigned int ix, iy, iz;
    PointLocatorTree pt_lctr(mesh);
    //pt_lctr.enable_out_of_mesh_mode();
@@ -207,11 +203,6 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                      const ElemType base_mapping_elem_type (base_el->type());
 
                      const unsigned int n_base_nodes = base_el->n_nodes();
-                     interpolated_dist=0;
-                     dist=(q_point-origin).norm();
-                     for (unsigned int n=0; n<n_base_nodes; n++)
-                           interpolated_dist += Point(base_el->point(n) - origin).norm()
-                              * FE<2,LAGRANGE>::shape (base_mapping_elem_type, base_mapping_order, n, q_point);
 
                      if(formulation=="symmetric")
                         // multiply with sqrt(D(r))
@@ -223,8 +214,7 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                      else if(formulation=="power")
                         // hoping the order is same in shape and dof_indices.
                         soln+= (*solution_vect)(dof_indices[i])*data.shape[i]*
-                             pow(interpolated_dist/dist, 2.*power);
-                            //  pow((1.-v)/2.,power);
+                              pow((1.-v)/2.,power);
                      else
                         // in original formulation: undamped solution.
                         soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
@@ -365,8 +355,6 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
 
    PointLocatorTree pt_lctr(mesh);
    unsigned int num_line=0;
-   Real interpolated_dist = 0.;
-   Real dist=0;
    Real N = 600.;
    Point q_point;
    for (int pts=1;pts<=N;pts++) {
@@ -386,6 +374,7 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
          Point map_point=FEInterface::inverse_map(3, fe_type, elem, q_point, TOLERANCE, true); 
          FEComputeData data(es, map_point); 
          FEInterface::compute_data(3, fe_type, elem, data);
+         Real v=map_point(2);
       
          //compute solution value at that point.
          Number soln=0;
@@ -407,24 +396,18 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
                const ElemType base_mapping_elem_type (base_el->type());
 
                const unsigned int n_base_nodes = base_el->n_nodes();
-               interpolated_dist=0;
-               dist=(q_point-origin).norm();
-               for (unsigned int n=0; n<n_base_nodes; n++)
-                     interpolated_dist += Point(base_el->point(n) - origin).norm()
-                        * FE<2,LAGRANGE>::shape (base_mapping_elem_type, base_mapping_order, n, q_point);
 
                if(formulation=="symmetric")
                   // multiply with sqrt(D(r))
-                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]*
-                                 interpolated_dist/dist; 
+                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]*((1.-v)/2.,power);
                else if(formulation=="root")
                   // multiply with sqrt(D(r))
                   soln+= (*solution_vect)(dof_indices[i])*data.shape[i]*
-                                 sqrt(interpolated_dist/dist); 
+                              sqrt((1.-v)/2.);
                else if(formulation=="power")
                   // hoping the order is same in shape and dof_indices.
                   soln+= (*solution_vect)(dof_indices[i])*data.shape[i]*
-                                 pow(interpolated_dist/dist, 2.*power); 
+                              pow((1.-v)/2.,power);
                else
                   // in original formulation: undamped solution.
                   soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
@@ -458,6 +441,7 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
          Point map_point=FEInterface::inverse_map(3, fe_type, elem, q_point, TOLERANCE, true); 
          FEComputeData data(es, map_point); 
          FEInterface::compute_data(3, fe_type, elem, data);
+         Real v=map_point(2);
       
          //compute solution value at that point.
          Number soln=0;
@@ -471,31 +455,18 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
          unsigned int n_sf= cfe->n_shape_functions();
          for (unsigned int i=0; i<n_sf; i++){
             if(elem->infinite()){
-               Point origin=elem->origin();
-               UniquePtr<const Elem> base_el (elem->build_side_ptr(0));
-
-               const Order    base_mapping_order     (base_el->default_order());
-               const ElemType base_mapping_elem_type (base_el->type());
-
-               const unsigned int n_base_nodes = base_el->n_nodes();
-               interpolated_dist=0;
-               dist=(q_point-origin).norm();
-               for (unsigned int n=0; n<n_base_nodes; n++)
-                     interpolated_dist += Point(base_el->point(n) - origin).norm()
-                        * FE<2,LAGRANGE>::shape (base_mapping_elem_type, base_mapping_order, n, q_point);
 
                if(formulation=="symmetric")
                   // multiply with sqrt(D(r))
-                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]*
-                                 interpolated_dist/dist; 
+                  soln+=(*solution_vect)(dof_indices[i])*data.shape[i]*(1.-v)/2.;
                else if(formulation=="root")
                   // multiply with sqrt(D(r))
                   soln+= (*solution_vect)(dof_indices[i])*data.shape[i]*
-                                 sqrt(interpolated_dist/dist); 
+                              sqrt((1.-v)/2.);
                else if(formulation=="power")
                   // hoping the order is same in shape and dof_indices.
                   soln+= (*solution_vect)(dof_indices[i])*data.shape[i]*
-                                 pow(interpolated_dist/dist, 2.*power); 
+                              pow((1.-v)/2.,power);
                else
                   // in original formulation: undamped solution.
                   soln+=(*solution_vect)(dof_indices[i])*data.shape[i]; // hoping the order is same in shape and dof_indices.
