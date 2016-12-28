@@ -11,6 +11,7 @@ pictorious = false # if DO and ESP should be computed explicitly
 spherical_analysis= -1 # if a projection onto spherical waves should be performed 
                        # number gives maximum l to be used
 cubes=false      # whether or not to make cube files
+grid=false      # whether or not to make grid files
 guessed l=1     # set l and m for the Spherical Harmonic used as initial guess.
 guessed m=1     # can be any integers
 

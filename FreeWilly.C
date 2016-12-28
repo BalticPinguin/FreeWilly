@@ -95,6 +95,7 @@ int main (int argc, char** argv){
    bool pictorious = cl("pictorious", false);
    int spherical_analysis= cl("spherical_analysis", -1);
    bool cubes = cl("cubes", false);
+   bool grid = cl("grid", false);
    Real r_0=cl("r_0",12.);
 
    int Qorder=cl("Qorder",2);
@@ -487,6 +488,11 @@ int main (int argc, char** argv){
          eigenvector_output_name.str(std::string());
          eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".cube";
          cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE", infel);
+      }
+      if(grid){
+         eigenvector_output_name.str(std::string());
+         eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".grid";
+         grid_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE", infel);
       }
       //eigenvector_output_name.str(std::string());
       //eigenvector_output_name<< "phi-"<<i <<".line";
