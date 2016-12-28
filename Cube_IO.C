@@ -22,7 +22,7 @@
 using namespace libMesh;
 
 // write the solutions values at points in a cube.
-void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, std::string SysName){
+void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, std::string SysName, bool infel){
    //CondensedEigenSystem & system = es.get_system<CondensedEigenSystem> ("EigenSE"); // --> how to generalise??
    System & system = es.get_system<System> (SysName); 
    const MeshBase & mesh = es.get_mesh();
@@ -88,12 +88,16 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    mol_center(1)=mol_center(1)/geom.size();
    mol_center(2)=mol_center(2)/geom.size();
    
-   Real r = 2.*es.parameters.get<Real>("radius");
+   Real r=0;
+   if (infel)
+      r = 2.*es.parameters.get<Real>("radius");
+   else
+      r = es.parameters.get<Real>("radius");
    Real lambda = es.parameters.get<Real>("speed")/es.parameters.get<Real>("current frequency");
 
-   Real dx=std::min(lambda/6.,0.2);
-   Real dy=std::min(lambda/6.,0.2);
-   Real dz=std::min(lambda/6.,0.2);
+   Real dx=std::min(lambda/6.,r/80.);
+   Real dy=std::min(lambda/6.,r/80.);
+   Real dz=std::min(lambda/6.,r/80.);
    //Real dx=std::min(lambda/6.,0.3);
    //Real dy=std::min(lambda/6.,0.3);
    //Real dz=std::min(lambda/6.,0.3);
@@ -198,11 +202,6 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
                      Real v=map_point(2);
 
                      UniquePtr<const Elem> base_el (elem->build_side_ptr(0));
-
-                     const Order    base_mapping_order     (base_el->default_order());
-                     const ElemType base_mapping_elem_type (base_el->type());
-
-                     const unsigned int n_base_nodes = base_el->n_nodes();
 
                      if(formulation=="symmetric")
                         // multiply with sqrt(D(r))
@@ -317,7 +316,7 @@ void  solution_write(EquationSystems& equation_systems, std::string filename, st
    out<<std::endl<<std::endl;
 }
 
-void line_out(EquationSystems& es, std::string output, std::string SysName){
+void line_out(EquationSystems& es, std::string output, std::string SysName, bool infel){
    //CondensedEigenSystem & system = es.get_system<CondensedEigenSystem> ("EigenSE"); // --> how to generalise??
    System & system = es.get_system<System> (SysName); 
    const MeshBase & mesh = es.get_mesh();
@@ -330,7 +329,11 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
 
    solution_vect->init((*system.solution).size(), true, SERIAL);
    (*system.solution).localize(* solution_vect);
-   Real r = 5.*es.parameters.get<Real>("radius");
+   Real r = 0;
+   if (infel)
+      r = 5.*es.parameters.get<Real>("radius");
+   else
+      r = es.parameters.get<Real>("radius");
    
    const FEType & fe_type = dof_map.variable_type(0);
    UniquePtr<FEBase> fe (FEBase::build(3, fe_type));
@@ -391,11 +394,6 @@ void line_out(EquationSystems& es, std::string output, std::string SysName){
             if(elem->infinite()){
                Point origin=elem->origin();
                UniquePtr<const Elem> base_el (elem->build_side_ptr(0));
-
-               const Order    base_mapping_order     (base_el->default_order());
-               const ElemType base_mapping_elem_type (base_el->type());
-
-               const unsigned int n_base_nodes = base_el->n_nodes();
 
                if(formulation=="symmetric")
                   // multiply with sqrt(D(r))

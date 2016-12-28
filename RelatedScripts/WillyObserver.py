@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # Author: Gael Varoquaux <gael.varoquaux@normalesup.org>
+# Modified: Hubert Weissmann
 # Copyright (c) 2008-2015, Enthought, Inc.
 # License: BSD Style.
 

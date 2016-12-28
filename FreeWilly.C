@@ -419,10 +419,10 @@ int main (int argc, char** argv){
    std::ostringstream eigenvector_output_name;
    if (pictorious && cubes){
       eigenvector_output_name<< "esp.cube";
-      cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "ESP");
+      cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "ESP", infel);
       eigenvector_output_name.str(std::string());
       eigenvector_output_name<< "do.cube";
-      cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "DO");
+      cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "DO", infel);
    }
 
    std::pair<Real,Real> eigpair;
@@ -486,7 +486,7 @@ int main (int argc, char** argv){
       if(cubes){
          eigenvector_output_name.str(std::string());
          eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".cube";
-         cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE");
+         cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE", infel);
       }
       //eigenvector_output_name.str(std::string());
       //eigenvector_output_name<< "phi-"<<i <<".line";
