@@ -564,7 +564,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    return;
 }
 
-std::vector<Number> evalSphWave(int l_max, Point qp, Real k);
+void evalSphWave(int l_max, Point qp, Real k, std::vector<Number>& );
 
 void assemble_DO(EquationSystems & es, const std::string & system_name){
    // Get a constant reference to the mesh object.
@@ -795,10 +795,11 @@ void assemble_Spherical(EquationSystems & es, const std::string & system_name){
       // Now loop over the quadrature points.  This handles
       // the numeric integration.
       //For infinite elements, the number of quadrature points is asked and than looped over; works for finite elements as well.
+      std::vector<Number> value;
       unsigned int max_qp = cfe->n_quadrature_points();
       for (unsigned int qp=0; qp<max_qp; qp++){
-         // get the value of DO at q_point[qp]
-         Value=evalSphWave(l, q_point[qp], k);
+         // get the value of the spherical wave at q_point[qp]
+         evalSphWave(l, q_point[qp], k, value);
          
          // Now, get number of shape functions:
          unsigned int n_sf = cfe->n_shape_functions();

@@ -21,8 +21,9 @@
 using namespace libMesh;
 
 //Number evalSphWave(int l, int m, Point qp, Real k);
-std::vector<Number> evalSphWave(int l_max, Point qp, Real k);
-void cube_sphere(EquationSystems& es, std::string output, int l, int m);
+
+void evalSphWave(int l_max, Point, Real, std::vector<Number>& );
+void cube_sphere(EquationSystems& , std::string, int l, int m);
 
 void PlotSphericals (EquationSystems& es, int l_max){
    Number this_proj;
@@ -146,7 +147,7 @@ void cube_sphere(EquationSystems& es, std::string output, int l, int m){
             Point q_point(start(0)+(Real)ix*dx,
                           start(1)+(Real)iy*dy,
                           start(2)+(Real)iz*dz);
-            soln=evalSphWave(l, q_point, k);
+            evalSphWave(l, q_point, k, soln);
 
             re_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::real(soln[2*l+m]);
             im_out<<" "<<std::setw(12)<<std::scientific<<std::setprecision(6)<<std::imag(soln[2*l+m]);

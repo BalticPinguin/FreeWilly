@@ -347,10 +347,9 @@ Real normalise(EquationSystems& equation_systems, bool infel){
 }
 
 // functions used to project solution onto spherical waves
-std::vector<Number> Y_lm(Real x, Real y, Real z, int l_max){
+void Y_lm(Real x, Real y, Real z, int l_max, std::vector<Number>& solution){
    //http://www.ppsloan.org/publications/StupidSH36.pdf
    //12.5663706144=4*pi
-   std::vector<Number> solution;
    solution.resize((l_max+1)*(l_max+1));
    Real K_lm;
    
@@ -391,19 +390,16 @@ std::vector<Number> Y_lm(Real x, Real y, Real z, int l_max){
       delete [] value[m];
 
    delete [] value;
-
-   return solution;
 }
 
-std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
+void evalSphWave(int l_max, Point qp, Real k, std::vector<Number>& solution){
    int error;
    Number wave;
    Real* R = new Real[l_max+1];
-   std::vector<Number> solution;
    solution.resize((l_max+1)*(l_max+1));
    
    std::vector<Number> angular;
-   angular.resize((l_max+1)*(l_max+1));
+   //angular.resize((l_max+1)*(l_max+1));
 
    Real kr=qp.norm()*k;
    rjbesl(kr, 0 ,l_max+1, R, error);
@@ -417,7 +413,7 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
          err<<"   qp.norm*k > x_max "<<std::endl;
    }
 
-   angular=Y_lm(qp(0), qp(1), qp(2), l_max);
+   Y_lm(qp(0), qp(1), qp(2), l_max, angular);
 
    int j=0;
    for(int l=0; l<=l_max; l++){
@@ -431,11 +427,9 @@ std::vector<Number> evalSphWave(int l_max, Point qp, Real k){
       }
    }
    delete [] R;
-
-   return solution;
 }
 
-std::vector<Number> projection(EquationSystems& es, const std::string sys, int l_max){
+void projection(EquationSystems& es, const std::string sys, int l_max, std::vector<Number>& overlap ){
    // this should be checked somehow as well:
    //libmesh_assert_not_equal_to(es1.comm(), es2.comm());
    //libmesh_assert_not_equal_to(es1.get_dof_map().variable_type(var1),
@@ -445,7 +439,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
    System & es1 = es.get_system<System> (sys);
 
    std::vector<Number> spherical_qp;
-   std::vector<Number> overlap;
+   //std::vector<Number> overlap;
    std::vector<Number> normSphere;
    overlap.resize((l_max+1)*(l_max+1));
    normSphere.resize((l_max+1)*(l_max+1));
@@ -503,7 +497,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
       // Begin the loop over the Quadrature points.
       for (unsigned int qp=0; qp<n_qp; qp++){
          Number u_h = 0.;
-         spherical_qp=evalSphWave(l_max, q_point[qp], k);
+         evalSphWave(l_max, q_point[qp], k, spherical_qp);
          
          Point mapped_qp = FEInterface::inverse_map(dim, fe_type, elem, q_point[qp], TOLERANCE, true); 
          FEComputeData fe_data(es, mapped_qp);
@@ -540,7 +534,7 @@ std::vector<Number> projection(EquationSystems& es, const std::string sys, int l
          j++;
       }
    }
-   return overlap;
+   //return overlap;
 }
 
 void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
@@ -549,7 +543,8 @@ void ProjectSphericals (EquationSystems& es, int l_max, int /*i*/){
    Number tot_proj=0, this_proj;
    int m;
    libmesh_assert_greater(l_max,0);
-   std::vector<Number> contributions = projection(es,"EigenSE", l_max);
+   std::vector<Number> contributions;
+   projection(es,"EigenSE", l_max, contributions);
    // make some nice output:
    out<<"====================================";
    out<<std::endl;
