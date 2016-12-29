@@ -296,7 +296,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
          if(quadrature){
 	    for(int i=0; i<mol_geom.size(); i++){
                 // 0.01 as threshold does work...
-		if ((q_point[qp]-mol_geom[i]).norm()<0.0005){
+		if ((q_point[qp]-mol_geom[i]).norm()<0.0001){
 		   away=false;
                    break;
                 }
