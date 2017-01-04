@@ -73,6 +73,7 @@ int main (int argc, char** argv){
    // local variables.
    // \p molec_file contains all informations on the molecule
    std::string molec_file=cl("mol_file", "invalid_file"); 
+   std::string pot_type=cl("pot","grid");
    std::string angular_creator=cl("angular", "invalid"); 
    std::string transform=cl("transform", "none"); 
    std::string solv=cl("solver", "none"); 
@@ -121,8 +122,8 @@ int main (int argc, char** argv){
 
    // make sure that the distance between two spheres is 
    // at least ~ 1/(4*lambda) //
-   if (N<=(int)(sqrt(Energy)*r/17.8))
-      N=(int)(r*sqrt(Energy)/17.8);
+   //if (N<=(int)(sqrt(Energy)*r/17.8))
+   //   N=(int)(r*sqrt(Energy)/17.8);
  
 
    if (scheme=="tm" || scheme=="tm_300" ||
@@ -132,8 +133,8 @@ int main (int argc, char** argv){
          L=sqrt(2./Energy);
 
       // this is necessary to be in numerically stable regime.
-      if( N<r/L)
-         N=r/L;
+      //if( N<r/L)
+      //   N=r/L;
    }
 
    // the function below creates a mesh using the molecular structure.
@@ -235,6 +236,7 @@ int main (int argc, char** argv){
    equation_systems.parameters.set<int> ("Qorder")=Qorder;
    equation_systems.parameters.set<bool >("cap")=cap;
    equation_systems.parameters.set<std::string>("potential")=pot_file;
+   equation_systems.parameters.set<std::string> ("pot_type")=pot_type;
    equation_systems.parameters.set<std::string>("DO_file")=molec_file;
    equation_systems.parameters.set<bool>("quadrat_print") = quadrature_print;
    equation_systems.parameters.set<std::string>("formulation")=formulation;
@@ -365,10 +367,10 @@ int main (int argc, char** argv){
    // set the spectral transformation:
    if (transform== "cayley") 
 	ConfigSolver.SetST(CAYLEY);
-   else if (transform== "sinv")
-	ConfigSolver.SetST(SINVERT);
-   else
+   else if (transform== "shift")
 	ConfigSolver.SetST(SHIFT); // this is default
+   else
+	ConfigSolver.SetST(SINVERT);
    solver ->set_solver_configuration(ConfigSolver);
 
    //now, do refinement loop, if refinement is allowd:

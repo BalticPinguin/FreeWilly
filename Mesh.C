@@ -98,7 +98,7 @@ std::pair<int, Real> chose_scheme(int circle, int N, Real L, Real p, Real r_max,
       pts_circle = std::min((int)(12.5*L*L/((1-L)*(1-L))), 300);
    }
    else if (scheme == "quadr" ){
-      scale=circle/N*r_max;
+      scale=circle*r_max/(Real)N;
       pts_circle=(int)(12.5*(circle*r_max*circle*r_max/(N*N)));
    }
    else if (scheme == "sqrt_tm" ){

@@ -111,9 +111,8 @@ void NeNeInterpolation<KDDim>::interpolate_field_data (const std::vector<std::st
 
         _kd_tree->knnSearch(&query_pt[0], num_results, &ret_index[0], &ret_dist_sqr[0]);
 
-        //this->interpolate (tgt, ret_index, ret_dist_sqr, out_it);
-        * out_it =_src_vals[ret_index[0]];
-         ++out_it;
+        this->interpolate (tgt, ret_index, ret_dist_sqr, out_it);
+        ++out_it;
       }
   }
 #else
@@ -126,15 +125,65 @@ void NeNeInterpolation<KDDim>::interpolate_field_data (const std::vector<std::st
 
 // keep it for consistency, actually not needed since there is no real interpolation.
 template <unsigned int KDDim>
-void NeNeInterpolation<KDDim>::interpolate (const Point               &  /*pt*/ ,
-                                                       const std::vector<size_t> &/* src_indices*/,
-                                                       const std::vector<Real>   & /*src_dist_sqr*/,
-                                                       std::vector<Number>::iterator & /*out_it*/) const
+void NeNeInterpolation<KDDim>::interpolate (const Point               &  pt ,
+                                                       const std::vector<size_t> & src_indices,
+                                                       const std::vector<Real>   & src_dist_sqr,
+                                                       std::vector<Number>::iterator & out_it) const
 {
-  // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
-  libmesh_assert_equal_to (this->n_field_variables(),1);
-  // Compute the interpolation weights & interpolated value
-  
+   // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
+   libmesh_assert_equal_to (this->n_field_variables(),1);
+   // Compute the interpolation weights & interpolated value
+   Real threshold=3e-7*3e-7;
+   if (src_dist_sqr[0] < threshold){
+      *out_it = _src_vals[src_indices[0]];
+      return;
+   }
+   int closestAtom=-1;
+   Real minDist=100;
+   for(int atom=0; atom< _geom.size(); atom++){
+      if (minDist>(_geom[atom]-pt).norm() ){
+          minDist=(_geom[atom]-pt).norm();
+          closestAtom=atom;
+      }
+   }
+   // make sure we are close to one nucleus
+   assert((pt-_geom[closestAtom]).norm() < 1e-3);
+
+   // just set it to Z/r:
+   *out_it = _geom[closestAtom].id()/minDist;
+   return;
+
+   // fit a+b/r .
+   //Real** A;
+   //A= new *Real[2];
+   //A[0]= new Real[src_dist_sqr.size()];
+   //A[1]= new Real[src_dist_sqr.size()];
+   
+   //Real** pinv;
+   //pinv= new *Real[2];
+   //pinv[0]= new Real[src_dist_sqr.size()];
+   //pinv[1]= new Real[src_dist_sqr.size()];
+
+   //for(unsigned int pt_ind=0; pt_ind<src_dist_sqr.size(); pt_ind++){
+   //   A[0][pt_ind]=1;
+   //   A[1][pt_ind]=-1/(_src_pts[src_indices[pt_ind]]-_geom[closestAtom]).norm();
+   //   pinv[0][pt_ind]=1;
+   //   pinv[1][pt_ind]=-1/(_src_pts[src_indices[pt_ind]]-_geom[closestAtom]).norm();
+   //}
+   //dgesdd(2, src_dist_sqr.size(), pinv)
+   //Real x(2)=(pinv.dot(A)*y)
+
+   //*out_it=x[0]+x[1]/min_dist;
+
+   //delete [] A[0];
+   //delete [] A[1];
+   //delete [] A;
+   //delete [] pinv[0];
+   //delete [] pinv[1];
+   //delete [] pinv;
+
+   //return;
+
 }
 
 // ------------------------------------------------------------

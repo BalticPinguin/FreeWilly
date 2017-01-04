@@ -36,6 +36,115 @@ void Read(ESP& esp, std::string input_file){
    esp_file.close();
 }
 
+Real vdw(unsigned int charge){
+   Real rad=0.;
+   switch (charge){
+   case 1:
+      rad=1.10;
+      break;
+   case 2:
+      rad=1.40;
+      break;
+   case 3: // Li
+      rad=1.82;
+      break;
+   case 4:
+      rad=1.53;
+      break;
+   case 5:
+      rad=1.92;
+      break;
+   case 6:
+      rad=1.70;
+      break;
+   case 7:
+      rad=1.55;
+      break;
+   case 8:
+      rad=1.52;
+      break;
+   case 9:
+      rad=1.47;
+      break;
+   case 10:
+      rad=1.54;
+      break;
+   case 11: //Na
+      rad=2.27;
+      break;
+   case 12:
+      rad=1.73;
+      break;
+   case 13:
+      rad=1.84;
+      break;
+   case 14:
+      rad=2.10;
+      break;
+   case 15:
+      rad=1.80;
+      break;
+   case 16:
+      rad=1.80;
+      break;
+   case 17:
+      rad=1.75;
+      break;
+   case 18:
+      rad=1.88;
+      break;
+   case 19: // K
+      rad=2.75;
+      break;
+   case 20:
+      rad=2.31;
+      break;
+   // in between: don't have Wdw-radii.
+   case 28:
+      rad=1.63;
+      break;
+   case 29:
+      rad=1.40;
+      break;
+   case 30:
+      rad=1.39;
+      break;
+   }
+   if (rad==0) 
+      // at least something in the right range 
+      // that is growing with charge.
+      rad=charge/10;
+   //rad*=angs2bohr;
+   rad*=1.889725989;
+   return rad;
+}
+
+void screen_pot(std::vector<Point> q_point, std::vector<Number>& potval, DOrbit dyson){
+   Real r;
+   Real r_0;
+   potval.resize(q_point.size(), 0);
+   unsigned int molsize=dyson.geometry.size();
+   for(unsigned int atom=0; atom<molsize; atom++){
+      r_0=vdw(dyson.geometry[atom].id());
+      for(unsigned int qp=0; qp<q_point.size(); qp++){
+         r=(dyson.geometry[atom]-q_point[qp]).norm();
+         potval[qp]-=dyson.geometry[atom].id()*erf(r-r_0)/r+1.*(1-erf(r-r_0))/(r*molsize);
+      }
+   }
+}
+
+void coulomb(std::vector<Point> q_point, std::vector<Number>& potval, DOrbit dyson){
+   potval.resize(q_point.size(), 0);
+   Real r;
+   unsigned int molsize=dyson.geometry.size();
+   for(unsigned int atom=0; atom<molsize; atom++){
+      for(unsigned int qp=0; qp<q_point.size(); qp++){
+         r=(dyson.geometry[atom]-q_point[qp]).norm();
+         potval[qp]-=1./(r);
+      }
+   }
+}
+
 void get_dirichlet_dofs(EquationSystems & es, const std::string & system_name, std::set<unsigned int>& dirichlet_dof_ids){
    dirichlet_dof_ids.clear();
    // It is a good idea to make sure we are assembling
@@ -115,6 +224,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    //const std::string & mesh_origin = es.parameters.get<std::string >("origin_mesh");
    const std::string & potfile = es.parameters.get<std::string>("potential");
+   std::string pot_type = es.parameters.get<std::string> ("pot_type");
+   assert( pot_type=="grid" || pot_type =="none" || pot_type=="screen" || pot_type=="coul");
    const std::string & formulation = es.parameters.get<std::string>("formulation");
    bool cap=es.parameters.get<bool >("cap");
    Real radius=es.parameters.get<Real>("radius");
@@ -129,10 +240,11 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 
    struct ESP esp;
    Read(esp, potfile);
+   DOrbit dyson(es.parameters.get<std::string>("DO_file"));
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
-   RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
-   //NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
+   //RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
+   NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);
@@ -283,7 +395,16 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       // triangle, now we are on a quadrilateral).
       Se.resize (dof_indices.size(), dof_indices.size());
       H.resize (dof_indices.size(), dof_indices.size());
-      potential.interpolate_field_data(esp_data, q_point, potval);
+      if (pot_type=="grid")
+         potential.interpolate_field_data(esp_data, q_point, potval);
+      else if (pot_type=="none")
+         potval.resize(cfe->n_quadrature_points(), 0);
+      else if (pot_type=="screen")
+         screen_pot(q_point, potval, dyson);
+      else if (pot_type=="coul")
+         coulomb(q_point, potval, dyson);
+      else // I should never come here:
+         assert(1==2);
 
       // Now loop over the quadrature points.  This handles
       // the numeric integration.
@@ -295,8 +416,8 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
 	 bool away=true;
          if(quadrature){
 	    for(int i=0; i<mol_geom.size(); i++){
-                // 0.01 as threshold does work...
-		if ((q_point[qp]-mol_geom[i]).norm()<0.0001){
+		//if ((q_point[qp]-mol_geom[i]).norm()<0.0001){
+		if ((q_point[qp]-mol_geom[i]).norm()<0.000){
 		   away=false;
                    break;
                 }
@@ -431,8 +552,8 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    Read(esp, potfile);
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
-   RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
-   //NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
+   //RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
+   NeNeInterpolation<3> potential(mesh.comm(), 1, r_0, mol_geom);
    const std::vector<std::string> esp_data(1);
    potential.set_field_variables(esp_data);
    potential.add_field_data(esp_data, esp.node, esp.potential);

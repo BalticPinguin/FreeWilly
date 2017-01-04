@@ -175,6 +175,8 @@ protected:
                             const std::vector<Real>   & src_dist_sqr,
                             std::vector<Number>::iterator & out_it) const;
    
+   const unsigned int _n_interp_pts;
+   
    /**
    * Temporary work array.  Object level scope to avoid cache thrashing.
    */
@@ -187,14 +189,17 @@ public:
    * which defaults to 2.
    */
    NeNeInterpolation (const libMesh::Parallel::Communicator & comm_in,
-                                 const unsigned int /*n_interp_pts*/ ,
+                                 const unsigned int n_interp_pts ,
                                  const Real  /*power    */           ,
-                                 const std::vector<Node> /*geometry*/) :
+                                 const std::vector<Node> geometry) :
    #if LIBMESH_HAVE_NANOFLANN
        MeshfreeInterpolation(comm_in),
-      _point_list_adaptor(_src_pts)
+      _point_list_adaptor(_src_pts),
+      _geom(geometry),
+      _n_interp_pts(n_interp_pts)
    #else 
-       MeshfreeInterpolation(comm_in)
+       MeshfreeInterpolation(comm_in),
+      _geom(geometry)
    #endif
    {}
    
