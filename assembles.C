@@ -414,12 +414,13 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
       out<<std::setprecision(10);
       for (unsigned int qp=0; qp<max_qp; qp++){
 	 bool away=true;
+
          if(quadrature){
 	    for(int i=0; i<mol_geom.size(); i++){
 		//if ((q_point[qp]-mol_geom[i]).norm()<0.0001){
 		if ((q_point[qp]-mol_geom[i]).norm()<0.000){
 		   away=false;
-                   break;
+                   //break;
                 }
             }
             if(away){
@@ -430,7 +431,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
             out<<std::setw(20)<<potval[qp].real()<<std::endl;
             }
          }
-         //out<<1/(q_point[qp].norm())<<std::endl;
+
          pot=potval[qp];
          if (cap){
             Real mindist=6000;
@@ -439,7 +440,7 @@ void assemble_InfSE(EquationSystems & es, const std::string & system_name){
                   mindist=(q_point[qp]-mol_geom[site]).norm();
             }
             if (mindist>=radius-offset)
-               pot=potval[qp]+Number(0,gamma*(mindist-radius+offset)*(mindist-radius+offset));
+               pot=potval[qp]-Number(0,gamma*(mindist-radius+offset)*(mindist-radius+offset));
          }
 
          // Now, get number of shape functions that are nonzero at this point::
@@ -544,12 +545,16 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
    Real r_0=es.parameters.get<Real>("r_0");
    const std::string & potfile = es.parameters.get<std::string>("potential");
    std::vector<Node> mol_geom=es.parameters.get<std::vector<Node>> ("mol_geom");
+   std::string pot_type = es.parameters.get<std::string> ("pot_type");
+   assert( pot_type=="grid" || pot_type =="none" || pot_type=="screen" || pot_type=="coul");
    bool cap=es.parameters.get<bool >("cap");
    Real radius=es.parameters.get<Real>("radius")*0.9;
+   Real offset=es.parameters.get<Real>("offset");
    Real gamma =es.parameters.get<Real>("gamma");
    
    struct ESP esp;
    Read(esp, potfile);
+   DOrbit dyson(es.parameters.get<std::string>("DO_file"));
 
    //InverseDistanceInterpolation<3> potential(mesh.comm(), 8, r_0);
    //RBFInterpolation<3> potential(mesh.comm(), 9, r_0, mol_geom);
@@ -643,7 +648,16 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
       cfe->reinit (elem);
       M.resize (dof_indices.size(), dof_indices.size());
       f.resize (dof_indices.size());
-      potential.interpolate_field_data(esp_data, q_point, potval);
+      if (pot_type=="grid")
+         potential.interpolate_field_data(esp_data, q_point, potval);
+      else if (pot_type=="none")
+         potval.resize(cfe->n_quadrature_points(), 0);
+      else if (pot_type=="screen")
+         screen_pot(q_point, potval, dyson);
+      else if (pot_type=="coul")
+         coulomb(q_point, potval, dyson);
+      else // I should never come here:
+         assert(1==2);
 
       // Now loop over the quadrature points.  This handles
       // the numeric integration.
@@ -659,7 +673,7 @@ void assemble_ESP(EquationSystems & es, const std::string & system_name){
                   mindist=(q_point[qp]-mol_geom[site]).norm();
             }
             if (mindist>=radius)
-               pot=potval[qp]+Number(0,gamma*mindist*mindist);
+               pot=potval[qp]-Number(0,gamma*(mindist-radius+offset)*(mindist-radius+offset));
          }
          
          // Now, get number of shape functions:

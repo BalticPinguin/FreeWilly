@@ -423,6 +423,9 @@ void evalSphWave(int l_max, Point qp, Real k, std::vector<Number>& solution){
            solution[j]=0;
          else
             solution[j]=R[l]*angular[j];
+            if(solution[j]!=solution[j]){
+              err<<"!! "<<R[l]<<"  "<<angular[j]<<"  "<<j<<std::endl;
+            }
          j++;
       }
    }

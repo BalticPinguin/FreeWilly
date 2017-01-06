@@ -340,7 +340,7 @@ void grid_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
             Point q_point(start(0)+(Real)ix*dx,
                           start(1)+(Real)iy*dy,
                           start(2)+(Real)iz*dz);
-            
+
             const Elem * elem=pt_lctr(q_point);
             if(elem!=NULL){
                dof_map.dof_indices (elem, dof_indices);

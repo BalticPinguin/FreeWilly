@@ -97,6 +97,7 @@ int main (int argc, char** argv){
    int spherical_analysis= cl("spherical_analysis", -1);
    bool cubes = cl("cubes", false);
    bool grid = cl("grid", false);
+   bool exe = cl("exodus", true);
    Real r_0=cl("r_0",12.);
 
    int Qorder=cl("Qorder",2);
@@ -286,11 +287,10 @@ int main (int argc, char** argv){
    // f = sqrt(E/2)/(pi*c)
    
    equation_systems.parameters.set<Real>("energy")=Energy;
-   equation_systems.parameters.set<Number>("momentum")=sqrt((Energy)*2.);
+   equation_systems.parameters.set<Number>("momentum")=sqrt(((Number)Energy)*2.);
    equation_systems.parameters.set<Real>("E_do")=dyson.get_energy();
    equation_systems.parameters.set<Real>("speed")=137.0359991;
-   equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
-                              sqrt(Energy*2.);
+   equation_systems.parameters.set<Real>("current frequency")=equation_systems.parameters.get<Real>("speed")*sqrt(Energy*2.)/(2*pi);
 
    equation_systems.parameters.print();
 
@@ -438,9 +438,8 @@ int main (int argc, char** argv){
    if (nconv==0){
       // that one can look at the mesh and some properties...
       #ifdef LIBMESH_HAVE_EXODUS_API
-         equation_systems.parameters.set<Number>("momentum")=sqrt((eigpair.first)*2.);
-         equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
-                              sqrt(eigpair.first*2.);
+         equation_systems.parameters.set<Number>("momentum")=sqrt((Number)(eigpair.first)*2.);
+         equation_systems.parameters.set<Real>("current frequency")=equation_systems.parameters.get<Real>("speed")*sqrt(std::abs(eigpair.first)*2.)/(2.*pi);
          if (infel)
             eigenvector_output_name<<"U"<<"-"<<cl("pot","unknwn")<<"_inf.e" ;
          else
@@ -455,9 +454,8 @@ int main (int argc, char** argv){
       for(unsigned int i=0; i<nconv; i++){
          //out<<" for the solution nr "<<i<<":"<<std::endl;
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Number>("momentum")=sqrt((eigpair.first)*2.);
-         equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
-                              sqrt(eigpair.first*2.);
+         equation_systems.parameters.set<Number>("momentum")=sqrt((Number)(eigpair.first)*2.);
+         equation_systems.parameters.set<Real>("current frequency")=equation_systems.parameters.get<Real>("speed")*sqrt(std::abs(eigpair.first)*2.)/(2.*pi);
          intensity=normalise(equation_systems, true);
          out<<"solution: "<<i<<"  ";
          out<<eigpair.first+equation_systems.parameters.get<Real>("E_do")<<"  ";
@@ -466,48 +464,51 @@ int main (int argc, char** argv){
       }
    }
 
-   // Write the eigen vector to file.
-   for(unsigned int i=0; i<nconv; i++){
-      eigpair = eigen_system.get_eigenpair(i);
-      
-      //std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
-      #ifdef LIBMESH_HAVE_EXODUS_API
-         eigenvector_output_name.str(std::string());
-         if (infel)
-            eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
-         else
-            eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
-         ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
-      #endif // #ifdef LIBMESH_HAVE_EXODUS_API
-      //eigenvector_output_name<< i <<"_err.e";
-      //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
-  
-      equation_systems.parameters.set<Number>("momentum")=sqrt((eigpair.first)*2.);
-      // frequency=2*pi*c*k
-      equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
-                              sqrt(eigpair.first*2.);
-      if(cubes){
-         eigenvector_output_name.str(std::string());
-         eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".cube";
-         cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE", infel);
+  // if any file format should be written:
+  if ( cubes || exe || grid ){
+      // Write the eigen vector to file.
+      for(unsigned int i=0; i<nconv; i++){
+         eigpair = eigen_system.get_eigenpair(i);
+         
+         //std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
+        if( exe){
+         #ifdef LIBMESH_HAVE_EXODUS_API
+            eigenvector_output_name.str(std::string());
+            if (infel)
+               eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<"_inf.e" ;
+            else
+               eigenvector_output_name<< i <<"-"<<cl("pot","unknwn")<<".e" ;
+            ExodusII_IO (mesh).write_equation_systems(eigenvector_output_name.str(), equation_systems);
+         #endif // #ifdef LIBMESH_HAVE_EXODUS_API
+       }
+         //eigenvector_output_name<< i <<"_err.e";
+         //ErrorVector::plot_error(eigenvector_output_name.str(), equation_systems.get_mesh() );
+     
+         equation_systems.parameters.set<Number>("momentum")=sqrt((Number)(eigpair.first)*2.);
+         // frequency=2*pi*c*k
+         equation_systems.parameters.set<Real>("current frequency")=equation_systems.parameters.get<Real>("speed")*sqrt(std::abs(eigpair.first)*2.)/(2.*pi);
+         if(cubes){
+            eigenvector_output_name.str(std::string());
+            eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".cube";
+            cube_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE", infel);
+         }
+         if(grid){
+            eigenvector_output_name.str(std::string());
+            eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".grid";
+            grid_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE", infel);
+         }
+         //eigenvector_output_name.str(std::string());
+         //eigenvector_output_name<< "phi-"<<i <<".line";
+         //line_out(equation_systems, eigenvector_output_name.str(), "EigenSE");
       }
-      if(grid){
-         eigenvector_output_name.str(std::string());
-         eigenvector_output_name<<cl("pot","unknwn")<< "-phi-"<<i <<".grid";
-         grid_io(equation_systems, dyson.geometry, eigenvector_output_name.str(), "EigenSE", infel);
-      }
-      //eigenvector_output_name.str(std::string());
-      //eigenvector_output_name<< "phi-"<<i <<".line";
-      //line_out(equation_systems, eigenvector_output_name.str(), "EigenSE");
    }
 
    // this will become an option for the input later.
    if (spherical_analysis>=0){
       for(unsigned int i=0; i<nconv; i++){
          eigpair = eigen_system.get_eigenpair(i);
-         equation_systems.parameters.set<Number>("momentum")=sqrt((eigpair.first)*2.);
-         equation_systems.parameters.set<Real>("current frequency")=2*pi*equation_systems.parameters.get<Real>("speed")*
-                              sqrt(eigpair.first*2.);
+         equation_systems.parameters.set<Number>("momentum")=sqrt((Number)(eigpair.first)*2.);
+         equation_systems.parameters.set<Real>("current frequency")=equation_systems.parameters.get<Real>("speed")*sqrt(std::abs(eigpair.first)*2.)/(2.*pi);
          ProjectSphericals (equation_systems, spherical_analysis, i);
       }
    }

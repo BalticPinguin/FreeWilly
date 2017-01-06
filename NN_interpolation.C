@@ -133,13 +133,14 @@ void NeNeInterpolation<KDDim>::interpolate (const Point               &  pt ,
    // number of variables is restricted to 1 here due to rbf_interpol_nd() at the moment.
    libmesh_assert_equal_to (this->n_field_variables(),1);
    // Compute the interpolation weights & interpolated value
-   Real threshold=3e-7*3e-7;
+   Real threshold=3e-5*3e-5;
    if (src_dist_sqr[0] < threshold){
       *out_it = _src_vals[src_indices[0]];
       return;
    }
    int closestAtom=-1;
-   Real minDist=100;
+   // be always larger than the minimum distance...
+   Real minDist=(_geom[0]-pt).norm()+1.;
    for(int atom=0; atom< _geom.size(); atom++){
       if (minDist>(_geom[atom]-pt).norm() ){
           minDist=(_geom[atom]-pt).norm();
@@ -147,10 +148,12 @@ void NeNeInterpolation<KDDim>::interpolate (const Point               &  pt ,
       }
    }
    // make sure we are close to one nucleus
-   assert((pt-_geom[closestAtom]).norm() < 1e-3);
+   //assert((pt-_geom[closestAtom]).norm() < 1e-3);
+   if ((pt-_geom[closestAtom]).norm() > 1e-3)
+      err<<"distance to closest point is large "<< src_dist_sqr[0]<<"  "<<(pt-_geom[closestAtom]).norm()<<std::endl;
 
    // just set it to Z/r:
-   *out_it = _geom[closestAtom].id()/minDist;
+   *out_it = -_geom[closestAtom].id()/minDist;
    return;
 
    // fit a+b/r .
