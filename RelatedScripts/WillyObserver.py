@@ -42,11 +42,11 @@ for i in range(num_atoms):
    atoms_y.append( data[3] ) #line 7+i, 3. row
    atoms_z.append( data[4] ) #line 7+i, 4. row
    # Display the orbital ##################################
-   #atom_i = mlab.points3d(atoms_x[i], atoms_y[i], atoms_z[i],
-   #               scale_factor=2,
-   #               resolution=20,
-   #               color=(1./float(data[0]), float(data[0])/92, 1.-1./float(data[0])), ## make color dependent on atom-type.
-   #               scale_mode='none')
+   atom_i = mlab.points3d(atoms_x[i], atoms_y[i], atoms_z[i],
+                  scale_factor=2,
+                  resolution=20,
+                  color=(1./float(data[0]), float(data[0])/92, 1.-1./float(data[0])), ## make color dependent on atom-type.
+                  scale_mode='none')
 
 # The bounds between the atoms, we use the scalar information to give
 # color  --> this is too easy at this point; understand and change later.
@@ -55,6 +55,9 @@ for i in range(num_atoms):
 
 stri = ''.join(file(sys.argv[1]).readlines()[6+num_atoms:])
 data = np.fromstring(stri, sep=' ')
+if data.size<NX*NY*NZ:
+   NX=np.floor(data.size/(NX*NZ))
+   data=data[:NX*NY*NZ]
 data.shape = (NX, NY, NZ)
 x,y,z=np.mgrid[start_point[0]:start_point[0]+dx[0]*NX+dy[0]*NY+dz[0]*NZ:NX*1j,
                start_point[1]:start_point[1]+dx[1]*NX+dy[1]*NY+dz[1]*NZ:NY*1j,
