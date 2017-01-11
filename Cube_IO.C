@@ -95,9 +95,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
       r = es.parameters.get<Real>("radius");
    Real lambda = es.parameters.get<Real>("speed")/es.parameters.get<Real>("current frequency");
 
-   Real dx=std::min(lambda/6.,r/80.);
-   Real dy=std::min(lambda/6.,r/80.);
-   Real dz=std::min(lambda/6.,r/80.);
+   Real dx=std::min(lambda/6.,r/31.);
+   Real dy=std::min(lambda/6.,r/31.);
+   Real dz=std::min(lambda/6.,r/31.);
    //Real dx=std::min(lambda/6.,0.3);
    //Real dy=std::min(lambda/6.,0.3);
    //Real dz=std::min(lambda/6.,0.3);
@@ -304,10 +304,12 @@ void grid_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    else
       r = es.parameters.get<Real>("radius");
    Real lambda = es.parameters.get<Real>("speed")/es.parameters.get<Real>("current frequency");
+   //Real lambda = 6.28/es.parameters.get<Real>("momentum");
+   out<<"wavelength:  "<<lambda<<std::endl;
 
-   Real dx=std::min(lambda/6.,r/80.);
-   Real dy=std::min(lambda/6.,r/80.);
-   Real dz=std::min(lambda/6.,r/80.);
+   Real dx=std::min(lambda/6.,r/31.);
+   Real dy=std::min(lambda/6.,r/31.);
+   Real dz=std::min(lambda/6.,r/31.);
    //Real dx=std::min(lambda/6.,0.3);
    //Real dy=std::min(lambda/6.,0.3);
    //Real dz=std::min(lambda/6.,0.3);

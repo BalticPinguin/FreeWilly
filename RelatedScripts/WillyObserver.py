@@ -43,7 +43,7 @@ for i in range(num_atoms):
    atoms_z.append( data[4] ) #line 7+i, 4. row
    # Display the orbital ##################################
    atom_i = mlab.points3d(atoms_x[i], atoms_y[i], atoms_z[i],
-                  scale_factor=2,
+                  scale_factor=data[0]/5,
                   resolution=20,
                   color=(1./float(data[0]), float(data[0])/92, 1.-1./float(data[0])), ## make color dependent on atom-type.
                   scale_mode='none')
