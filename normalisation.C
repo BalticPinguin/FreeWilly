@@ -386,7 +386,7 @@ void Y_lm(Real x, Real y, Real z, int l_max, std::vector<Number>& solution){
       }
    }
 
-   for(int m=0; m<l_max; m++)
+   for(int m=0; m<=l_max; m++)
       delete [] value[m];
 
    delete [] value;

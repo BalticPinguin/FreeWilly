@@ -105,9 +105,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    unsigned int ny=(2*r+(max(1)-min(1)))/dy;
    unsigned int nz=(2*r+(max(2)-min(2)))/dz;
 
-   Point start(mol_center(0)-dx*nx/2.,
-               mol_center(1)-dy*ny/2.,
-               mol_center(2)-dz*nz/2.);
+   Point start(mol_center(0)-dx*nx/2.+0.001,
+               mol_center(1)-dy*ny/2.+0.001,
+               mol_center(2)-dz*nz/2.+0.001);
 
    re_out<<std::setw(12)<<std::setprecision(6)<<"   "<<start(0);
    re_out<<std::setw(12)<<std::setprecision(6)<<"   "<<start(1);
@@ -162,9 +162,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    PointLocatorTree pt_lctr(mesh);
    //pt_lctr.enable_out_of_mesh_mode();
    unsigned int num_line=0;
-   for (ix=0;ix<nx;ix++) {
+   for (iz=0;iz<nz;iz++) {
       for (iy=0;iy<ny;iy++) {
-         for (iz=0;iz<nz;iz++) {
+         for (ix=0;ix<nx;ix++) {
 
             num_line++;
             Point q_point(start(0)+(Real)ix*dx,
@@ -300,7 +300,7 @@ void grid_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    
    Real r=0;
    if (infel)
-      r = 2.*es.parameters.get<Real>("radius");
+      r = 1.99*es.parameters.get<Real>("radius");
    else
       r = es.parameters.get<Real>("radius");
    Real lambda = es.parameters.get<Real>("speed")/es.parameters.get<Real>("current frequency");
@@ -317,9 +317,9 @@ void grid_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    unsigned int ny=(2*r+(max(1)-min(1)))/dy;
    unsigned int nz=(2*r+(max(2)-min(2)))/dz;
 
-   Point start(mol_center(0)-dx*nx/2.,
-               mol_center(1)-dy*ny/2.,
-               mol_center(2)-dz*nz/2.);
+   Point start(mol_center(0)-dx*nx/2.+0.001,
+               mol_center(1)-dy*ny/2.+0.001,
+               mol_center(2)-dz*nz/2.+0.001);
 
    for(unsigned int i=0; i<geom.size(); i++){
       re_out<<" "<<std::setw(5)<<geom[i].id()<<"\t";
