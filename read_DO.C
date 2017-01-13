@@ -166,7 +166,6 @@ double solHar2(double x,double y,double z, unsigned int l, unsigned int mpl){
    int m=(int)(mpl-l); // m=m+l-l.     //12.5663706144=4*pi
    double K_lm=sqrt((2.*l+1.)*factorial(l-abs(m))/(12.5663706144*factorial(l+abs(m))));
    double* value;
-   value=new double[l+1];
    double r=sqrt(x*x+y*y+z*z), phival;
    double cos_theta[1];
 
@@ -189,6 +188,7 @@ double solHar2(double x,double y,double z, unsigned int l, unsigned int mpl){
    //evaluate associated legendre polynomial;
    // it is defined only for m>=0 here, therefore need to distinguish
    // three cases (following the convention in QM)
+   // value is allocated in pm_polynomial_value()!
    if (m<0)
       value = pm_polynomial_value ( 1, l, -m, cos_theta);
 

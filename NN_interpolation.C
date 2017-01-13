@@ -149,6 +149,15 @@ void NeNeInterpolation<KDDim>::interpolate (const Point               &  pt ,
    }
    // make sure we are close to one nucleus
    //assert((pt-_geom[closestAtom]).norm() < 1e-3);
+   //
+   if ((pt-_geom[closestAtom]).norm() > 2){
+      double pot=0;
+      for(int atom=0; atom< _geom.size(); atom++){
+         pot += -1./(_geom.size()*(_geom[atom]-pt).norm());
+      }
+      *out_it=pot;
+      return;
+   }
    if ((pt-_geom[closestAtom]).norm() > 1e-3)
       err<<"distance to closest point is large "<< src_dist_sqr[0]<<"  "<<(pt-_geom[closestAtom]).norm()<<std::endl;
 

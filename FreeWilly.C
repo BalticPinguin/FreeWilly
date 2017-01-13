@@ -450,13 +450,12 @@ int main (int argc, char** argv){
       //out<< sqrt(norm_DO(equation_systems))<<std::endl;
    }
    else{
-      Real intensity;
       for(unsigned int i=0; i<nconv; i++){
          //out<<" for the solution nr "<<i<<":"<<std::endl;
          eigpair = eigen_system.get_eigenpair(i);
          equation_systems.parameters.set<Number>("momentum")=sqrt((Number)(eigpair.first)*2.);
          equation_systems.parameters.set<Real>("current frequency")=equation_systems.parameters.get<Real>("speed")*sqrt(std::abs(eigpair.first)*2.)/(2.*pi);
-         intensity=normalise(equation_systems, true);
+         Real intensity=normalise(equation_systems, true);
          out<<"solution: "<<i<<"  ";
          out<<eigpair.first+equation_systems.parameters.get<Real>("E_do")<<"  ";
          out<<eigpair.first<<"  ";

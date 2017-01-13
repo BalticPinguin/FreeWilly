@@ -338,9 +338,8 @@ Real normalise(EquationSystems& equation_systems, bool infel){
    //out<<"norm of phi: ";
    //out<< sqrt(norm_phi) <<std::endl;
 
-   Real overlap=0;
    //compute <DO| mu |phi>
-   overlap = overlap_DO(equation_systems, "EigenSE", 0, LENGTH, infel);
+   Real overlap = overlap_DO(equation_systems, "EigenSE", 0, LENGTH, infel);
    
    // abs needed for type conversion.
    return overlap; ///std::abs((norm_phi*conj(norm_phi)));
@@ -354,8 +353,10 @@ void Y_lm(Real x, Real y, Real z, int l_max, std::vector<Number>& solution){
    Real K_lm;
    
    Real** value= new Real*[l_max+1];
-   for(int m=0; m<=l_max; m++)
-      value[m]=new Real[l_max+1];
+
+   // memory for value is allocated in pm_polynomial_value()!
+   //for(int m=0; m<=l_max; m++)
+   //   value[m]=new Real[l_max+1];
 
    double r=sqrt(x*x+y*y+z*z),
             phival=0;
