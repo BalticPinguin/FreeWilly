@@ -162,9 +162,9 @@ void cube_io(EquationSystems& es, std::vector<Node> geom, std::string output, st
    PointLocatorTree pt_lctr(mesh);
    //pt_lctr.enable_out_of_mesh_mode();
    unsigned int num_line=0;
-   for (iz=0;iz<nz;iz++) {
+   for (ix=0;ix<nx;ix++) {
       for (iy=0;iy<ny;iy++) {
-         for (ix=0;ix<nx;ix++) {
+         for (iz=0;iz<nz;iz++) {
 
             num_line++;
             Point q_point(start(0)+(Real)ix*dx,

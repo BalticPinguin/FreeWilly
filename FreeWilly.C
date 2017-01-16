@@ -95,7 +95,7 @@ int main (int argc, char** argv){
    bool quadrature_print = cl("print_quadrature", false);
    bool pictorious = cl("pictorious", false);
    int spherical_analysis= cl("spherical_analysis", -1);
-   bool cubes = cl("cubes", false);
+   int cubes = cl("cubes", 0);
    bool grid = cl("grid", false);
    bool exe = cl("exodus", true);
    Real r_0=cl("r_0",12.);
@@ -464,9 +464,10 @@ int main (int argc, char** argv){
    }
 
   // if any file format should be written:
-  if ( cubes || exe || grid ){
+  if ( cubes>0 || exe || grid ){
       // Write the eigen vector to file.
-      for(unsigned int i=0; i<nconv; i++){
+      //for(unsigned int i=0; i<nconv; i++){
+      unsigned int i=cubes;
          eigpair = eigen_system.get_eigenpair(i);
          
          //std::cout<<"kinetic energy: "<<i<<" = "<<eigpair.first<<std::endl;
@@ -499,7 +500,7 @@ int main (int argc, char** argv){
          //eigenvector_output_name.str(std::string());
          //eigenvector_output_name<< "phi-"<<i <<".line";
          //line_out(equation_systems, eigenvector_output_name.str(), "EigenSE");
-      }
+      //}
    }
 
    // this will become an option for the input later.
